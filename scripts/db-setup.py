@@ -1,9 +1,16 @@
 #!/usr/bin/env python3
-"""Set up the Postgres database with an 'app' and an 'analytics' schema.
+"""Set up the Postgres database with 'app', 'analytics' and 'analytics_dev'.
 
-Creates the database, both schemas, and one login role per schema. Each role
-administers its own schema and gets read-only access to the other one, for both
-existing and future objects.
+Creates the database, all three schemas, and one login role per schema. Each
+role administers its own schema and gets read-only access to the others it
+needs, for both existing and future objects.
+
+The third schema is where the data track publishes while it is still building.
+It exists so a trainee can run the publish step against the real database
+rather than a stand-in on their laptop, which is what exercises TLS, the
+firewall and the grants before the first scheduled run does. Its role cannot
+write `analytics`, so an `.env` still pointing at production fails with a
+permission error instead of replacing what the backend serves.
 
 The script is idempotent: re-running it never changes existing state, so a
 failed run can simply be repeated. Existing roles keep their current password
@@ -43,20 +50,37 @@ MAINTENANCE_DATABASE = "postgres"  # the database connected to while creating it
 
 APP_SCHEMA = "app"
 ANALYTICS_SCHEMA = "analytics"
+ANALYTICS_DEV_SCHEMA = "analytics_dev"
 APP_ROLE = "app_user"
 ANALYTICS_ROLE = "analytics_user"
+ANALYTICS_DEV_ROLE = "analytics_dev_user"
 
 
 class SchemaAccess(NamedTuple):
-    """The schema a role fully administers, and the schema it may only read."""
+    """The schema a role fully administers, and the ones it may only read."""
 
     administers: str
-    read_only: str
+    reads: tuple[str, ...]
 
 
+# Who may write what, which is the whole dev/production boundary in one table.
+#
+# `analytics` is written by exactly one role, and that role's password is
+# readable only by the team's Airflow VM. Trainees publish to `analytics_dev`
+# instead and can read `analytics` to compare, but not write it.
+#
+# The backend reads both, so its developers can build against a table the data
+# track is still shaping without waiting for it to reach production.
 ROLE_LAYOUT = {
-    APP_ROLE: SchemaAccess(administers=APP_SCHEMA, read_only=ANALYTICS_SCHEMA),
-    ANALYTICS_ROLE: SchemaAccess(administers=ANALYTICS_SCHEMA, read_only=APP_SCHEMA),
+    APP_ROLE: SchemaAccess(
+        administers=APP_SCHEMA, reads=(ANALYTICS_SCHEMA, ANALYTICS_DEV_SCHEMA)
+    ),
+    # Deliberately cannot read `analytics_dev`: production must never end up
+    # depending on a table somebody is still editing from a laptop.
+    ANALYTICS_ROLE: SchemaAccess(administers=ANALYTICS_SCHEMA, reads=(APP_SCHEMA,)),
+    ANALYTICS_DEV_ROLE: SchemaAccess(
+        administers=ANALYTICS_DEV_SCHEMA, reads=(APP_SCHEMA, ANALYTICS_SCHEMA)
+    ),
 }
 
 class Privileges(NamedTuple):
@@ -289,12 +313,12 @@ def report(args: argparse.Namespace, passwords: dict[str, str | None]) -> None:
     unchanged = "(unchanged)"
     print(f"\n✅ Setup complete on {args.host}:{args.port}\n")
     print(f"  database : {NEW_DATABASE}")
-    print(f"  schemas  : {APP_SCHEMA}, {ANALYTICS_SCHEMA}\n")
+    print(f"  schemas  : {APP_SCHEMA}, {ANALYTICS_SCHEMA}, {ANALYTICS_DEV_SCHEMA}\n")
     for role, access in ROLE_LAYOUT.items():
+        reads = ", ".join(f"'{schema}'" for schema in access.reads)
         print(f"  {role}")
         print(f"    password : {passwords[role] or unchanged}")
-        print(f"    access   : full on '{access.administers}', "
-              f"read-only on '{access.read_only}'")
+        print(f"    access   : full on '{access.administers}', read-only on {reads}")
 
 
 # --- Entry point -----------------------------------------------------------
@@ -327,7 +351,8 @@ def main() -> None:
         creators = [args.admin_user, *roles]
         for role, access in ROLE_LAYOUT.items():
             grant_access(conn, access.administers, role, FULL_ACCESS, creators)
-            grant_access(conn, access.read_only, role, READ_ONLY, creators)
+            for schema in access.reads:
+                grant_access(conn, schema, role, READ_ONLY, creators)
 
     report(args, passwords)
 
