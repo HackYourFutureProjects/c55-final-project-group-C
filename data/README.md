@@ -10,6 +10,12 @@ rows arrive, break something, and watch which test catches it. Your job is to
 make it yours, which is a different and more interesting problem than making it
 exist.
 
+> **Team-a walkthrough.** Examples in this folder use team-c's cloud resources
+> (`sthyffpteamc`, `team_c`, `rg-hyf-fp-team-c`). If you are on team-b, team-c,
+> or team-d, keep the same commands and replace those names with yours — see
+> [Setup](#setup) for the mapping. Personal settings (`LANDING_PREFIX`,
+> `DBT_SCHEMA`, your Databricks token) stay yours on every team.
+
 ## The pipeline
 
 ```mermaid
@@ -20,7 +26,7 @@ flowchart LR
         ING["ACA job: ingestion container, image tagged by SHA"]
 
         subgraph dbx["Databricks (Unity Catalog)"]
-            LAND[("landing zone, ADLS: /Volumes/catalog/landing/raw")]
+            LAND[("landing zone, ADLS: /Volumes/catalog/landing/prod")]
             WH["SQL warehouse, 2X-Small"]
             MODELS["staging, then marts, plus dbt tests"]
             ENRM["fct_postings_enriched: dbt Python model on serverless"]
@@ -127,10 +133,11 @@ with `enabled: false` because it needs an API key first. See
 limit.
 
 Your raw files live in your team's own storage account, in a container called
-`landing`. That same container is registered in Unity Catalog as a volume, so
-the file the container writes as `landing/raw/postings/2026-08-12.json` is the
-file dbt reads at `/Volumes/<your catalog>/landing/raw/postings/`. One copy of
-the bytes, two ways to reach it: Azure tooling on one side, SQL on the other.
+`prod`. That same container is registered in Unity Catalog as a volume, so
+the file the container writes as
+`prod/raw/postings/ingest_date=2026-08-12/data.json` is the file dbt reads
+at `/Volumes/team_c/landing/prod/postings/`. One copy of the
+bytes, two ways to reach it: Azure tooling on one side, SQL on the other.
 
 The two tracks meet in the backend's database, which has one schema per side.
 You write marts into `analytics`, which the backend reads. The backend writes
@@ -179,9 +186,19 @@ in place:
 
 What you do once, on your own machine:
 
-**1. Get your team's values.** Your teacher gives you two: your storage account
-name and your catalog. Everything else is the same for all three teams and is
-filled in already.
+**1. Copy `.env` and adjust for your team.** `data/.env.example` is prefilled
+with **team-c** as the worked example. If that is your team, you only need your
+personal values (prefix, dev schema, Databricks token, Postgres password from
+Key Vault). On another team, swap the four team identifiers:
+
+| If you are on | Storage account | Catalog | Resource group | Registry |
+|---|---|---|---|---|
+| team-c | `sthyffpteamc` | `team_c` | `rg-hyf-fp-team-c` | `acrhyffpc` |
+| team-b | `sthyffpteamb` | `team_b` | `rg-hyf-fp-team-b` | `acrhyffpb` |
+| team-c | `sthyffpteamc` | `team_c` | `rg-hyf-fp-team-c` | `acrhyffpc` |
+| team-d | `sthyffpteamd` | `team_d` | `rg-hyf-fp-team-d` | `acrhyffpd` |
+
+The full dev walkthrough is in [`docs/dev_flow.md`](docs/dev_flow.md).
 
 **2. Generate your Databricks token.** The same one you made in Week 13, and
 for the same reason: it authenticates dbt as *you*. Your name in the top bar,
@@ -219,8 +236,10 @@ cd data
 cp .env.example .env      # a different file: data/.env.example, the pipeline's
 ```
 
-Fill in the two values from step 1, your token, and the `analytics_user`
-password from step 3.
+Add your token, your `LANDING_PREFIX` and `DBT_SCHEMA`, and the Postgres
+secrets from Key Vault (commands are in `.env.example`; team-c names are shown
+— replace `team-c` with your team letter if needed). Step 3 is only for the
+optional local Postgres container at the repository root.
 
 **5. Sign in to Azure.** The pipeline authenticates as you locally, and as its
 managed identity in Azure. Same code, no secret either way.
@@ -231,15 +250,16 @@ az login
 
 **6. Check you can reach your landing zone.** Your teacher grants each team
 member two roles, one per container: `Storage Blob Data Contributor` on `dev`,
-so your own runs can write there, and `Storage Blob Data Reader` on `landing`,
+so your own runs can write there, and `Storage Blob Data Reader` on `prod`,
 so you can read what the scheduled pipeline wrote without being able to
 overwrite it. Owner or Contributor on the resource group is *not* enough:
 Azure separates managing a storage account from reading what is inside it, and
 this trips up nearly everyone the first time.
 
 ```bash
-az storage blob list --account-name <your storage account> \
-  --container-name landing --auth-mode login -o table
+# Team-c example — replace sthyffpteamc with your storage account if needed.
+az storage blob list --account-name sthyffpteamc \
+  --container-name prod --auth-mode login -o table
 ```
 
 An `AuthorizationPermissionMismatch` here means the role is missing or has not
@@ -260,7 +280,7 @@ That fetches the default source and lands one file. Check it arrived, from the
 Databricks SQL editor:
 
 ```sql
-SELECT count(*) FROM read_files('/Volumes/<your catalog>/landing/raw/postings',
+SELECT count(*) FROM read_files('/Volumes/team_c/landing/prod/postings',
                                 format => 'json');
 ```
 
@@ -312,18 +332,39 @@ and they are the first thing to fill in:
 
 | Setting | Yours | The scheduled run |
 |---|---|---|
-| `LANDING_CONTAINER` | `dev` | `landing` |
+| `LANDING_CONTAINER` | `dev` | `prod` |
 | `LANDING_PREFIX` | `your-name` | `raw` |
-| `LANDING_PATH` | `/Volumes/<catalog>/landing/dev/your-name/postings` | `.../landing/raw/postings` |
+| `LANDING_PATH` | `/Volumes/<catalog>/landing/dev/your-name/postings` | `.../landing/prod/postings` |
 | `DBT_SCHEMA` | `dev_yourname` | `analytics` |
-| `BACKEND_PG_HOST` | your own Postgres in Docker | the backend's database |
+| `BACKEND_PG_PUBLISH_SCHEMA` | `analytics_dev` | `analytics` |
+| `BACKEND_PG_USER` | `analytics_dev_user` | `analytics_user` |
 
 This is not a naming convention you have to remember. It is what your account
-is allowed to do. You can write the `dev` container and only read `landing`.
+is allowed to do. You can write the `dev` container and only read `prod`.
 You can create and own `dev_` schemas and only read `analytics`. Point your
 `.env` at the production names by mistake and the run stops with a permission
 error, which is a much better afternoon than discovering at the demo that your
 test data went out to the backend.
+
+### Before any of that: look at the source
+
+When you point the pipeline at a new API, the first question is what it
+actually returns, and you do not need a cloud account to answer it:
+
+```bash
+uv run python -m src.ingestion.pipeline --local     # writes local-landing/
+```
+
+It fetches and validates exactly as a real run does, then writes the file to
+your own disk instead of the landing zone, in the same newline-delimited format
+dbt would read. Open it, work out which fields matter, and write the renames in
+`stg_*.sql` against something you have seen rather than something you assume.
+`--local` takes an optional directory if you want it somewhere else, and it is
+the one mode that needs no `STORAGE_ACCOUNT`.
+
+> This is a look, not a stage. The SQL warehouse cannot read your laptop, so
+> there is no step where you land locally and then upload it. When the shape
+> looks right, drop the flag and the same command writes the `dev` container.
 
 The loop, start to finish:
 
@@ -359,8 +400,21 @@ docker exec -it $(docker ps -qf name=scheduler) \
 ```
 
 It reads `<catalog>.dev_yourname.fct_postings_enriched` and writes
-`analytics.fct_postings` in your own Postgres, the one `scripts/db-setup.py`
-created. `dbt_build` runs the same way. The `ingest` task does not: it starts a
+`analytics_dev.fct_postings` in the real backend database. Same table name as
+production, one schema across, so promoting it later changes nothing the
+backend selects. `dbt_build` runs the same way.
+
+You share `analytics_dev` with your teammates, so the last publish wins. The
+table carries a comment saying where the rows came from, which is how you tell
+whose run you are looking at:
+
+```
+\d+ analytics_dev.fct_postings     -->  from team_c.dev_alex at 2026-08-13T11:21Z
+```
+
+Point `BACKEND_PG_PUBLISH_SCHEMA` at `analytics` by mistake and the run stops
+with a permission error. `analytics_dev_user` cannot write production, which is
+the point of it being a separate role. The `ingest` task does not: it starts a
 Container Apps job, which needs the VM's identity, so run that one as the
 script above.
 
@@ -430,10 +484,10 @@ Raw files, not tables. A raw file is exactly what the source sent you, so when
 a column changes shape in three weeks you can re-read it and find out when.
 
 Your team's storage account has two containers, each registered in Unity
-Catalog as a volume. `landing` is the scheduled pipeline's, and the file it
-writes as `landing/raw/postings/2026-08-12.json` is the file dbt reads at
-`/Volumes/<catalog>/landing/raw/postings/`. One copy of the bytes, two ways to
-reach it: Azure tooling on one side, SQL on the other.
+Catalog as a volume. `prod` is the scheduled pipeline's, and the file it
+writes as `prod/raw/postings/ingest_date=2026-08-12/data.json` is the file
+dbt reads at `/Volumes/<catalog>/landing/prod/postings/`. One copy of the
+bytes, two ways to reach it: Azure tooling on one side, SQL on the other.
 
 `dev` is the other one, and it is where your own runs land. It appears next to
 the first as `/Volumes/<catalog>/landing/dev/`. Two containers rather than two
@@ -442,8 +496,32 @@ on a folder: this is the difference between separation you are asked to
 observe and separation you cannot get around.
 
 One file per source per day, so a re-run replaces its own file instead of
-doubling your data. Change the layout if you like, and change `LANDING_PATH`
-to match.
+doubling your data. The date is a folder rather than part of the filename:
+`postings/ingest_date=2026-08-12/data.json`. A folder named `key=value` is a
+partition, a convention every engine that reads files understands, so dbt gets
+an `ingest_date` column without anyone parsing a filename.
+
+What that buys you is a bad day being one directory. When a source has an
+outage and sends nonsense for a day, the fix is to delete that folder and run
+the pipeline again for that date, and nothing else in the landing zone is
+touched:
+
+```bash
+az storage blob delete-batch --account-name sthyffpteamc --source dev \
+  --pattern 'your-name/postings/ingest_date=2026-08-12/*' --auth-mode login
+uv run python -m src.ingestion.pipeline --run-date 2026-08-12
+```
+
+> ⚠️ It does not speed up `dbt build`. Skipping folders only helps a query
+> that filters on the partition column, and staging deliberately reads every
+> day so its de-duplication can pick the newest version of each record.
+
+One sharp edge if you landed files before this layout existed: once a
+`ingest_date=` folder appears beside them, `read_files` treats the folder as
+the partition root and **silently ignores** files sitting at the old depth. No
+error, they just stop appearing in your models. Move or delete them.
+
+Change the layout if you like, and change `LANDING_PATH` to match.
 
 **Raw means raw.** The job validates before it writes, but it lands what the
 source sent, not what validation produced. Parsing is a gate deciding whether
