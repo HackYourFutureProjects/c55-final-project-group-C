@@ -133,11 +133,11 @@ def test_the_source_schema_is_stamped_on_the_table(connection):
     """One shared `analytics_dev` means the last publish wins, which is right for
     a place two tracks meet but leaves nobody able to say why the columns changed.
     The comment names the warehouse schema the rows came from."""
-    sync.publish("dsn", "analytics_dev", "fct_postings", COLUMNS, ROWS, source="team_a.dev_alex")
+    sync.publish("dsn", "analytics_dev", "fct_postings", COLUMNS, ROWS, source="team_c.dev_alex")
 
     comment = connection.log[index_of(connection.log, "comment on table")]
     assert '"analytics_dev"."fct_postings"' in comment
-    assert "from team_a.dev_alex at " in comment
+    assert "from team_c.dev_alex at " in comment
 
 
 def test_the_stamp_lands_after_the_swap(connection):

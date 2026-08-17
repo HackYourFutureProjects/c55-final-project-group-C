@@ -91,7 +91,7 @@ def publish(
     comment on the table. One shared `analytics_dev` means the last publish wins,
     which is the right behaviour for a place two tracks meet but leaves nobody
     able to say why the columns changed this morning. The comment answers it in
-    any client: `from team_a.dev_alex at 2026-08-13T11:02Z`.
+    any client: `from team_c.dev_alex at 2026-08-13T11:02Z`.
     """
     if not rows:
         raise ValueError("refusing to publish zero rows over an existing table")
