@@ -27,8 +27,8 @@ azure-identity>=1.19.0
 # src/ingestion/storage.py imports BlobServiceClient for landing raw files.
 azure-storage-blob>=12.23.0
 
-# Not imported by any task today. They are here so that a task you add which
-# imports src/ingest.py or src/models.py works on the VM as it did on your
-# machine, rather than failing with ModuleNotFoundError after a deploy.
+# Mode 1 local ingest (`INGEST_MODE=local`) imports src/ingestion/pipeline in
+# the worker, which pulls in pydantic and requests via src/ingestion/ingest.py.
+# Keep them listed so a deploy does not drop a dependency the default path needs.
 pydantic>=2.9.0
 requests>=2.32.0

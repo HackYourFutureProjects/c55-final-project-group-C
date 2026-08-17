@@ -10,8 +10,8 @@ rows arrive, break something, and watch which test catches it. Your job is to
 make it yours, which is a different and more interesting problem than making it
 exist.
 
-> **Team-a walkthrough.** Examples in this folder use team-c's cloud resources
-> (`sthyffpteamc`, `team_c`, `rg-hyf-fp-team-c`). If you are on team-b, team-c,
+> **Team-c walkthrough.** Examples in this folder use team-c's cloud resources
+> (`sthyffpteamc`, `team_c`, `rg-hyf-fp-team-c`). If you are on team-a, team-b,
 > or team-d, keep the same commands and replace those names with yours — see
 > [Setup](#setup) for the mapping. Personal settings (`LANDING_PREFIX`,
 > `DBT_SCHEMA`, your Databricks token) stay yours on every team.
@@ -193,7 +193,7 @@ Key Vault). On another team, swap the four team identifiers:
 
 | If you are on | Storage account | Catalog | Resource group | Registry |
 |---|---|---|---|---|
-| team-c | `sthyffpteamc` | `team_c` | `rg-hyf-fp-team-c` | `acrhyffpc` |
+| team-a | `sthyffpteama` | `team_a` | `rg-hyf-fp-team-a` | `acrhyffpa` |
 | team-b | `sthyffpteamb` | `team_b` | `rg-hyf-fp-team-b` | `acrhyffpb` |
 | team-c | `sthyffpteamc` | `team_c` | `rg-hyf-fp-team-c` | `acrhyffpc` |
 | team-d | `sthyffpteamd` | `team_d` | `rg-hyf-fp-team-d` | `acrhyffpd` |
