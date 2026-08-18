@@ -1,9 +1,10 @@
-CREATE TABLE users (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    name VARCHAR(255) NOT NULL,
-    email VARCHAR(255) UNIQUE NOT NULL,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
+ALTER TABLE users
+    ALTER COLUMN id SET DEFAULT gen_random_uuid(),
+    ALTER COLUMN email TYPE VARCHAR(255),
+    ALTER COLUMN email SET NOT NULL,
+    ADD CONSTRAINT users_email_unique UNIQUE (email),
+    ADD COLUMN name VARCHAR(255) NOT NULL DEFAULT '',
+    ADD COLUMN created_at TIMESTAMPTZ NOT NULL DEFAULT now();
 
 CREATE TABLE user_credentials (
     user_id UUID PRIMARY KEY,
@@ -40,4 +41,3 @@ CREATE TABLE saved_jobs (
     PRIMARY KEY (user_id, job_id),
     CONSTRAINT fk_saved_jobs_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
-
