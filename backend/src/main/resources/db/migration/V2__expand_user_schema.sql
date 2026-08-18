@@ -6,7 +6,7 @@ ALTER TABLE users
 CREATE TABLE user_credentials (
     user_id UUID PRIMARY KEY,
     password_hash VARCHAR(255) NOT NULL,
-    refresh_token TEXT,
+    refresh_token_hash TEXT,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     CONSTRAINT fk_user_credentials FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
