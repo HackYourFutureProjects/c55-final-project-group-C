@@ -234,7 +234,10 @@ jobs:
                     DATABRICKS_CATALOG=${{ vars.DATABRICKS_CATALOG }} \
                     AZURE_CLIENT_ID=$client_id"
 
-          if az containerapp job show -g "$RG" -n "$JOB" -o none 2>/dev/null; then
+          # No 2>/dev/null: if this lookup fails for a transient reason we want
+          # to see why in the log, rather than silently falling through to
+          # `create` against a job that already exists.
+          if az containerapp job show -g "$RG" -n "$JOB" -o none; then
             echo "updating $JOB -> $image"
             az containerapp job update -g "$RG" -n "$JOB" \
               --image "$image" --set-env-vars $env_vars -o none
