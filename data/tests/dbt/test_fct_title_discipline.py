@@ -124,5 +124,5 @@ def test_being_rate_limited_says_so_in_words(monkeypatch):
 
 def test_the_prompt_names_the_allowed_disciplines_and_the_titles():
     prompt = build_prompt(["Backend Engineer"])
-    assert "backend, frontend, data, devops, other" in prompt
+    assert "backend, frontend, data, devops, mobile, other" in prompt
     assert "0. Backend Engineer" in prompt

@@ -38,7 +38,10 @@ import urllib.request
 # Keep this list short and closed. An open-ended prompt ("what discipline is
 # this?") returns a different taxonomy every week, and nothing downstream can
 # depend on it.
-DISCIPLINES = ("backend", "frontend", "data", "devops", "other")
+# Must match the dictionary model in fct_postings_enriched.py and the
+# accepted_values test in _fct_postings_enriched.yml. Drop one and the
+# titles it covered land as `other`, which passes the test silently.
+DISCIPLINES = ("backend", "frontend", "data", "devops", "mobile", "other")
 
 ENDPOINT = "https://openrouter.ai/api/v1/chat/completions"
 # Pin the model. "latest" means your classification changes under you, and the
