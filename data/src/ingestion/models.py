@@ -1,5 +1,4 @@
-"""Validation models for the source data. Replace with your source's shape."""
-
+"""Validation model for FreeHire job data."""
 from datetime import datetime
 
 from pydantic import BaseModel, Field
@@ -27,4 +26,3 @@ class Posting(BaseModel):
     updated_at: datetime | None = None
     last_seen_at: datetime | None = None
     closed_at: datetime | None = None
-    
