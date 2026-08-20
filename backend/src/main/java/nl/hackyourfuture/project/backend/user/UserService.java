@@ -32,4 +32,11 @@ public class UserService {
         var updated = userRepository.updateUser(updatedUser);
         return UserResponse.from(updated);
     }
+
+    // for the frontend to verify active authentication.
+    public UserResponse getUserByEmail(String email) {
+        var user = userRepository.getUserByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        return UserResponse.from(user);
+    }
 }
