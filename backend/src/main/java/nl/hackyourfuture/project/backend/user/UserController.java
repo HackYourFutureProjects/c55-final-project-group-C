@@ -43,6 +43,9 @@ public class UserController {
 
         String email;
         if (principal instanceof String principalEmail) {
+            if ("anonymousUser".equals(principalEmail) || principalEmail.isBlank()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            }
             email = principalEmail;
         } else if (principal instanceof UserDetails userDetails) {
             email = userDetails.getUsername();

@@ -75,7 +75,7 @@ public class UserRepository {
     public User updateUser(User user) {
         jdbcClient.sql("""
                         UPDATE users
-                        SET email=:email name = :name
+                        SET email=:email, name = :name
                         WHERE id=:id
                         """)
                 .param("id", user.getId())
