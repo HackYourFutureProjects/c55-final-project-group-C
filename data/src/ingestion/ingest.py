@@ -1,6 +1,6 @@
 """Fetch records from the source API and validate them.
 
-The default source is the Arbeitnow job board, which needs no API key. Point
+The default source is the Freehire job board, which needs no API key. Point
 SOURCE_API_URL at your team's source and rewrite `parse_records` to match it.
 """
 
@@ -19,7 +19,7 @@ REQUEST_TIMEOUT_SECONDS = 30
 BASE_URL = "https://freehire.me/api/v1/jobs/search"
 MAX_RETRIES = 3
 DEFAULT_LIMIT = 100
-MAX_OFFSET_LIMIT = 10000
+MAX_OFFSET_LIMIT = 100
 RETRYABLE_STATUS_CODES = {429, 500, 502, 503, 504}
 
 
@@ -70,7 +70,8 @@ def fetch_raw(url: str = BASE_URL) -> list[Any]:
             break
 
         logger.info("Fetching %s (offset=%d, limit=%d)", url, offset, limit)
-        # added parameter to filter for Netherlands only, offset and limits to match api pagination and limits
+        # added parameter to filter for Netherlands only,
+        # offset and limits to match api pagination and limits
         params = {"offset": offset, "limit": limit, "countries": "NL"}
         payload = fetch_with_retry(url, params)
 
@@ -101,24 +102,56 @@ def fetch_raw(url: str = BASE_URL) -> list[Any]:
 
 
 def parse_records(records: list[Any]) -> tuple[list[Posting], int]:
-    """Validate raw records, returning the good ones and a rejected count.
+    """Validate FreeHire job records.
 
-    One malformed record must not lose the whole batch, so invalid rows are
-    counted and skipped. `Any` is deliberate: this is the boundary, and the
-    source can send anything.
+    Each record must be a JSON object, match the Posting model,
+    and have a unique public_slug.
+
+    Invalid records are counted and skipped during validation so that
+    one bad record does not stop the whole batch.
     """
     parsed: list[Posting] = []
     rejected = 0
+    seen_slugs: set[str] = set()
+
     for record in records:
+        if not isinstance(record, dict):
+            rejected += 1
+            logger.warning("Rejected non-object record: %r", record)
+            continue
+
         try:
-            parsed.append(Posting.model_validate(record))
+            posting = Posting.model_validate(record)
         except ValidationError as exc:
             rejected += 1
-            # A JSON list can hold a scalar, and .get on one would raise here
-            # and lose the batch this loop exists to save.
-            identifier = (
-                record.get("slug", "<no slug>") if isinstance(record, dict) else repr(record)[:40]
+
+            identifier = record.get(
+                "public_slug",
+                "<no public_slug>",
             )
-            logger.warning("Rejected record %s: %s", identifier, exc.error_count())
-    logger.info("Parsed %d record(s), rejected %d", len(parsed), rejected)
+
+            logger.warning(
+                "Rejected record %s: %d validation error(s)",
+                identifier,
+                exc.error_count(),
+            )
+            continue
+
+        if posting.public_slug in seen_slugs:
+            rejected += 1
+            logger.warning(
+                "Rejected duplicate record: %s",
+                posting.public_slug,
+            )
+            continue
+
+        seen_slugs.add(posting.public_slug)
+        parsed.append(posting)
+
+    logger.info(
+        "Parsed %d record(s), rejected %d",
+        len(parsed),
+        rejected,
+    )
+
     return parsed, rejected

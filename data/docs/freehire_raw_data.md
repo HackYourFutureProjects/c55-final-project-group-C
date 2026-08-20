@@ -38,7 +38,15 @@ Example raw fields include:
 
 ## Validation
 
-Incoming records are validated before being written to the raw data layer.
+Incoming FreeHire records are validated by `parse_records()` using the
+`Posting` Pydantic model.
+
+For each record, the validation checks that:
+
+- the record is a JSON object/dictionary;
+- the record matches the expected FreeHire job structure;
+- required fields are present;
+- `public_slug` is unique within the batch.
 
 Required fields are:
 
@@ -48,7 +56,7 @@ Required fields are:
 - url
 - created_at
 
-The following fields are preserved and used when available:
+The following fields are preserved when available:
 
 - location
 - countries
@@ -61,10 +69,11 @@ The following fields are preserved and used when available:
 - last_seen_at
 - closed_at
 
-Some FreeHire records can contain missing or empty values for these fields.
-A missing optional field does not make the complete job record invalid.
+Some FreeHire records can contain missing or empty values for these optional
+fields. A missing optional field does not make the complete job record invalid.
 
-Invalid records are rejected and counted without stopping the complete batch.
+Invalid or duplicate records are counted as rejected without stopping the
+validation of the remaining records.
 
 ## Validation result
 
@@ -72,7 +81,18 @@ The FreeHire validation is covered by automated ingestion tests.
 
 Current test result:
 
-- ingestion tests: 7 passed
+- ingestion tests: 8 passed
+
+The tests cover:
+
+- valid FreeHire records;
+- missing required fields;
+- invalid non-object records;
+- optional missing or empty fields;
+- datetime parsing;
+- `closed_at = null`;
+- batch processing with invalid records;
+- duplicate `public_slug` values.
 
 The validation has also been tested with real FreeHire job records through the
 integrated ingestion pipeline.
