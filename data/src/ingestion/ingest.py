@@ -4,8 +4,8 @@ The default source is the Freehire job board, which needs no API key. Point
 SOURCE_API_URL at your team's source and rewrite `parse_records` to match it.
 """
 
-import time
 import logging
+import time
 from typing import Any
 
 import requests
