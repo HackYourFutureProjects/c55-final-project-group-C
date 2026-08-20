@@ -1,4 +1,5 @@
 """Validation model for FreeHire job data."""
+
 from datetime import datetime
 
 from pydantic import BaseModel, Field

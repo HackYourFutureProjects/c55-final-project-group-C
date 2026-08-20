@@ -53,20 +53,21 @@ def test_created_at_is_parsed_as_datetime():
     posting = Posting.model_validate(GOOD)
 
     assert posting.created_at.tzinfo is not None
-    assert posting.created_at == datetime(
-        2026, 8, 18, 9, 15, 11, tzinfo=UTC
-    )
+    assert posting.created_at == datetime(2026, 8, 18, 9, 15, 11, tzinfo=UTC)
+
 
 def test_missing_required_field_is_rejected():
     """The Posting model requires title, company, url, and public_slug."""
     with pytest.raises(ValidationError):
         Posting.model_validate({k: v for k, v in GOOD.items() if k != "title"})
 
+
 def test_open_job_can_have_no_closed_at():
     """The API returns closed_at as null for open jobs."""
     posting = Posting.model_validate(GOOD)
 
     assert posting.closed_at is None
+
 
 def test_optional_fields_can_be_empty_or_missing():
     """The API sometimes returns empty lists or omits optional fields entirely."""
@@ -81,6 +82,7 @@ def test_optional_fields_can_be_empty_or_missing():
     assert posting.cities == []
     assert posting.skills == []
     assert posting.work_mode is None
+
 
 def test_duplicate_public_slug_is_rejected():
     """Two records with the same public_slug are not allowed."""
