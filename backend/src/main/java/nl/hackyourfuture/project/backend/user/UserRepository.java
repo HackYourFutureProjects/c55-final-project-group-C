@@ -21,7 +21,7 @@ public class UserRepository {
 
     public List<User> getAllUsers() {
         return jdbcClient
-                .sql("SELECT id, email FROM users")
+                .sql("SELECT id, email, name FROM users")
                 .query(USER_ROW_MAPPER)
                 .list();
     }
@@ -75,11 +75,12 @@ public class UserRepository {
     public User updateUser(User user) {
         jdbcClient.sql("""
                         UPDATE users
-                        SET email=:email
+                        SET email=:email name = :name
                         WHERE id=:id
                         """)
                 .param("id", user.getId())
                 .param("email", user.getEmail())
+                .param("name", user.getName())
                 .update();
         return user;
     }

@@ -37,12 +37,14 @@ public class UserController {
     @ApiResponse(responseCode = "401", description = "Not logged in")
     public ResponseEntity<UserResponse> getCurrentUser(@AuthenticationPrincipal Object principal) {
         // Check if not logged in or if it's an anonymous user string
-        if (principal == null || principal instanceof String) {
+        if (principal == null ) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
         String email;
-        if (principal instanceof UserDetails userDetails) {
+        if (principal instanceof String principalEmail) {
+            email = principalEmail;
+        } else if (principal instanceof UserDetails userDetails) {
             email = userDetails.getUsername();
         } else {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
