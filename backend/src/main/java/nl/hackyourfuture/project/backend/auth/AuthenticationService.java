@@ -46,7 +46,7 @@ public class AuthenticationService {
         userRepository.createUserCredentials(userId, hashedPassword);
 
         return new RegisterResponse(
-                userId.getMostSignificantBits(),
+                userId,
                 request.email(),
                 request.name(),
                 "User registered successfully"
