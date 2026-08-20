@@ -80,7 +80,9 @@ public class AuthenticationService {
 
         // Create an HTTP session and store the security context so the user stays logged in
         var session = httpRequest.getSession(true);
-        session.setAttribute(org.springframework.security.web.context.HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY, securityContext);
+        session.setAttribute(
+                org.springframework.security.web.context.HttpSessionSecurityContextRepository
+                        .SPRING_SECURITY_CONTEXT_KEY, securityContext);
 
         return new LoginResponse(
                 credentials.email(),

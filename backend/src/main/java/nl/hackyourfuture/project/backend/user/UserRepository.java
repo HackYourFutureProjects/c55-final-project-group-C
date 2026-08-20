@@ -46,8 +46,8 @@ public class UserRepository {
     }
 
     public record UserCredentialsRecord(UUID id, String email, String name, String passwordHash) {}
-
-    public Optional<UserCredentialsRecord> findCredentialsByEmail(String email) { // using Optional here to prevent a db crash if the email isn't registered
+    // using Optional here to prevent a db crash if the email isn't registered
+    public Optional<UserCredentialsRecord> findCredentialsByEmail(String email) {
         return jdbcClient.sql("""
                         SELECT u.id, u.email, u.name, uc.password_hash
                         FROM users u
