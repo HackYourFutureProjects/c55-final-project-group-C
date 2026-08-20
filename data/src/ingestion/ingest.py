@@ -23,35 +23,64 @@ MAX_OFFSET_LIMIT = 100
 RETRYABLE_STATUS_CODES = {429, 500, 502, 503, 504}
 
 
-def fetch_with_retry(url: str, params: dict, max_retries: int = MAX_RETRIES) -> dict:
+def fetch_with_retry(
+    url: str,
+    params: dict,
+    max_retries: int = MAX_RETRIES,
+) -> dict:
     """Fetch a URL with exponential backoff on failure and return JSON payload."""
+
+    if max_retries < 1:
+        raise ValueError("max_retries must be at least 1")
+
     for attempt in range(max_retries):
         try:
-            response = requests.get(url, params=params, timeout=REQUEST_TIMEOUT_SECONDS)
+            response = requests.get(
+                url,
+                params=params,
+                timeout=REQUEST_TIMEOUT_SECONDS,
+            )
             response.raise_for_status()
             return response.json()
+
         except (
             requests.exceptions.ConnectionError,
             requests.exceptions.Timeout,
             requests.exceptions.HTTPError,
         ) as e:
-            # Check if it's a 5xx server error or a rate limit (429), which are worth retrying
-            if (
-                isinstance(e, requests.exceptions.HTTPError)
-                and e.response.status_code not in RETRYABLE_STATUS_CODES
-            ):
-                logger.error("Client error encountered for %s: %s. Not retrying.", url, e)
-                raise  # Do not retry client errors like 400 or 404
+            # Do not retry non-retryable HTTP client errors such as 400 or 404.
+            if isinstance(e, requests.exceptions.HTTPError):
+                response = e.response
+
+                if response is not None and response.status_code not in RETRYABLE_STATUS_CODES:
+                    logger.error(
+                        "Client error encountered for %s: %s. Not retrying.",
+                        url,
+                        e,
+                    )
+                    raise
 
             if attempt == max_retries - 1:
-                logger.error("Failed to fetch %s after %d attempts. Error: %s", url, max_retries, e)
+                logger.error(
+                    "Failed to fetch %s after %d attempts. Error: %s",
+                    url,
+                    max_retries,
+                    e,
+                )
                 raise
 
-            wait_time = 2**attempt  # exponential backoff
+            wait_time = 2**attempt
+
             logger.warning(
-                "Attempt %d failed for %s, retrying in %s seconds...", attempt + 1, url, wait_time
+                "Attempt %d failed for %s, retrying in %s seconds...",
+                attempt + 1,
+                url,
+                wait_time,
             )
+
             time.sleep(wait_time)
+
+    raise RuntimeError("Retry loop ended unexpectedly")
 
 
 def fetch_raw(url: str = BASE_URL) -> list[Any]:
