@@ -7,6 +7,9 @@ import jakarta.validation.constraints.Size;
 
 @Schema(description = "The details needed to create or update a user")
 public record UserRequest(
+        @Schema(description = "Name of the user", example = "John Doe")
+        String name,
+
         @NotBlank(message = "Please provide an email")
         @Size(min=3,max=100)
         @Email

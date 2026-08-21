@@ -20,6 +20,7 @@ public class UserService {
     public UserResponse createUser(UserRequest request) {
         var newUser = User.builder()
                 .id(UUID.randomUUID())
+                .name(request.name())
                 .email(request.email())
                 .build();
         var created = userRepository.createUser(newUser);
@@ -27,8 +28,20 @@ public class UserService {
     }
 
     public UserResponse updateUser(UUID id, UserRequest request) {
+        // Find the existing user first to get their current data
+        var existingUser = userRepository.getAllUsers().stream()
+                .filter(u -> u.getId().equals(id))
+                .findFirst()
+                .orElseThrow(() -> new ResponseStatusException(
+                        org.springframework.http.HttpStatus.NOT_FOUND,
+                        "User not found"
+                ));
+        // If the request name is null, keep the existing name
+        String nameToUse = request.name() != null ? request.name() : existingUser.getName();
+
         var updatedUser = User.builder()
                 .id(id)
+                .name(nameToUse) // keep the original UserName if its NULL
                 .email(request.email())
                 .build();
         var updated = userRepository.updateUser(updatedUser);

@@ -8,7 +8,10 @@ import nl.hackyourfuture.project.backend.auth.dto.RegisterResponse;
 import nl.hackyourfuture.project.backend.user.User;
 import nl.hackyourfuture.project.backend.user.UserRepository;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,6 +30,13 @@ public class AuthenticationService {
      */
     @Transactional
     public RegisterResponse register(RegisterRequest request) {
+        // Checking if a user with this email already exists
+        if (userRepository.getUserByEmail(request.email()).isPresent()) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.CONFLICT,
+                    "Email already registered"
+            );
+        }
         // UUID for the user
         UUID userId = UUID.randomUUID();
 
@@ -67,22 +77,22 @@ public class AuthenticationService {
         }
 
         // Create Spring Security authentication token
-        var authToken = new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
+        var authToken = new UsernamePasswordAuthenticationToken(
                 credentials.email(),
                 null,
                 java.util.Collections.emptyList() // Placeholder for roles/authorities
         );
 
         // Set the authentication in the Security Context
-        var securityContext = org.springframework.security.core.context.SecurityContextHolder.createEmptyContext();
+        var securityContext = SecurityContextHolder.createEmptyContext();
         securityContext.setAuthentication(authToken);
-        org.springframework.security.core.context.SecurityContextHolder.setContext(securityContext);
+        SecurityContextHolder.setContext(securityContext);
 
         // Create an HTTP session and store the security context so the user stays logged in
         var session = httpRequest.getSession(true);
+        httpRequest.changeSessionId(); //  Change session ID to prevent session fixation
         session.setAttribute(
-                org.springframework.security.web.context.HttpSessionSecurityContextRepository
-                        .SPRING_SECURITY_CONTEXT_KEY, securityContext);
+                HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY, securityContext);
 
         return new LoginResponse(
                 credentials.email(),

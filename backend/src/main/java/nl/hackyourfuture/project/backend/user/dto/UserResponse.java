@@ -17,12 +17,19 @@ public record UserResponse(
                 example = "user@example.com",
                 requiredMode = Schema.RequiredMode.REQUIRED
         )
-        String email
+        String email,
+        @Schema(
+                description = "Name of the user",
+                example = "John Doe",
+                requiredMode = Schema.RequiredMode.REQUIRED
+        )
+                String name
 ) {
     public static UserResponse from(User user) {
         return new UserResponse(
                 user.getId(),
-                user.getEmail()
+                user.getEmail(),
+                user.getName()
         );
     }
 }

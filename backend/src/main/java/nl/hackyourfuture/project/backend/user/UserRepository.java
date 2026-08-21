@@ -73,9 +73,11 @@ public class UserRepository {
     }
 
     public User updateUser(User user) {
+        // added COALESCE so if the name isn't provided it will keep the original UserName
         jdbcClient.sql("""
                         UPDATE users
-                        SET email=:email
+                        SET email = :email,
+                            name = COALESCE(:name, name)
                         WHERE id=:id
                         """)
                 .param("id", user.getId())
