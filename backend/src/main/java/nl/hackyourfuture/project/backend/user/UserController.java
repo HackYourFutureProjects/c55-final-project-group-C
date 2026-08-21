@@ -11,6 +11,9 @@ import lombok.RequiredArgsConstructor;
 import nl.hackyourfuture.project.backend.user.dto.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -23,6 +26,36 @@ import java.util.UUID;
 public class UserController {
 
     private final UserService userService;
+
+    /**
+     * Checks the current security principal to return info on the logged-in user.
+     * for the frontend to verify active authentication.
+     */
+    @GetMapping("/me")
+    @Operation(summary = "Get current logged-in user", description = "Returns the user details associated with the current session.")
+    @ApiResponse(responseCode = "200", description = "The current authenticated user")
+    @ApiResponse(responseCode = "401", description = "Not logged in")
+    public ResponseEntity<UserResponse> getCurrentUser(@AuthenticationPrincipal Object principal) {
+        // Check if not logged in or if it's an anonymous user string
+        if (principal == null ) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        String email;
+        if (principal instanceof String principalEmail) {
+            if ("anonymousUser".equals(principalEmail) || principalEmail.isBlank()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            }
+            email = principalEmail;
+        } else if (principal instanceof UserDetails userDetails) {
+            email = userDetails.getUsername();
+        } else {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        UserResponse user = userService.getUserByEmail(email);
+        return ResponseEntity.ok(user);
+    }
 
     @GetMapping
     @Operation(summary = "List all users", description = "Returns every user account currently stored.")
