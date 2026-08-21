@@ -16,10 +16,9 @@ from .models import Posting
 logger = logging.getLogger(__name__)
 
 REQUEST_TIMEOUT_SECONDS = 30
-BASE_URL = "https://freehire.me/api/v1/jobs/search"
 MAX_RETRIES = 3
 DEFAULT_LIMIT = 100
-MAX_OFFSET_LIMIT = 100
+MAX_OFFSET_LIMIT = 5000
 RETRYABLE_STATUS_CODES = {429, 500, 502, 503, 504}
 
 
@@ -83,7 +82,7 @@ def fetch_with_retry(
     raise RuntimeError("Retry loop ended unexpectedly")
 
 
-def fetch_raw(url: str = BASE_URL) -> list[Any]:
+def fetch_raw(url: str ) -> list[Any]:
     """Call the freehire.me API using limit/offset pagination linked to retry logic."""
     all_records = []
     offset = 0
