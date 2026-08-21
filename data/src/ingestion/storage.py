@@ -57,6 +57,7 @@ def blob_path(
     return f"{prefix}/{source_name}/ingest_date={run_date}/data.json"
 
 
+
 def land_raw_json(
     account: str, path: str, records: list[dict], container: str = PRODUCTION_CONTAINER
 ) -> int:
@@ -76,6 +77,33 @@ def land_raw_json(
         account,
     )
     return len(records)
+
+def read_raw_json(
+    account: str,
+    path: str,
+    container: str,
+) -> list[dict]:
+    """Read an NDJSON blob back from Azure."""
+
+    credential = DefaultAzureCredential()
+
+    service = BlobServiceClient(
+        f"https://{account}.blob.core.windows.net",
+        credential,
+    )
+
+    blob_client = service.get_blob_client(
+        container=container,
+        blob=path,
+    )
+
+    payload = blob_client.download_blob().readall().decode("utf-8")
+
+    return [
+        json.loads(line)
+        for line in payload.splitlines()
+        if line.strip()
+    ]
 
 
 def land_local_json(directory: Path, path: str, records: list[dict]) -> int:
