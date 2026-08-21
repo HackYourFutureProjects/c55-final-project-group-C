@@ -1,32 +1,29 @@
-"""Validation models for the source data. Replace with your source's shape."""
+"""Validation model for FreeHire job data."""
 
-from datetime import UTC, datetime
+from datetime import datetime
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field
 
 
 class Posting(BaseModel):
-    """One job posting from the source API."""
+    """One job posting from the FreeHire API."""
 
-    slug: str
+    public_slug: str
     title: str
-    company_name: str = Field(alias="company_name")
+    company: str
+    url: str
+
     location: str | None = None
-    remote: bool = False
-    tags: list[str] = Field(default_factory=list)
+
+    countries: list[str] = Field(default_factory=list)
+    regions: list[str] = Field(default_factory=list)
+    cities: list[str] = Field(default_factory=list)
+
+    work_mode: str | None = None
+    skills: list[str] = Field(default_factory=list)
+
+    posted_at: datetime | None = None
     created_at: datetime
-
-    @field_validator("created_at", mode="before")
-    @classmethod
-    def _epoch_to_datetime(cls, value: object) -> object:
-        """Unix timestamp to a UTC datetime.
-
-        Without the timezone, Python reads the number in whatever zone the
-        machine is in, so your laptop and the container disagree about what
-        `posted_at` means.
-        """
-        if isinstance(value, int):
-            return datetime.fromtimestamp(value, tz=UTC)
-        return value
-
-    model_config = {"populate_by_name": True}
+    updated_at: datetime | None = None
+    last_seen_at: datetime | None = None
+    closed_at: datetime | None = None
