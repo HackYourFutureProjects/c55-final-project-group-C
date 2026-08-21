@@ -27,6 +27,13 @@ public class AuthenticationService {
      */
     @Transactional
     public RegisterResponse register(RegisterRequest request) {
+        // Checking if a user with this email already exists
+        if (userRepository.getUserByEmail(request.email()).isPresent()) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.CONFLICT,
+                    "Email already registered"
+            );
+        }
         // UUID for the user
         UUID userId = UUID.randomUUID();
 
@@ -80,6 +87,7 @@ public class AuthenticationService {
 
         // Create an HTTP session and store the security context so the user stays logged in
         var session = httpRequest.getSession(true);
+        httpRequest.changeSessionId(); //  Change session ID to prevent session fixation
         session.setAttribute(
                 org.springframework.security.web.context.HttpSessionSecurityContextRepository
                         .SPRING_SECURITY_CONTEXT_KEY, securityContext);
