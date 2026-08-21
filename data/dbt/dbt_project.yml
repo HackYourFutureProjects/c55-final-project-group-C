@@ -26,13 +26,22 @@ clean-targets:
 models:
   final_project:
     staging:
-      +materialized: view
-    # Views, so they cost nothing to store and you can query them while you are
-    # working out why a mart looks wrong. `ephemeral` is the other common
-    # choice: it pastes the SQL into whatever selects it, which is tidier in the
-    # warehouse but leaves you nothing to inspect when a number is off. While
-    # you are learning, being able to select from it is worth more.
+      # Tables, not views, because staging reads files rather than a warehouse
+      # table. A view is a stored query, not a stored result: every statement
+      # that names it re-runs its `read_files`. Nine separate queries select
+      # from this model per `dbt build` (6 column tests, 2 downstream models,
+      # 1 relationship test), so the landing folder is scanned nine times
+      # instead of once. As a table it is built once and the rest read the
+      # result. See the header of stg_postings.sql.
+      +materialized: table
     intermediate:
+      # Views here: intermediate models select from the staging table, not from
+      # files, so re-running one is cheap. They cost nothing to store and you
+      # can query them while working out why a mart looks wrong. `ephemeral` is
+      # the other common choice: it pastes the SQL into whatever selects it,
+      # which is tidier in the warehouse but leaves you nothing to inspect when
+      # a number is off. While you are learning, being able to select from it
+      # is worth more.
       +materialized: view
     marts:
       +materialized: table
