@@ -43,11 +43,4 @@ public class AuthenticationController {
     public LoginResponse login(@Valid @RequestBody LoginRequest request, jakarta.servlet.http.HttpServletRequest httpRequest) {
         return authenticationService.login(request, httpRequest);
     }
-
-    @PostMapping("/logout")
-    @ResponseStatus(HttpStatus.OK)
-    @Operation(summary = "Log out a user", description = "Destroys the current user session and clears the session cookie.")
-    @ApiResponse(responseCode = "200", description = "Logout successful")
-    public void logout() {
-    }
 }

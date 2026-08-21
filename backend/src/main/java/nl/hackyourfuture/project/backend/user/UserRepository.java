@@ -80,7 +80,6 @@ public class UserRepository {
                         """)
                 .param("id", user.getId())
                 .param("email", user.getEmail())
-                .param("name", user.getName())
                 .update();
         return user;
     }
