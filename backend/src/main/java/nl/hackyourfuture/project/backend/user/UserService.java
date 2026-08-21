@@ -3,8 +3,6 @@ package nl.hackyourfuture.project.backend.user;
 import lombok.RequiredArgsConstructor;
 import nl.hackyourfuture.project.backend.user.dto.*;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
-
 import java.util.List;
 import java.util.UUID;
 
@@ -33,17 +31,5 @@ public class UserService {
                 .build();
         var updated = userRepository.updateUser(updatedUser);
         return UserResponse.from(updated);
-    }
-
-    // for the frontend to verify active authentication.
-    public UserResponse getUserByEmail(String email) {
-        var user = userRepository.getUserByEmail(email)
-                .orElseThrow(() -> new ResponseStatusException(
-                        org.springframework.http.HttpStatus.NOT_FOUND,
-                        "User not found"
-                ));
-
-
-        return UserResponse.from(user);
     }
 }
