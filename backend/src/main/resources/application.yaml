@@ -7,9 +7,24 @@ spring:
     password: ${DB_PASSWORD:password}
   flyway:
     schemas: ${DB_SCHEMA:app}
-
 server:
   port: 8080
+  servlet:
+    session:
+      cookie:
+        http-only: true
+        same-site: lax
+        secure: ${SESSION_COOKIE_SECURE:false}
+
+app:
+  base-url: ${APP_BASE_URL:http://localhost:3000}
+  oauth2:
+    google:
+      client-id: ${GOOGLE_CLIENT_ID:}
+      client-secret: ${GOOGLE_CLIENT_SECRET:}
+      redirect-uri: ${GOOGLE_REDIRECT_URI:${app.base-url}/api/login/oauth2/code/google}
+    success-redirect: ${OAUTH2_SUCCESS_REDIRECT:${app.base-url}/}
+    failure-redirect: ${OAUTH2_FAILURE_REDIRECT:${app.base-url}/login?error=oauth}
 
 # API Docs
 springdoc:
@@ -19,4 +34,3 @@ scalar:
   enabled: true
   path: /api/docs
   url: ${springdoc.api-docs.path}
-

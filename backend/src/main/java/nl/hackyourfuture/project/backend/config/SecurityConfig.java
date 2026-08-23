@@ -1,26 +1,42 @@
 package nl.hackyourfuture.project.backend.config;
 
+import lombok.extern.slf4j.Slf4j;
+import nl.hackyourfuture.project.backend.auth.OAuth2LoginSuccessHandler;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.SimpleUrlAuthenticationFailureHandler;
 
+@Slf4j
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
 
+    // Under /api so the Next.js proxy forwards it, keeping one origin for JSESSIONID.
+    private static final String AUTHORIZATION_BASE_URI = "/api/oauth2/authorization";
+    private static final String REDIRECTION_BASE_URI = "/api/login/oauth2/code/*";
+
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) {
+    public SecurityFilterChain securityFilterChain(
+            HttpSecurity http,
+            ObjectProvider<ClientRegistrationRepository> clientRegistrations,
+            OAuth2LoginSuccessHandler oauth2LoginSuccessHandler,
+            Environment environment) {
         http
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/error").permitAll()
                         .requestMatchers("/api/docs/**").permitAll()
+                        .requestMatchers("/api/oauth2/**", "/api/login/oauth2/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .csrf(AbstractHttpConfigurer::disable)
@@ -38,6 +54,21 @@ public class SecurityConfig {
                         })
                 );
 
+        // No credentials means no ClientRegistrationRepository, and oauth2Login would fail startup.
+        if (clientRegistrations.getIfAvailable() != null) {
+            String loginRedirect = environment.getRequiredProperty("app.oauth2.failure-redirect");
+            http.oauth2Login(oauth2 -> oauth2
+                    .authorizationEndpoint(endpoint -> endpoint.baseUri(AUTHORIZATION_BASE_URI))
+                    .redirectionEndpoint(endpoint -> endpoint.baseUri(REDIRECTION_BASE_URI))
+                    .successHandler(oauth2LoginSuccessHandler)
+                    .failureHandler(new SimpleUrlAuthenticationFailureHandler(loginRedirect))
+            );
+            // A mismatch with the Google Cloud Console URI is the usual sign-in failure.
+            log.info("Google sign-in enabled at {}/google, redirect URI {}",
+                    AUTHORIZATION_BASE_URI, environment.getProperty("app.oauth2.google.redirect-uri"));
+        } else {
+            log.info("Google sign-in disabled: no OAuth2 client credentials configured");
+        }
 
         return http.build();
     }
