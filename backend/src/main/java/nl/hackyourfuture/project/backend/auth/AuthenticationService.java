@@ -2,6 +2,7 @@ package nl.hackyourfuture.project.backend.auth;
 
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import nl.hackyourfuture.project.backend.auth.dto.LoginRequest;
 import nl.hackyourfuture.project.backend.auth.dto.LoginResponse;
 import nl.hackyourfuture.project.backend.auth.dto.RegisterRequest;
@@ -22,6 +23,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.Collections;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AuthenticationService {
@@ -78,18 +80,34 @@ public class AuthenticationService {
         var credentials = userRepository.findCredentialsByEmail(request.email())
                 .orElseThrow(() -> new BadCredentialsException("Invalid email or password"));
 
-        // A Google-only account has no password hash, so it can never match here
+        // A Google-only account has no user_credentials row, so the lookup above already
+        // failed; the null check only guards a row written without a hash.
         if (credentials.passwordHash() == null
                 || !passwordEncoder.matches(request.password(), credentials.passwordHash())) {
             throw new BadCredentialsException("Invalid email or password");
         }
 
         establishSession(credentials.email(), httpRequest);
+        completePendingGoogleLink(credentials, httpRequest);
 
         return new LoginResponse(
                 credentials.email(),
                 credentials.name()
         );
+    }
+
+    // A Google sign-in that found this email waits in the session until a password login
+    // proves the account. This is that proof, so the identity can be attached now.
+    private void completePendingGoogleLink(UserRepository.UserCredentialsRecord credentials,
+                                           HttpServletRequest httpRequest) {
+        PendingGoogleLink.claim(httpRequest.getSession(false), credentials.email())
+                .ifPresent(providerId -> {
+                    boolean linked = userRepository.linkProvider(
+                            credentials.id(), OAuth2LoginSuccessHandler.PROVIDER_GOOGLE, providerId);
+                    log.info("Google sign-in {} for account {}",
+                            linked ? "linked" : "not linked, another identity is already attached",
+                            credentials.id());
+                });
     }
 
     // Stores the security context on a fresh session (JSESSIONID). Shared with Google sign-in.

@@ -23,7 +23,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 
-    private static final String PROVIDER_GOOGLE = "GOOGLE";
+    static final String PROVIDER_GOOGLE = "GOOGLE";
 
     private final UserRepository userRepository;
     private final AuthenticationService authenticationService;
@@ -31,6 +31,9 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
     // No default: application.yaml derives it from app.base-url.
     @Value("${app.oauth2.success-redirect}")
     private String successRedirect;
+
+    @Value("${app.oauth2.link-required-redirect}")
+    private String linkRequiredRedirect;
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
@@ -41,27 +44,30 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         String providerId = oidcUser.getSubject();
         String name = Optional.ofNullable(oidcUser.getFullName()).orElse(email);
 
-        User user = findOrCreateUser(email, name, providerId);
+        Optional<User> user = resolveUser(email, name, providerId);
+        if (user.isEmpty()) {
+            // Park the identity and send them to the password form. No session is opened:
+            // nothing here has proved the account is theirs yet.
+            PendingGoogleLink.save(request.getSession(), email, providerId);
+            log.info("Google sign-in for {} needs the account password before linking", email);
+            response.sendRedirect(linkRequiredRedirect);
+            return;
+        }
 
-        authenticationService.establishSession(user.getEmail(), request);
+        authenticationService.establishSession(user.get().getEmail(), request);
         response.sendRedirect(successRedirect);
     }
 
-    // Matches on Google id, then on email, otherwise creates the account.
-    // Not @Transactional: the catch below re-reads after a failed insert, which Postgres
-    // forbids inside a transaction.
-    private User findOrCreateUser(String email, String name, String providerId) {
+    // Empty when the email already belongs to an account. Linking on an email match alone
+    // would hand this Google identity to whoever registered the address, since registration
+    // never proved they own it; AuthenticationService.login finishes the link instead.
+    private Optional<User> resolveUser(String email, String name, String providerId) {
         Optional<User> linked = userRepository.findByProvider(PROVIDER_GOOGLE, providerId);
         if (linked.isPresent()) {
-            return linked.get();
+            return linked;
         }
-
-        Optional<User> existing = userRepository.getUserByEmail(email);
-        if (existing.isPresent()) {
-            User account = existing.get();
-            userRepository.linkProvider(account.getId(), PROVIDER_GOOGLE, providerId);
-            log.info("Linked Google sign-in to existing account {}", account.getId());
-            return account;
+        if (userRepository.getUserByEmail(email).isPresent()) {
+            return Optional.empty();
         }
 
         User created = User.builder()
@@ -72,11 +78,11 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         try {
             userRepository.createProviderUser(created, PROVIDER_GOOGLE, providerId);
         } catch (DuplicateKeyException ex) {
-            // Lost a race with a concurrent sign-up; use the row that won.
-            log.info("Concurrent sign-up for {}, using the account that won the race", email);
-            return userRepository.getUserByEmail(email).orElseThrow(() -> ex);
+            // Lost a race with a concurrent sign-up; that account has to prove itself too.
+            log.info("Concurrent sign-up for {}, deferring the link", email);
+            return Optional.empty();
         }
         log.info("Created new account {} from Google sign-in", created.getId());
-        return created;
+        return Optional.of(created);
     }
 }

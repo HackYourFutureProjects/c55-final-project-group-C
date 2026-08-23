@@ -70,14 +70,15 @@ public class UserRepository {
     }
 
     // Links a provider identity to an existing account; an existing password keeps working.
-    public void linkProvider(UUID userId, String provider, String providerId) {
-        jdbcClient
+    // Only fills an empty slot, so a second identity cannot displace the one already attached.
+    public boolean linkProvider(UUID userId, String provider, String providerId) {
+        return jdbcClient
                 .sql("UPDATE users SET oauth_provider = :provider, oauth_provider_id = :providerId "
-                        + "WHERE id = :userId")
+                        + "WHERE id = :userId AND oauth_provider_id IS NULL")
                 .param("userId", userId)
                 .param("provider", provider)
                 .param("providerId", providerId)
-                .update();
+                .update() == 1;
     }
 
     public record UserCredentialsRecord(UUID id, String email, String name, String passwordHash) {}

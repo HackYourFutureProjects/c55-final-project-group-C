@@ -12,7 +12,10 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserRequest;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
+import org.springframework.security.oauth2.client.userinfo.OAuth2UserService;
+import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationFailureHandler;
 
@@ -29,6 +32,7 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(
             HttpSecurity http,
             ObjectProvider<ClientRegistrationRepository> clientRegistrations,
+            ObjectProvider<OAuth2UserService<OidcUserRequest, OidcUser>> oidcUserService,
             OAuth2LoginSuccessHandler oauth2LoginSuccessHandler,
             Environment environment) {
         http
@@ -60,6 +64,9 @@ public class SecurityConfig {
             http.oauth2Login(oauth2 -> oauth2
                     .authorizationEndpoint(endpoint -> endpoint.baseUri(AUTHORIZATION_BASE_URI))
                     .redirectionEndpoint(endpoint -> endpoint.baseUri(REDIRECTION_BASE_URI))
+                    // Spring Security would find this bean by type anyway; naming it here keeps
+                    // the email_verified check from disappearing behind a generics change.
+                    .userInfoEndpoint(userInfo -> userInfo.oidcUserService(oidcUserService.getObject()))
                     .successHandler(oauth2LoginSuccessHandler)
                     .failureHandler(new SimpleUrlAuthenticationFailureHandler(loginRedirect))
             );

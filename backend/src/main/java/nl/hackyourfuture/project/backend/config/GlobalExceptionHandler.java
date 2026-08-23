@@ -1,5 +1,6 @@
 package nl.hackyourfuture.project.backend.config;
 
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -33,5 +34,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(BadCredentialsException.class)
     public ProblemDetail handleBadCredentialsException(BadCredentialsException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, ex.getMessage());
+    }
+
+    // Every writer of users.email now meets users_email_idx; without this a duplicate
+    // surfaces as a 500 instead of a conflict.
+    @ExceptionHandler(DuplicateKeyException.class)
+    public ProblemDetail handleDuplicateKey(DuplicateKeyException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, "Email already registered");
     }
 }
