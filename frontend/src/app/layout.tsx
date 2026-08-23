@@ -1,19 +1,22 @@
 import type { Metadata } from "next";
+import Navbar from "@/components/layout/Navbar";
 import "./globals.css";
-import styles from "./page.module.css";
 
 export const metadata: Metadata = {
-  title: "HYF Final Project",
-  description: "HackYourFuture final project",
+  title: {
+    default: "JobMatch",
+    template: "%s | JobMatch",
+  },
+  description:
+    "Find relevant and fresh jobs, understand your match, and spend less time on outdated listings.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en">
       <body>
-        <div className={styles.page}>
-          <main className={styles.main}>{children}</main>
-        </div>
+        <Navbar />
+        <main className="app-main">{children}</main>
       </body>
     </html>
   );
