@@ -10,7 +10,6 @@ import nl.hackyourfuture.project.backend.auth.dto.RegisterResponse;
 import nl.hackyourfuture.project.backend.user.User;
 import nl.hackyourfuture.project.backend.user.UserRepository;
 import org.springframework.dao.DuplicateKeyException;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -18,7 +17,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Collections;
 import java.util.UUID;
@@ -39,7 +37,7 @@ public class AuthenticationService {
     public RegisterResponse register(RegisterRequest request) {
         // Checking if a user with this email already exists
         if (userRepository.getUserByEmail(request.email()).isPresent()) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already registered");
+            throw new DuplicateKeyException("Email already registered");
         }
         // UUID for the user
         UUID userId = UUID.randomUUID();
@@ -52,11 +50,8 @@ public class AuthenticationService {
                 .build();
 
         // The check above misses a registration still in flight; users_email_idx decides the race.
-        try {
-            userRepository.createUser(newUser);
-        } catch (DuplicateKeyException ex) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already registered", ex);
-        }
+        // Its DuplicateKeyException reaches GlobalExceptionHandler as the same 409 as the check.
+        userRepository.createUser(newUser);
 
         // Hashing password
         String hashedPassword = passwordEncoder.encode(request.password());

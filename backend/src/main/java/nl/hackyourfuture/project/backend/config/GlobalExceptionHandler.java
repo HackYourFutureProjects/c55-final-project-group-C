@@ -37,9 +37,13 @@ public class GlobalExceptionHandler {
     }
 
     // Every writer of users.email now meets users_email_idx; without this a duplicate
-    // surfaces as a 500 instead of a conflict.
+    // surfaces as a 500 instead of a conflict. Registration throws it for its own
+    // pre-check too, so both paths answer with this one body.
     @ExceptionHandler(DuplicateKeyException.class)
     public ProblemDetail handleDuplicateKey(DuplicateKeyException ex) {
-        return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, "Email already registered");
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.CONFLICT, "An account with this email address already exists. Try logging in instead.");
+        problem.setTitle("Email already registered");
+        return problem;
     }
 }
