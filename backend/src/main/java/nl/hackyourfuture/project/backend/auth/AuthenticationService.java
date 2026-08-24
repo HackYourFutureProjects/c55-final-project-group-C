@@ -3,13 +3,11 @@ package nl.hackyourfuture.project.backend.auth;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import nl.hackyourfuture.project.backend.auth.dto.LoginRequest;
-import nl.hackyourfuture.project.backend.auth.dto.LoginResponse;
-import nl.hackyourfuture.project.backend.auth.dto.RegisterRequest;
-import nl.hackyourfuture.project.backend.auth.dto.RegisterResponse;
+import nl.hackyourfuture.project.backend.auth.dto.*;
 import nl.hackyourfuture.project.backend.user.User;
 import nl.hackyourfuture.project.backend.user.UserRepository;
 import org.springframework.dao.DuplicateKeyException;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -17,6 +15,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Collections;
 import java.util.UUID;
@@ -28,6 +27,7 @@ public class AuthenticationService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final EmailService emailService;
 
     /**
      * Registers a new user by generating an ID, saving user details,
@@ -89,6 +89,82 @@ public class AuthenticationService {
                 credentials.email(),
                 credentials.name()
         );
+    }
+
+    /**
+     * Generates a password reset token for the given email and triggers an asynchronous email.
+     */
+    @Transactional
+    public void forgotPassword(ForgotPasswordRequest request) {
+        var userOpt = userRepository.getUserByEmail(request.email());
+
+        // for security (Always 200): Don't reveal if the email exists or not.
+        if (userOpt.isPresent()) {
+            var user = userOpt.get();
+
+            // Clear any old tokens for this user
+            userRepository.deletePasswordResetTokensByUserId(user.getId());
+
+            UUID tokenId = UUID.randomUUID();
+            String token = UUID.randomUUID() + "-" + UUID.randomUUID();
+            java.time.OffsetDateTime expiryDate = java.time.OffsetDateTime.now().plusMinutes(15);
+
+            userRepository.savePasswordResetToken(tokenId, user.getId(), token, expiryDate);
+
+            // Send the real email via Brevo
+            String resetUrl = "http://localhost:3000/reset-password?token=" + token;
+
+            // Call the asynchronous email service
+            emailService.sendPasswordResetEmail(user.getEmail(), resetUrl);
+
+            log.info("Password reset email successfully sent to: {}", user.getEmail());
+        }
+
+    }
+
+    /**
+     * Validates the provided password reset token and updates the user's password hash securely.
+     */
+    @Transactional
+    public void resetPassword(ResetPasswordRequest request) {
+        UUID userId = userRepository.findUserIdByValidResetToken(request.token())
+                .orElseThrow(() ->
+                        new ResponseStatusException(
+                                HttpStatus.BAD_REQUEST, "Invalid or expired password reset token"));
+
+        String hashedPassword = passwordEncoder.encode(request.newPassword());
+        userRepository.updatePasswordHash(userId, hashedPassword);
+        userRepository.deletePasswordResetTokensByUserId(userId);
+
+        log.info("Password successfully reset for user ID: {}", userId);
+    }
+
+    /**
+     * Updates the password for an authenticated user after verifying their current password.
+     */
+    @Transactional
+    public void updatePassword(String email, UpdatePasswordRequest request) {
+        // Look up the user ID using the provided email
+        UUID userId = userRepository.getUserByEmail(email)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"))
+                .getId();
+
+        // Check if the user has a credentials record (fails cleanly for Google-only accounts)
+        String currentPasswordHash = userRepository.findPasswordHashByUserId(userId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST, "Google-only accounts cannot update passwords via this endpoint"));
+
+        // Verify the current password matches the stored hash
+        if (!passwordEncoder.matches(request.currentPassword(), currentPasswordHash)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Current password is incorrect");
+        }
+
+        // Hash the new password
+        String newPasswordHash = passwordEncoder.encode(request.newPassword());
+
+        userRepository.updatePasswordHash(userId, newPasswordHash);
+
+        log.info("Password successfully updated for user email: {}", email);
     }
 
     // A Google sign-in that found this email waits in the session until a password login

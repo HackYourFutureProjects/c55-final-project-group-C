@@ -122,4 +122,56 @@ public class UserRepository {
                 .update();
         return user;
     }
+
+    // Low-level database query to update the password hash and timestamp for a user ID.
+    // Used by password update and password reset flows after validation and hashing are complete.
+    public void updatePasswordHash(UUID userId, String passwordHash) {
+        jdbcClient.sql("""
+                        UPDATE user_credentials
+                        SET password_hash = :passwordHash,
+                            updated_at = CURRENT_TIMESTAMP
+                        WHERE user_id = :userId
+                        """)
+                .param("passwordHash", passwordHash)
+                .param("userId", userId)
+                .update();
+    }
+
+    // Retrieves the password hash for a specific user ID to verify current passwords
+    // and safely handle users who signed up via OAuth (Google) without credentials.
+    public Optional<String> findPasswordHashByUserId(UUID userId) {
+        return jdbcClient.sql("SELECT password_hash FROM user_credentials WHERE user_id = :userId")
+                .param("userId", userId)
+                .query((rs, _) -> rs.getString("password_hash"))
+                .optional();
+    }
+
+    // Password Reset Token Management
+    public void savePasswordResetToken(UUID id, UUID userId, String token, java.time.OffsetDateTime expiryDate) {
+        jdbcClient.sql("""
+                        INSERT INTO password_reset_tokens (id, user_id, token, expiry_date)
+                        VALUES (:id, :userId, :token, :expiryDate)
+                        """)
+                .param("id", id)
+                .param("userId", userId)
+                .param("token", token)
+                .param("expiryDate", expiryDate)
+                .update();
+    }
+
+    public Optional<UUID> findUserIdByValidResetToken(String token) {
+        return jdbcClient.sql("""
+                        SELECT user_id FROM password_reset_tokens
+                        WHERE token = :token AND expiry_date > CURRENT_TIMESTAMP
+                        """)
+                .param("token", token)
+                .query((rs, _) -> rs.getObject("user_id", UUID.class))
+                .optional();
+    }
+
+    public void deletePasswordResetTokensByUserId(UUID userId) {
+        jdbcClient.sql("DELETE FROM password_reset_tokens WHERE user_id = :userId")
+                .param("userId", userId)
+                .update();
+    }
 }
