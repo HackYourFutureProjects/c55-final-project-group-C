@@ -32,6 +32,11 @@ public class AuthenticationController {
             description = "Validation failed for the request body",
             content = @Content(schema = @Schema(implementation = ProblemDetail.class))
     )
+    @ApiResponse(
+            responseCode = "409",
+            description = "An account with this email address already exists",
+            content = @Content(schema = @Schema(implementation = ProblemDetail.class))
+    )
     public RegisterResponse register(@Valid @RequestBody RegisterRequest request) {
         return authenticationService.register(request);
     }
