@@ -27,6 +27,24 @@ export type CurrentUserResponse = {
   name: string;
 };
 
+type ProblemDetail = {
+  title?: string;
+  detail?: string;
+  status?: number;
+};
+
+export class ApiError extends Error {
+  status: number;
+  detail?: string;
+
+  constructor(status: number, message: string, detail?: string) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+    this.detail = detail;
+  }
+}
+
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const response = await fetch(path, {
     ...options,
@@ -38,7 +56,22 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   });
 
   if (!response.ok) {
-    throw new Error(`Request failed with status ${response.status}`);
+    const contentType = response.headers.get("content-type");
+
+    if (contentType?.includes("application/json")) {
+      const problem = (await response.json()) as ProblemDetail;
+
+      throw new ApiError(
+        response.status,
+        problem.title ?? `Request failed with status ${response.status}`,
+        problem.detail,
+      );
+    }
+
+    throw new ApiError(
+      response.status,
+      `Request failed with status ${response.status}`,
+    );
   }
 
   const contentType = response.headers.get("content-type");
@@ -49,9 +82,6 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 
   return response.json() as Promise<T>;
 }
-
-// Based on backend auth PR #25.
-// Re-check the contract after that PR is merged.
 
 export function registerUser(
   payload: RegisterRequest,
@@ -85,7 +115,10 @@ export async function getCurrentUser(): Promise<CurrentUserResponse | null> {
   }
 
   if (!response.ok) {
-    throw new Error(`Request failed with status ${response.status}`);
+    throw new ApiError(
+      response.status,
+      `Request failed with status ${response.status}`,
+    );
   }
 
   return response.json() as Promise<CurrentUserResponse>;
