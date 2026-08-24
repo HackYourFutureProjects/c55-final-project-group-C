@@ -45,6 +45,42 @@ public class UserRepository {
                 .update();
     }
 
+    // Provider-only account: no user_credentials row, so no password.
+    public User createProviderUser(User user, String provider, String providerId) {
+        jdbcClient
+                .sql("INSERT INTO users (id, email, name, oauth_provider, oauth_provider_id) "
+                        + "VALUES (:id, :email, :name, :provider, :providerId)")
+                .param("id", user.getId())
+                .param("email", user.getEmail())
+                .param("name", user.getName())
+                .param("provider", provider)
+                .param("providerId", providerId)
+                .update();
+        return user;
+    }
+
+    public Optional<User> findByProvider(String provider, String providerId) {
+        return jdbcClient
+                .sql("SELECT id, email, name FROM users "
+                        + "WHERE oauth_provider = :provider AND oauth_provider_id = :providerId")
+                .param("provider", provider)
+                .param("providerId", providerId)
+                .query(USER_ROW_MAPPER)
+                .optional();
+    }
+
+    // Links a provider identity to an existing account; an existing password keeps working.
+    // Only fills an empty slot, so a second identity cannot displace the one already attached.
+    public boolean linkProvider(UUID userId, String provider, String providerId) {
+        return jdbcClient
+                .sql("UPDATE users SET oauth_provider = :provider, oauth_provider_id = :providerId "
+                        + "WHERE id = :userId AND oauth_provider_id IS NULL")
+                .param("userId", userId)
+                .param("provider", provider)
+                .param("providerId", providerId)
+                .update() == 1;
+    }
+
     public record UserCredentialsRecord(UUID id, String email, String name, String passwordHash) {}
     // using Optional here to prevent a db crash if the email isn't registered
     public Optional<UserCredentialsRecord> findCredentialsByEmail(String email) {
