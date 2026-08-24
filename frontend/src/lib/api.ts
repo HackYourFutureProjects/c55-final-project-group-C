@@ -75,6 +75,18 @@ export function logoutUser(): Promise<void> {
   });
 }
 
-export function getCurrentUser(): Promise<CurrentUserResponse> {
-  return request<CurrentUserResponse>("/api/users/me");
+export async function getCurrentUser(): Promise<CurrentUserResponse | null> {
+  const response = await fetch("/api/users/me", {
+    credentials: "include",
+  });
+
+  if (response.status === 401) {
+    return null;
+  }
+
+  if (!response.ok) {
+    throw new Error(`Request failed with status ${response.status}`);
+  }
+
+  return response.json() as Promise<CurrentUserResponse>;
 }

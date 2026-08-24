@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Navbar from "@/components/layout/Navbar";
+import { AuthProvider } from "@/context/AuthContext";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -15,8 +16,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en">
       <body>
-        <Navbar />
-        <main className="app-main">{children}</main>
+        <AuthProvider>
+          <Navbar />
+          <main className="app-main">{children}</main>
+        </AuthProvider>
       </body>
     </html>
   );

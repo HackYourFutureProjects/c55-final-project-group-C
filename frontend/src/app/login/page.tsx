@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { type FormEvent, useState } from "react";
+import { useAuth } from "@/context/AuthContext";
 import { loginUser } from "@/lib/api";
 
 type FormErrors = {
@@ -12,6 +13,7 @@ type FormErrors = {
 
 export default function LoginPage() {
   const router = useRouter();
+  const { refreshUser } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -52,6 +54,8 @@ export default function LoginPage() {
         password,
       });
 
+      await refreshUser();
+
       router.push("/");
     } catch {
       setErrors({
@@ -60,6 +64,10 @@ export default function LoginPage() {
     } finally {
       setIsSubmitting(false);
     }
+  }
+
+  function handleGoogleLogin() {
+    window.location.href = "/api/oauth2/authorization/google";
   }
 
   return (
@@ -81,6 +89,7 @@ export default function LoginPage() {
             aria-invalid={Boolean(errors.email)}
             aria-describedby={errors.email ? "email-error" : undefined}
           />
+
           {errors.email ? (
             <p id="email-error" role="alert">
               {errors.email}
@@ -100,6 +109,7 @@ export default function LoginPage() {
             aria-invalid={Boolean(errors.password)}
             aria-describedby={errors.password ? "password-error" : undefined}
           />
+
           {errors.password ? (
             <p id="password-error" role="alert">
               {errors.password}
@@ -111,6 +121,10 @@ export default function LoginPage() {
           {isSubmitting ? "Logging in..." : "Log in"}
         </button>
       </form>
+
+      <button type="button" onClick={handleGoogleLogin}>
+        Continue with Google
+      </button>
     </main>
   );
 }
