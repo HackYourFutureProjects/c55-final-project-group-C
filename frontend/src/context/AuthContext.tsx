@@ -30,15 +30,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [authError, setAuthError] = useState<string | null>(null);
 
   const refreshUser = useCallback(async () => {
+    setAuthError(null);
+
     try {
-      setAuthError(null);
-
       const currentUser = await getCurrentUser();
-
       setUser(currentUser);
     } catch {
       setAuthError("Unable to check your session.");
-      throw new Error("Unable to check authentication session.");
     }
   }, []);
 
@@ -50,13 +48,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     async function loadUser() {
-      try {
-        await refreshUser();
-      } catch {
-        // Keep the current state and expose authError.
-      } finally {
-        setIsLoading(false);
-      }
+      await refreshUser();
+      setIsLoading(false);
     }
 
     void loadUser();

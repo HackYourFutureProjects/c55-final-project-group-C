@@ -1,7 +1,7 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { type FormEvent, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { type FormEvent, Suspense, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { loginUser } from "@/lib/api";
 
@@ -11,14 +11,17 @@ type FormErrors = {
   form?: string;
 };
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { refreshUser } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const oauthError = searchParams.get("error");
 
   function validate() {
     const nextErrors: FormErrors = {};
@@ -57,19 +60,14 @@ export default function LoginPage() {
       setErrors({
         form: "Invalid email or password.",
       });
+      setIsSubmitting(false);
       return;
     }
 
-    try {
-      await refreshUser();
-      router.push("/");
-    } catch {
-      setErrors({
-        form: "Logged in, but we couldn't load your session. Please try again.",
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
+    await refreshUser();
+
+    setIsSubmitting(false);
+    router.push("/");
   }
 
   function handleGoogleLogin() {
@@ -79,6 +77,17 @@ export default function LoginPage() {
   return (
     <main>
       <h1>Log in</h1>
+
+      {oauthError === "google_link_required" ? (
+        <p role="alert">
+          This email already has an account. Enter your password once to link
+          Google sign-in.
+        </p>
+      ) : null}
+
+      {oauthError === "oauth" ? (
+        <p role="alert">Google sign-in failed. Please try again.</p>
+      ) : null}
 
       <form onSubmit={handleSubmit} noValidate>
         {errors.form ? <p role="alert">{errors.form}</p> : null}
@@ -132,5 +141,13 @@ export default function LoginPage() {
         Continue with Google
       </button>
     </main>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<main>Loading login...</main>}>
+      <LoginForm />
+    </Suspense>
   );
 }

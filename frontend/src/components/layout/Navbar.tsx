@@ -6,7 +6,7 @@ import { useAuth } from "@/context/AuthContext";
 
 export default function Navbar() {
   const router = useRouter();
-  const { user, isLoading, logout } = useAuth();
+  const { user, isLoading, authError, logout } = useAuth();
 
   async function handleLogout() {
     await logout();
@@ -29,7 +29,9 @@ export default function Navbar() {
         </div>
 
         <div className="auth-links">
-          {isLoading ? null : user ? (
+          {isLoading ? null : authError ? (
+            <output className="nav-auth-error">Session unavailable</output>
+          ) : user ? (
             <>
               <span className="nav-user">{user.name}</span>
               <button
