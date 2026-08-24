@@ -1,153 +1,193 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { type FormEvent, Suspense, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { loginUser } from "@/lib/api";
 
-type FormErrors = {
-  email?: string;
-  password?: string;
-  form?: string;
-};
-
-function LoginForm() {
+function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { refreshUser } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [errors, setErrors] = useState<FormErrors>({});
+  const [formError, setFormError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const oauthError = searchParams.get("error");
-
-  function validate() {
-    const nextErrors: FormErrors = {};
-
-    if (!email.trim()) {
-      nextErrors.email = "Email is required.";
-    } else if (!/^\S+@\S+\.\S+$/.test(email)) {
-      nextErrors.email = "Enter a valid email address.";
-    }
-
-    if (!password) {
-      nextErrors.password = "Password is required.";
-    }
-
-    setErrors(nextErrors);
-
-    return Object.keys(nextErrors).length === 0;
-  }
+  const registrationSuccessful = searchParams.get("registered") === "true";
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (!validate()) {
-      return;
-    }
-
+    setFormError("");
     setIsSubmitting(true);
-    setErrors({});
 
     try {
       await loginUser({
-        email: email.trim().toLowerCase(),
+        email: email.trim(),
         password,
       });
+
+      await refreshUser();
+      router.push("/");
     } catch {
-      setErrors({
-        form: "Invalid email or password.",
-      });
+      setFormError("Invalid email or password.");
+    } finally {
       setIsSubmitting(false);
-      return;
     }
-
-    await refreshUser();
-
-    setIsSubmitting(false);
-    router.push("/");
   }
 
   function handleGoogleLogin() {
     window.location.href = "/api/oauth2/authorization/google";
   }
 
+  let oauthMessage = "";
+
+  if (oauthError === "oauth") {
+    oauthMessage = "Google sign-in could not be completed. Please try again.";
+  }
+
+  if (oauthError === "google_link_required") {
+    oauthMessage =
+      "An account with this email already exists. Log in with your email and password first.";
+  }
+
   return (
-    <main>
-      <h1>Log in</h1>
+    <section className="auth-page">
+      <div className="auth-intro">
+        <p className="auth-eyebrow">WELCOME BACK</p>
 
-      {oauthError === "google_link_required" ? (
-        <p role="alert">
-          This email already has an account. Enter your password once to link
-          Google sign-in.
+        <h1 className="auth-display-title">
+          Continue
+          <br />
+          your search
+          <br />
+          with clarity.
+        </h1>
+
+        <p className="auth-intro-copy">
+          Your matches, saved jobs, and application progress stay together in
+          one place.
         </p>
-      ) : null}
 
-      {oauthError === "oauth" ? (
-        <p role="alert">Google sign-in failed. Please try again.</p>
-      ) : null}
+        <div className="auth-signal-list">
+          {" "}
+          <div>
+            <span>01</span>
+            <p>Understand why a job matches you.</p>
+          </div>
+          <div>
+            <span>02</span>
+            <p>Save opportunities worth coming back to.</p>
+          </div>
+          <div>
+            <span>03</span>
+            <p>Keep track after you apply externally.</p>
+          </div>
+        </div>
+      </div>
 
-      <form onSubmit={handleSubmit} noValidate>
-        {errors.form ? <p role="alert">{errors.form}</p> : null}
-
-        <div>
-          <label htmlFor="email">Email</label>
-          <input
-            id="email"
-            name="email"
-            type="email"
-            autoComplete="email"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            aria-invalid={Boolean(errors.email)}
-            aria-describedby={errors.email ? "email-error" : undefined}
-          />
-
-          {errors.email ? (
-            <p id="email-error" role="alert">
-              {errors.email}
-            </p>
-          ) : null}
+      <div className="auth-form-column">
+        <div className="auth-form-header">
+          <p className="auth-form-kicker">SIGN IN</p>
+          <h2>Welcome back.</h2>
+          <p>Enter your details to continue to JobMatch.</p>
         </div>
 
-        <div>
-          <label htmlFor="password">Password</label>
-          <input
-            id="password"
-            name="password"
-            type="password"
-            autoComplete="current-password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            aria-invalid={Boolean(errors.password)}
-            aria-describedby={errors.password ? "password-error" : undefined}
-          />
+        {registrationSuccessful ? (
+          <output className="auth-message auth-message-success">
+            Account created successfully. Please log in to continue.
+          </output>
+        ) : null}
 
-          {errors.password ? (
-            <p id="password-error" role="alert">
-              {errors.password}
-            </p>
-          ) : null}
+        {oauthMessage ? (
+          <div className="auth-message auth-message-error" role="alert">
+            {oauthMessage}
+          </div>
+        ) : null}
+
+        {formError ? (
+          <div className="auth-message auth-message-error" role="alert">
+            {formError}
+          </div>
+        ) : null}
+
+        <form className="auth-form" onSubmit={handleSubmit}>
+          <div className="auth-field">
+            <label htmlFor="email">Email address</label>
+            <input
+              id="email"
+              name="email"
+              type="email"
+              autoComplete="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              placeholder="you@example.com"
+              required
+            />
+          </div>
+
+          <div className="auth-field">
+            <label htmlFor="password">Password</label>
+            <input
+              id="password"
+              name="password"
+              type="password"
+              autoComplete="current-password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              placeholder="Enter your password"
+              required
+            />
+          </div>
+
+          <button
+            className="auth-primary-button"
+            type="submit"
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? "Signing in..." : "Sign in"}
+          </button>
+        </form>
+
+        <div className="auth-divider" aria-hidden="true">
+          <span />
+          <p>or</p>
+          <span />
         </div>
 
-        <button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? "Logging in..." : "Log in"}
+        <button
+          className="auth-google-button"
+          type="button"
+          onClick={handleGoogleLogin}
+        >
+          <span className="google-mark" aria-hidden="true">
+            G
+          </span>
+          Continue with Google
         </button>
-      </form>
 
-      <button type="button" onClick={handleGoogleLogin}>
-        Continue with Google
-      </button>
-    </main>
+        <p className="auth-switch">
+          New to JobMatch? <Link href="/register">Create an account</Link>
+        </p>
+      </div>
+    </section>
   );
 }
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<main>Loading login...</main>}>
-      <LoginForm />
+    <Suspense
+      fallback={
+        <section className="auth-page">
+          <p className="auth-loading">Loading...</p>
+        </section>
+      }
+    >
+      <LoginContent />
     </Suspense>
   );
 }

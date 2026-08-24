@@ -1,8 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useState } from "react";
-import { registerUser } from "@/lib/api";
+import { ApiError, registerUser } from "@/lib/api";
 
 type FormErrors = {
   firstName?: string;
@@ -23,7 +24,7 @@ export default function RegisterPage() {
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  function validate() {
+  function validateForm() {
     const nextErrors: FormErrors = {};
 
     if (!firstName.trim()) {
@@ -35,15 +36,11 @@ export default function RegisterPage() {
     }
 
     if (!email.trim()) {
-      nextErrors.email = "Email is required.";
-    } else if (!/^\S+@\S+\.\S+$/.test(email)) {
-      nextErrors.email = "Enter a valid email address.";
+      nextErrors.email = "Email address is required.";
     }
 
-    if (!password) {
-      nextErrors.password = "Password is required.";
-    } else if (password.length < 6) {
-      nextErrors.password = "Password must be at least 6 characters.";
+    if (password.length < 8) {
+      nextErrors.password = "Password must be at least 8 characters.";
     }
 
     setErrors(nextErrors);
@@ -54,117 +51,200 @@ export default function RegisterPage() {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (!validate()) {
+    if (!validateForm()) {
       return;
     }
 
-    setIsSubmitting(true);
     setErrors({});
+    setIsSubmitting(true);
 
     try {
       await registerUser({
-        name: `${firstName.trim()} ${lastName.trim()}`.trim(),
-        email: email.trim().toLowerCase(),
+        name: `${firstName.trim()} ${lastName.trim()}`,
+        email: email.trim(),
         password,
       });
 
-      router.push("/login");
-    } catch {
-      setErrors({
-        form: "We could not create your account. Please try again.",
-      });
+      router.push("/login?registered=true");
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 409) {
+        setErrors({
+          form:
+            error.detail ??
+            "An account with this email address already exists. Try logging in instead.",
+        });
+      } else {
+        setErrors({
+          form: "We could not create your account. Please try again.",
+        });
+      }
     } finally {
       setIsSubmitting(false);
     }
   }
 
+  function handleGoogleRegister() {
+    window.location.href = "/api/oauth2/authorization/google";
+  }
+
   return (
-    <main>
-      <h1>Create account</h1>
+    <section className="auth-page">
+      <div className="auth-intro">
+        <p className="auth-eyebrow">CREATE YOUR PROFILE</p>
 
-      <form onSubmit={handleSubmit} noValidate>
-        {errors.form ? <p role="alert">{errors.form}</p> : null}
+        <h1 className="auth-display-title">
+          Find work
+          <br />
+          that actually
+          <br />
+          fits you.
+        </h1>
 
-        <div>
-          <label htmlFor="firstName">First name</label>
-          <input
-            id="firstName"
-            name="firstName"
-            type="text"
-            autoComplete="given-name"
-            value={firstName}
-            onChange={(event) => setFirstName(event.target.value)}
-            aria-invalid={Boolean(errors.firstName)}
-            aria-describedby={errors.firstName ? "firstName-error" : undefined}
-          />
-          {errors.firstName ? (
-            <p id="firstName-error" role="alert">
-              {errors.firstName}
-            </p>
-          ) : null}
+        <p className="auth-intro-copy">
+          Build your JobMatch profile once, then use it to understand which
+          opportunities deserve your time.
+        </p>
+
+        <div className="auth-signal-list">
+          <div>
+            <span>01</span>
+            <p>See jobs that are more relevant to your skills.</p>
+          </div>
+
+          <div>
+            <span>02</span>
+            <p>Understand your match instead of guessing.</p>
+          </div>
+
+          <div>
+            <span>03</span>
+            <p>Save, apply, and keep your job search organized.</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="auth-form-column">
+        <div className="auth-form-header">
+          <p className="auth-form-kicker">CREATE ACCOUNT</p>
+
+          <h2>Start with JobMatch.</h2>
+
+          <p>Create your account to unlock personalized match information.</p>
         </div>
 
-        <div>
-          <label htmlFor="lastName">Last name</label>
-          <input
-            id="lastName"
-            name="lastName"
-            type="text"
-            autoComplete="family-name"
-            value={lastName}
-            onChange={(event) => setLastName(event.target.value)}
-            aria-invalid={Boolean(errors.lastName)}
-            aria-describedby={errors.lastName ? "lastName-error" : undefined}
-          />
-          {errors.lastName ? (
-            <p id="lastName-error" role="alert">
-              {errors.lastName}
-            </p>
-          ) : null}
+        {errors.form ? (
+          <div className="auth-message auth-message-error" role="alert">
+            {errors.form}
+          </div>
+        ) : null}
+
+        <form className="auth-form" onSubmit={handleSubmit}>
+          <div className="auth-name-grid">
+            <div className="auth-field">
+              <label htmlFor="firstName">First name</label>
+
+              <input
+                id="firstName"
+                name="firstName"
+                type="text"
+                autoComplete="given-name"
+                value={firstName}
+                onChange={(event) => setFirstName(event.target.value)}
+                placeholder="First name"
+              />
+
+              {errors.firstName ? (
+                <p className="auth-field-error">{errors.firstName}</p>
+              ) : null}
+            </div>
+
+            <div className="auth-field">
+              <label htmlFor="lastName">Last name</label>
+
+              <input
+                id="lastName"
+                name="lastName"
+                type="text"
+                autoComplete="family-name"
+                value={lastName}
+                onChange={(event) => setLastName(event.target.value)}
+                placeholder="Last name"
+              />
+
+              {errors.lastName ? (
+                <p className="auth-field-error">{errors.lastName}</p>
+              ) : null}
+            </div>
+          </div>
+
+          <div className="auth-field">
+            <label htmlFor="email">Email address</label>
+
+            <input
+              id="email"
+              name="email"
+              type="email"
+              autoComplete="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              placeholder="you@example.com"
+            />
+
+            {errors.email ? (
+              <p className="auth-field-error">{errors.email}</p>
+            ) : null}
+          </div>
+
+          <div className="auth-field">
+            <label htmlFor="password">Password</label>
+
+            <input
+              id="password"
+              name="password"
+              type="password"
+              autoComplete="new-password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              placeholder="At least 8 characters"
+            />
+
+            {errors.password ? (
+              <p className="auth-field-error">{errors.password}</p>
+            ) : (
+              <p className="auth-field-hint">Use at least 8 characters.</p>
+            )}
+          </div>
+
+          <button
+            className="auth-primary-button"
+            type="submit"
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? "Creating account..." : "Create account"}
+          </button>
+        </form>
+
+        <div className="auth-divider" aria-hidden="true">
+          <span />
+          <p>or</p>
+          <span />
         </div>
 
-        <div>
-          <label htmlFor="email">Email</label>
-          <input
-            id="email"
-            name="email"
-            type="email"
-            autoComplete="email"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            aria-invalid={Boolean(errors.email)}
-            aria-describedby={errors.email ? "email-error" : undefined}
-          />
-          {errors.email ? (
-            <p id="email-error" role="alert">
-              {errors.email}
-            </p>
-          ) : null}
-        </div>
-
-        <div>
-          <label htmlFor="password">Password</label>
-          <input
-            id="password"
-            name="password"
-            type="password"
-            autoComplete="new-password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            aria-invalid={Boolean(errors.password)}
-            aria-describedby={errors.password ? "password-error" : undefined}
-          />
-          {errors.password ? (
-            <p id="password-error" role="alert">
-              {errors.password}
-            </p>
-          ) : null}
-        </div>
-
-        <button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? "Creating account..." : "Create account"}
+        <button
+          className="auth-google-button"
+          type="button"
+          onClick={handleGoogleRegister}
+        >
+          <span className="google-mark" aria-hidden="true">
+            G
+          </span>
+          Continue with Google
         </button>
-      </form>
-    </main>
+
+        <p className="auth-switch">
+          Already have an account? <Link href="/login">Sign in</Link>
+        </p>
+      </div>
+    </section>
   );
 }
