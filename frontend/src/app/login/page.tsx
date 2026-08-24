@@ -53,13 +53,19 @@ export default function LoginPage() {
         email: email.trim().toLowerCase(),
         password,
       });
-
-      await refreshUser();
-
-      router.push("/");
     } catch {
       setErrors({
         form: "Invalid email or password.",
+      });
+      return;
+    }
+
+    try {
+      await refreshUser();
+      router.push("/");
+    } catch {
+      setErrors({
+        form: "Logged in, but we couldn't load your session. Please try again.",
       });
     } finally {
       setIsSubmitting(false);
