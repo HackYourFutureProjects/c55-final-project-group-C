@@ -10,35 +10,74 @@
 -- Change: rename to your domain and decide the grain. Write one sentence in
 -- _fct_postings.yml saying what one row means. If you cannot write that
 -- sentence, the mart is not ready.
-with
-    postings as (select * from {{ ref("stg_postings") }}),
+with postings as (
 
-    tag_counts as (
+    select *
+    from {{ ref("stg_postings") }}
 
-        -- int_posting_tags has one row per posting and tag, so counting it
-        -- gives tags per posting. Doing it here rather than `size(tags)` means
-        -- this counts the same cleaned, de-duplicated tags that
-        -- fct_tag_popularity counts, instead of raw array length.
-        select posting_id, count(*) as tag_count
-        from {{ ref("int_posting_tags") }}
-        group by posting_id
-
-    )
+)
 
 select
-    postings.posting_id,
-    postings.title,
-    postings.company_name,
-    postings.location,
-    postings.is_remote,
-    postings.tags,
-    -- A posting with no tags has no rows in int_posting_tags, so the join
-    -- finds nothing and the count has to be put back as zero. Without the
-    -- coalesce it would be null, and "null tags" and "no tags" are different
-    -- claims to make to the backend.
-    coalesce(tag_counts.tag_count, 0) as tag_count,
-    postings.posted_at,
-    date(postings.posted_at) as posted_date,
-    postings.ingested_at
+    public_slug as posting_id,
+
+    original_source as source,
+    source_job_id,
+
+    title,
+    company_name,
+
+    location_raw as location,
+    countries_raw as countries,
+    regions_raw as regions,
+    cities_raw as cities,
+
+    source_work_mode as work_mode,
+
+    case
+        when lower(coalesce(source_work_mode, '')) = 'remote' then true
+        else false
+    end as is_remote,
+
+    skills_raw as skills,
+
+    coalesce(
+        size(array_distinct(skills_raw)),
+        0
+    ) as skill_count,
+
+    source_experience_level as experience_level,
+    source_education_level as education_level,
+    source_employment_type as employment_type,
+
+    source_salary_min as salary_min,
+    source_salary_max as salary_max,
+    source_salary_currency as salary_currency,
+    source_salary_period as salary_period,
+
+    source_category as category,
+
+    description_raw as description,
+
+    posted_at,
+    date(posted_at) as posted_date,
+
+    updated_at,
+    last_seen_at,
+    closed_at,
+
+    case
+        when closed_at is null then 'open'
+        else 'closed'
+    end as status,
+
+    source_freshness_class as freshness_class,
+    source_age_days as age_days,
+    source_repost_count as repost_count,
+    source_fake_freshness as fake_freshness,
+
+    source_url,
+
+    ingest_date,
+    ingested_at
+
 from postings
-left join tag_counts on postings.posting_id = tag_counts.posting_id
