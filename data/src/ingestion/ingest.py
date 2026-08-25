@@ -82,7 +82,7 @@ def fetch_with_retry(
     raise RuntimeError("Retry loop ended unexpectedly")
 
 
-def fetch_raw(url: str ) -> list[Any]:
+def fetch_raw(url: str) -> list[Any]:
     """Call the freehire.me API using limit/offset pagination linked to retry logic."""
     all_records = []
     offset = 0

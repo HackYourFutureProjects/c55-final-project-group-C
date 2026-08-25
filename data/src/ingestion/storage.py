@@ -57,7 +57,6 @@ def blob_path(
     return f"{prefix}/{source_name}/ingest_date={run_date}/data.json"
 
 
-
 def land_raw_json(
     account: str, path: str, records: list[dict], container: str = PRODUCTION_CONTAINER
 ) -> int:
@@ -77,6 +76,7 @@ def land_raw_json(
         account,
     )
     return len(records)
+
 
 def read_raw_json(
     account: str,
@@ -99,11 +99,7 @@ def read_raw_json(
 
     payload = blob_client.download_blob().readall().decode("utf-8")
 
-    return [
-        json.loads(line)
-        for line in payload.splitlines()
-        if line.strip()
-    ]
+    return [json.loads(line) for line in payload.splitlines() if line.strip()]
 
 
 def land_local_json(directory: Path, path: str, records: list[dict]) -> int:
