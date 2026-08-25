@@ -7,44 +7,30 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.List;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 public class UserService {
     private final UserRepository userRepository;
 
-    public List<UserResponse> getAllUsers() {
-        return userRepository.getAllUsers().stream().map(UserResponse::from).toList();
-    }
-
-    public UserResponse createUser(UserRequest request) {
-        var newUser = User.builder()
-                .id(UUID.randomUUID())
-                .name(request.name())
-                .email(request.email())
-                .build();
-        var created = userRepository.createUser(newUser);
-        return UserResponse.from(created);
-    }
-
-    public UserResponse updateUser(UUID id, UserRequest request) {
-        // Find the existing user first to get their current data
-        var existingUser = userRepository.getAllUsers().stream()
-                .filter(u -> u.getId().equals(id))
-                .findFirst()
-                .orElseThrow(() -> new ResponseStatusException(
-                        org.springframework.http.HttpStatus.NOT_FOUND,
-                        "User not found"
-                ));
-        // If the request name is null, keep the existing name
-        String nameToUse = request.name() != null ? request.name() : existingUser.getName();
+    // The account comes from the session, so nobody can edit someone else's.
+    // The email in the request is ignored: it is what the user logs in with.
+    public UserResponse updateCurrentUser(String email, UserRequest request) {
+        var existingUser = userRepository.getUserByEmail(email)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 
         var updatedUser = User.builder()
-                .id(id)
-                .name(nameToUse) // keep the original UserName if its NULL
-                .email(request.email())
+                .id(existingUser.getId())
+                // Null name means leave it alone.
+                .name(request.name() != null ? request.name() : existingUser.getName())
+                .email(existingUser.getEmail())
+                // Not editable: an edit must not erase or forge the agreement.
+                .termsAcceptedAt(existingUser.getTermsAcceptedAt())
+                // Read-only. Carried through so the response matches the row.
+                .createdAt(existingUser.getCreatedAt())
+                .oauthProvider(existingUser.getOauthProvider())
+                .oauthProviderId(existingUser.getOauthProviderId())
+                .passwordUpdatedAt(existingUser.getPasswordUpdatedAt())
                 .build();
         var updated = userRepository.updateUser(updatedUser);
         return UserResponse.from(updated);
@@ -62,10 +48,21 @@ public class UserService {
         return UserResponse.from(user);
     }
 
-    public void deleteUser(UUID id) {
-    if (!userRepository.deleteUser(id)) {
-        throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found");
+    // Records the agreement. Registration does this itself; this covers Google sign-ups.
+    public UserResponse acceptTerms(String email) {
+        var user = userRepository.getUserByEmail(email)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+        userRepository.acceptTerms(user.getId());
+        return getUserByEmail(email);
     }
+
+    // Deletes the caller's own account. Every table pointing at users cascades with it.
+    public void deleteUserByEmail(String email) {
+        var user = userRepository.getUserByEmail(email)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+        if (!userRepository.deleteUser(user.getId())) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found");
+        }
     }
 
 }
