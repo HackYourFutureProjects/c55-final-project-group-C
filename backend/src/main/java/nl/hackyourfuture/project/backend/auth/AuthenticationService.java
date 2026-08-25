@@ -35,10 +35,7 @@ public class AuthenticationService {
     @Value("${app.base-url}")
     private String baseUrl;
 
-    /**
-     * Registers a new user by generating an ID, saving user details,
-     * hashing the password, and storing credentials separately.
-     */
+    // Creates the account, stores the hashed password, and records the terms agreement.
     @Transactional
     public RegisterResponse register(RegisterRequest request) {
         // Checking if a user with this email already exists
@@ -64,6 +61,9 @@ public class AuthenticationService {
         // save the hashed password in the user_credentials table
         userRepository.createUserCredentials(userId, hashedPassword);
 
+        // Same transaction as the account: no personal data stored without the agreement.
+        userRepository.acceptTerms(userId);
+
         return new RegisterResponse(
                 userId,
                 request.email(),
@@ -72,10 +72,7 @@ public class AuthenticationService {
         );
     }
 
-    /**
-     * Authenticates a user by verifying their credentials, creating a security context,
-     * and establishing an active HTTP session (JSESSIONID).
-     */
+    // Checks the password and starts the session (JSESSIONID).
     public LoginResponse login(LoginRequest request, HttpServletRequest httpRequest) {
         // Look up user credentials by email or fail with a generic security error
         var credentials = userRepository.findCredentialsByEmail(request.email())
@@ -91,15 +88,15 @@ public class AuthenticationService {
         establishSession(credentials.email(), httpRequest);
         completePendingGoogleLink(credentials, httpRequest);
 
+        // Null timestamp means they never agreed; the frontend shows the terms screen.
         return new LoginResponse(
                 credentials.email(),
-                credentials.name()
+                credentials.name(),
+                credentials.termsAcceptedAt()
         );
     }
 
-    /**
-     * Generates a password reset token for the given email and triggers an asynchronous email.
-     */
+    // Creates a reset token and emails the link.
     @Transactional
     public void forgotPassword(ForgotPasswordRequest request) {
         var userOpt = userRepository.getUserByEmail(request.email());
@@ -131,9 +128,7 @@ public class AuthenticationService {
 
     }
 
-    /**
-     * Validates the provided password reset token and updates the user's password hash securely.
-     */
+    // Checks the reset token, then sets the new password.
     @Transactional
     public void resetPassword(ResetPasswordRequest request) {
         UUID userId = userRepository.findUserIdByValidResetToken(request.token())
@@ -153,9 +148,7 @@ public class AuthenticationService {
         log.info("Password successfully reset for user ID: {}", userId);
     }
 
-    /**
-     * Updates the password for an authenticated user after verifying their current password.
-     */
+    // Changes the password after checking the current one.
     @Transactional
     public void updatePassword(String email, UpdatePasswordRequest request, HttpServletRequest httpRequest) {
         // Look up the user ID using the provided email
