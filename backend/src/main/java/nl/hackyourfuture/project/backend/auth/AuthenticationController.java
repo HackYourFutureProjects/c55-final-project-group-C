@@ -12,6 +12,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -68,7 +69,11 @@ public class AuthenticationController {
     @ApiResponse(responseCode = "400", description = "Invalid current password or Google-only account")
     public void updatePassword(
             @AuthenticationPrincipal String email,
-            @Valid @RequestBody UpdatePasswordRequest request) {
-        authenticationService.updatePassword(email, request);
+            @Valid @RequestBody UpdatePasswordRequest request, jakarta.servlet.http.HttpServletRequest httpRequest) {
+        // Guard against unauthenticated requests or anonymous principals falling through
+        if (email == null || "anonymousUser".equals(email) || email.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Not logged in");
+        }
+        authenticationService.updatePassword(email, request, httpRequest);
     }
 }

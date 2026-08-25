@@ -6,8 +6,11 @@ import lombok.extern.slf4j.Slf4j;
 import nl.hackyourfuture.project.backend.auth.dto.*;
 import nl.hackyourfuture.project.backend.user.User;
 import nl.hackyourfuture.project.backend.user.UserRepository;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.HttpStatus;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -28,6 +31,9 @@ public class AuthenticationService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
+
+    @Value("${app.base-url}")
+    private String baseUrl;
 
     /**
      * Registers a new user by generating an ID, saving user details,
@@ -112,12 +118,15 @@ public class AuthenticationService {
             userRepository.savePasswordResetToken(tokenId, user.getId(), token, expiryDate);
 
             // Send the real email via Brevo
-            String resetUrl = "http://localhost:3000/reset-password?token=" + token;
+            String resetUrl = baseUrl + "/reset-password?token=" + token;
 
-            // Call the asynchronous email service
-            emailService.sendPasswordResetEmail(user.getEmail(), resetUrl);
-
-            log.info("Password reset email successfully sent to: {}", user.getEmail());
+            // Ensure the token is fully committed to the database before the email goes out
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    emailService.sendPasswordResetEmail(user.getEmail(), resetUrl);
+                }
+            });
         }
 
     }
@@ -132,6 +141,11 @@ public class AuthenticationService {
                         new ResponseStatusException(
                                 HttpStatus.BAD_REQUEST, "Invalid or expired password reset token"));
 
+        // Reject Google-only accounts since they don't have a local password credentials record
+        userRepository.findPasswordHashByUserId(userId)
+                        .orElseThrow(() -> new ResponseStatusException(
+                                HttpStatus.BAD_REQUEST, "Google-only accounts cannot reset passwords"));
+
         String hashedPassword = passwordEncoder.encode(request.newPassword());
         userRepository.updatePasswordHash(userId, hashedPassword);
         userRepository.deletePasswordResetTokensByUserId(userId);
@@ -143,7 +157,7 @@ public class AuthenticationService {
      * Updates the password for an authenticated user after verifying their current password.
      */
     @Transactional
-    public void updatePassword(String email, UpdatePasswordRequest request) {
+    public void updatePassword(String email, UpdatePasswordRequest request, HttpServletRequest httpRequest) {
         // Look up the user ID using the provided email
         UUID userId = userRepository.getUserByEmail(email)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"))
@@ -163,6 +177,8 @@ public class AuthenticationService {
         String newPasswordHash = passwordEncoder.encode(request.newPassword());
 
         userRepository.updatePasswordHash(userId, newPasswordHash);
+        // Refresh/re-establish the session to invalidate any old/stolen session contexts
+        establishSession(email, httpRequest);
 
         log.info("Password successfully updated for user email: {}", email);
     }
