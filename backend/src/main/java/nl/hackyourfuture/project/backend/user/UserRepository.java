@@ -174,4 +174,10 @@ public class UserRepository {
                 .param("userId", userId)
                 .update();
     }
+
+    public boolean deleteUser(UUID id) {
+    return jdbcClient.sql("DELETE FROM users WHERE id = :id")
+            .param("id", id)
+            .update() == 1;
+        }
 }

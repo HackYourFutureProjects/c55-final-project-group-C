@@ -6,17 +6,24 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import nl.hackyourfuture.project.backend.user.dto.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.web.authentication.logout.CookieClearingLogoutHandler;
+import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @RestController
@@ -36,25 +43,9 @@ public class UserController {
     @ApiResponse(responseCode = "200", description = "The current authenticated user")
     @ApiResponse(responseCode = "401", description = "Not logged in")
     public ResponseEntity<UserResponse> getCurrentUser(@AuthenticationPrincipal Object principal) {
-        // Check if not logged in or if it's an anonymous user string
-        if (principal == null ) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
-
-        String email;
-        if (principal instanceof String principalEmail) {
-            if ("anonymousUser".equals(principalEmail) || principalEmail.isBlank()) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-            }
-            email = principalEmail;
-        } else if (principal instanceof UserDetails userDetails) {
-            email = userDetails.getUsername();
-        } else {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
-
-        UserResponse user = userService.getUserByEmail(email);
-        return ResponseEntity.ok(user);
+        return resolveEmail(principal)
+                .map(email -> ResponseEntity.ok(userService.getUserByEmail(email)))
+                .orElseGet(() -> ResponseEntity.status(HttpStatus.UNAUTHORIZED).build());
     }
 
     @GetMapping
@@ -94,5 +85,66 @@ public class UserController {
             @PathVariable UUID id,
             @Valid @RequestBody UserRequest request) {
         return userService.updateUser(id, request);
+    }
+
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(summary = "Delete a user")
+    @ApiResponse(responseCode = "204", description = "The user was deleted")
+    @ApiResponse(responseCode = "404", description = "No such user")
+    public void deleteUser(
+            @Parameter(
+                    description = "ID of the user to delete",
+                    example = "effe1126-329f-4f31-942c-31bc0be4d672"
+            )
+            @PathVariable UUID id,
+            @AuthenticationPrincipal Object principal,
+            HttpServletRequest request,
+            HttpServletResponse response) {
+        // Resolved before the delete: afterwards the caller's row is gone and
+        // getUserByEmail would throw 404 on the account we just removed.
+        boolean deletingSelf = isCurrentUser(id, principal);
+
+        userService.deleteUser(id);
+
+        // The session outlives the row it points at, so /me would answer 404
+        // instead of 401 until it expires. Ending it here keeps the two in step.
+        if (deletingSelf) {
+            endSession(request, response);
+        }
+    }
+
+    private boolean isCurrentUser(UUID id, Object principal) {
+        return resolveEmail(principal)
+                .map(email -> userService.getUserByEmail(email).id().equals(id))
+                .orElse(false);
+    }
+
+    /**
+     * Unwraps the security principal to the caller's email, or empty when the
+     * request carries no real authentication.
+     */
+    private static Optional<String> resolveEmail(Object principal) {
+        // Check if not logged in or if it's an anonymous user string
+        if (principal instanceof String principalEmail) {
+            if ("anonymousUser".equals(principalEmail) || principalEmail.isBlank()) {
+                return Optional.empty();
+            }
+            return Optional.of(principalEmail);
+        }
+        if (principal instanceof UserDetails userDetails) {
+            return Optional.of(userDetails.getUsername());
+        }
+        return Optional.empty();
+    }
+
+    /**
+     * Invalidates the session and clears the cookie, matching what the logout
+     * handler in SecurityConfig does.
+     */
+    private static void endSession(HttpServletRequest request, HttpServletResponse response) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        new SecurityContextLogoutHandler().logout(request, response, authentication);
+        new CookieClearingLogoutHandler("JSESSIONID").logout(request, response, authentication);
     }
 }

@@ -2,6 +2,8 @@ package nl.hackyourfuture.project.backend.user;
 
 import lombok.RequiredArgsConstructor;
 import nl.hackyourfuture.project.backend.user.dto.*;
+
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -59,4 +61,11 @@ public class UserService {
 
         return UserResponse.from(user);
     }
+
+    public void deleteUser(UUID id) {
+    if (!userRepository.deleteUser(id)) {
+        throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found");
+    }
+    }
+
 }
