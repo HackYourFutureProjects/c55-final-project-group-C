@@ -16,6 +16,15 @@ export type LoginRequest = {
   password: string;
 };
 
+export type ForgotPasswordRequest = {
+  email: string;
+};
+
+export type ResetPasswordRequest = {
+  token: string;
+  newPassword: string;
+};
+
 export type LoginResponse = {
   email: string;
   name: string;
@@ -94,6 +103,20 @@ export function registerUser(
 
 export function loginUser(payload: LoginRequest): Promise<LoginResponse> {
   return request<LoginResponse>("/api/auth/login", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function forgotPassword(payload: ForgotPasswordRequest): Promise<void> {
+  return request<void>("/api/auth/forgot-password", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function resetPassword(payload: ResetPasswordRequest): Promise<void> {
+  return request<void>("/api/auth/reset-password", {
     method: "POST",
     body: JSON.stringify(payload),
   });
