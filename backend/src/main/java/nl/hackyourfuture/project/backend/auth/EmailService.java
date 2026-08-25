@@ -20,12 +20,12 @@ public class EmailService {
     @Value("${app.mail.from}")
     private String mailFrom;
 
-    @Value("${spring.mail.username:}")
+    @Value("${spring.mail.username:none}")
     private String mailUsername;
 
     @PostConstruct
     public void checkMailConfiguration() {
-        if (mailUsername == null || mailUsername.isBlank() || mailUsername.contains("${")) {
+        if (mailUsername == null || mailUsername.isBlank() || mailUsername.equals("none") ||  mailUsername.contains("${")) {
             log.warn("⚠️ Mail service warning: MAIL_USERNAME / MAIL_PASSWORD are not configured." +
                     " Password reset emails will fail to send!");
         } else {
