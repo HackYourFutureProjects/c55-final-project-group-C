@@ -10,12 +10,7 @@
 -- Change: rename to your domain and decide the grain. Write one sentence in
 -- _fct_postings.yml saying what one row means. If you cannot write that
 -- sentence, the mart is not ready.
-with postings as (
-
-    select *
-    from {{ ref("stg_postings") }}
-
-)
+with postings as (select * from {{ ref("stg_postings") }})
 
 select
     public_slug as posting_id,
@@ -34,16 +29,12 @@ select
     source_work_mode as work_mode,
 
     case
-        when lower(coalesce(source_work_mode, '')) = 'remote' then true
-        else false
+        when lower(coalesce(source_work_mode, '')) = 'remote' then true else false
     end as is_remote,
 
     skills_raw as skills,
 
-    coalesce(
-        size(array_distinct(skills_raw)),
-        0
-    ) as skill_count,
+    coalesce(size(array_distinct(skills_raw)), 0) as skill_count,
 
     source_experience_level as experience_level,
     source_education_level as education_level,
@@ -65,10 +56,7 @@ select
     last_seen_at,
     closed_at,
 
-    case
-        when closed_at is null then 'open'
-        else 'closed'
-    end as status,
+    case when closed_at is null then 'open' else 'closed' end as status,
 
     source_freshness_class as freshness_class,
     source_age_days as age_days,

@@ -12,52 +12,36 @@
 -- fan-out model produces.
 -- One row per skill:
 -- number of jobs using the skill and its posting date range.
-
 -- One row per skill.
 -- Shows how many job postings contain each skill.
-
 -- One row per skill.
 -- Shows how many job postings contain each skill.
-
 -- One row per skill.
 -- Shows how many job postings contain each skill.
+with
+    postings as (
 
-with postings as (
+        select public_slug as posting_id, skills_raw as skills, posted_at
 
-    select
-        public_slug as posting_id,
-        skills_raw as skills,
-        posted_at
+        from {{ ref("stg_postings") }}
 
-    from {{ ref("stg_postings") }}
+    ),
 
-),
+    exploded_skills as (
 
-exploded_skills as (
+        select posting_id, posted_at, explode_outer(skills) as skill from postings
 
-    select
-        posting_id,
-        posted_at,
-        explode_outer(skills) as skill
+    ),
 
-    from postings
+    cleaned_skills as (
 
-),
+        select distinct posting_id, lower(trim(skill)) as skill, posted_at
 
-cleaned_skills as (
+        from exploded_skills
 
-    select distinct
-        posting_id,
-        lower(trim(skill)) as skill,
-        posted_at
+        where skill is not null and trim(skill) <> ''
 
-    from exploded_skills
-
-    where
-        skill is not null
-        and trim(skill) <> ''
-
-)
+    )
 
 select
     skill,
