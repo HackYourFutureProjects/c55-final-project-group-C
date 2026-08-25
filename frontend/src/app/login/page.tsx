@@ -144,6 +144,12 @@ function LoginContent() {
             />
           </div>
 
+          <div className="auth-password-row">
+            <Link href="/forgot-password" className="auth-forgot-link">
+              Forgot password?
+            </Link>
+          </div>
+
           <button
             className="auth-primary-button"
             type="submit"
