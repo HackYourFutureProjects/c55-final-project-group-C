@@ -25,8 +25,8 @@ function ResetPasswordContent() {
       return;
     }
 
-    if (newPassword.length < 8) {
-      setError("Password must be at least 8 characters.");
+    if (newPassword.length < 6) {
+      setError("Password must be at least 6 characters.");
       return;
     }
 
@@ -145,7 +145,7 @@ function ResetPasswordContent() {
 
           <h2>Set a new password.</h2>
 
-          <p>Choose a password with at least 8 characters.</p>
+          <p>Choose a password with at least 6 characters.</p>
         </div>
 
         {isSuccess ? (
@@ -178,11 +178,11 @@ function ResetPasswordContent() {
                   autoComplete="new-password"
                   value={newPassword}
                   onChange={(event) => setNewPassword(event.target.value)}
-                  placeholder="At least 8 characters"
+                  placeholder="At least 6 characters"
                   required
                 />
 
-                <p className="auth-field-hint">Use at least 8 characters.</p>
+                <p className="auth-field-hint">Use at least 6 characters.</p>
               </div>
 
               <div className="auth-field">
