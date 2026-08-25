@@ -25,7 +25,7 @@ public class EmailService {
 
     @PostConstruct
     public void checkMailConfiguration() {
-        if (mailUsername == null || mailUsername.isBlank() || mailUsername.equals("none") ||  mailUsername.contains("${")) {
+        if (mailUsername == null || mailUsername.isBlank() || "none".equals(mailUsername) ||  mailUsername.contains("${")) {
             log.warn("⚠️ Mail service warning: MAIL_USERNAME / MAIL_PASSWORD are not configured." +
                     " Password reset emails will fail to send!");
         } else {
