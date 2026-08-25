@@ -7,10 +7,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import nl.hackyourfuture.project.backend.auth.dto.LoginRequest;
-import nl.hackyourfuture.project.backend.auth.dto.LoginResponse;
-import nl.hackyourfuture.project.backend.auth.dto.RegisterRequest;
-import nl.hackyourfuture.project.backend.auth.dto.RegisterResponse;
+import nl.hackyourfuture.project.backend.auth.dto.*;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.web.bind.annotation.*;
@@ -47,5 +45,30 @@ public class AuthenticationController {
     @ApiResponse(responseCode = "401", description = "Invalid email or password")
     public LoginResponse login(@Valid @RequestBody LoginRequest request, jakarta.servlet.http.HttpServletRequest httpRequest) {
         return authenticationService.login(request, httpRequest);
+    }
+
+    @PostMapping("/forgot-password")
+    @Operation(summary = "Forgot password", description = "Triggers a password reset token generation and logs the link for testing.")
+    @ApiResponse(responseCode = "200", description = "Password reset request processed")
+    public void forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        authenticationService.forgotPassword(request);
+    }
+
+    @PostMapping("/reset-password")
+    @Operation(summary = "Reset password", description = "Resets the user password using a valid token.")
+    @ApiResponse(responseCode = "200", description = "Password successfully reset")
+    @ApiResponse(responseCode = "400", description = "Invalid or expired token")
+    public void resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        authenticationService.resetPassword(request);
+    }
+
+    @PatchMapping("/password")
+    @Operation(summary = "Update password", description = "Updates the password for the currently logged-in user.")
+    @ApiResponse(responseCode = "200", description = "Password successfully updated")
+    @ApiResponse(responseCode = "400", description = "Invalid current password or Google-only account")
+    public void updatePassword(
+            @AuthenticationPrincipal String email,
+            @Valid @RequestBody UpdatePasswordRequest request) {
+        authenticationService.updatePassword(email, request);
     }
 }
