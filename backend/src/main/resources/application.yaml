@@ -40,6 +40,8 @@ app:
     success-redirect: ${OAUTH2_SUCCESS_REDIRECT:${app.base-url}/}
     failure-redirect: ${OAUTH2_FAILURE_REDIRECT:${app.base-url}/login?error=oauth}
     link-required-redirect: ${OAUTH2_LINK_REDIRECT:${app.base-url}/login?error=google_link_required}
+    # Google never shows our terms, so a first sign-in through it lands here instead of home.
+    terms-required-redirect: ${OAUTH2_TERMS_REDIRECT:${app.base-url}/accept-terms}
 
 # API Docs
 springdoc:

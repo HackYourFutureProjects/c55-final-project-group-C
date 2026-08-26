@@ -35,6 +35,9 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
     @Value("${app.oauth2.link-required-redirect}")
     private String linkRequiredRedirect;
 
+    @Value("${app.oauth2.terms-required-redirect}")
+    private String termsRequiredRedirect;
+
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
                                         Authentication authentication) throws IOException {
@@ -55,6 +58,13 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         }
 
         authenticationService.establishSession(user.get().getEmail(), request);
+
+        // Google never shows our terms, so send these users to the terms screen first.
+        if (user.get().getTermsAcceptedAt() == null) {
+            log.info("Google sign-in for {} still needs the terms and privacy agreement", email);
+            response.sendRedirect(termsRequiredRedirect);
+            return;
+        }
         response.sendRedirect(successRedirect);
     }
 
