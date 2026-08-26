@@ -12,22 +12,16 @@
 -- it is a separate, not-yet-built step — this model only explodes and
 -- lightly normalizes what the source actually sent.
 with
-    postings as (select * from {{ ref('int_postings') }}),
+    postings as (select * from {{ ref("int_postings") }}),
 
     exploded as (
-        select
-            posting_id,
-            posted_at,
-            city
+        select posting_id, posted_at, city
         from postings
         lateral view explode(cities_raw) as city
     ),
 
     cleaned as (
-        select
-            posting_id,
-            posted_at,
-            lower(trim(city)) as city
+        select posting_id, posted_at, lower(trim(city)) as city
         from exploded
         where trim(city) <> ''
     ),

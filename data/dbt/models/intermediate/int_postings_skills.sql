@@ -41,7 +41,8 @@ with
         -- mart.
         select *
         from cleaned
-        qualify row_number() over (partition by posting_id, skill order by posted_at) = 1
+        qualify
+            row_number() over (partition by posting_id, skill order by posted_at) = 1
 
     )
 

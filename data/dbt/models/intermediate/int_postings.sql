@@ -8,15 +8,14 @@
 -- matching score) is out of scope for this model — deliberately deferred,
 -- not forgotten.
 with
-    postings as (select * from {{ ref('stg_postings') }}),
+    postings as (select * from {{ ref("stg_postings") }}),
 
     keyed as (
         select
             -- Surrogate key so every downstream model (skills, cities,
             -- requirements) joins on one column instead of the natural
             -- (original_source, source_job_id) pair.
-            md5(concat(original_source, '-', source_job_id)) as posting_id,
-            *
+            md5(concat(original_source, '-', source_job_id)) as posting_id, *
         from postings
     ),
 
@@ -32,19 +31,34 @@ with
             trim(
                 regexp_replace(
                     replace(
-                    replace(
-                    replace(
-                    replace(
-                    replace(
-                    replace(
-                        regexp_replace(description_raw, '<[^>]+>', ' '),
-                    '&nbsp;', ' '),
-                    '&amp;', '&'),
-                    '&quot;', '"'),
-                    '&#39;', ''''),
-                    '&lt;', '<'),
-                    '&gt;', '>'),
-                    '\\s+', ' '
+                        replace(
+                            replace(
+                                replace(
+                                    replace(
+                                        replace(
+                                            regexp_replace(
+                                                description_raw, '<[^>]+>', ' '
+                                            ),
+                                            '&nbsp;',
+                                            ' '
+                                        ),
+                                        '&amp;',
+                                        '&'
+                                    ),
+                                    '&quot;',
+                                    '"'
+                                ),
+                                '&#39;',
+                                ''''
+                            ),
+                            '&lt;',
+                            '<'
+                        ),
+                        '&gt;',
+                        '>'
+                    ),
+                    '\\s+',
+                    ' '
                 )
             ) as description_clean
         from keyed

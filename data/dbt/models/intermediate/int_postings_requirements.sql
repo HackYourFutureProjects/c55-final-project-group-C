@@ -9,7 +9,7 @@
 -- correct at this grain — a mart counting requirements per posting has to
 -- coalesce the count back to 0 for those postings, same as skills.
 with
-    postings as (select * from {{ ref('int_postings') }}),
+    postings as (select * from {{ ref("int_postings") }}),
 
     exploded as (
         select
@@ -39,10 +39,11 @@ with
         -- posting shouldn't produce two rows.
         select *
         from cleaned
-        qualify row_number() over (
-            partition by posting_id, priority, requirement_text
-            order by posted_at
-        ) = 1
+        qualify
+            row_number() over (
+                partition by posting_id, priority, requirement_text order by posted_at
+            )
+            = 1
     )
 
 select *
