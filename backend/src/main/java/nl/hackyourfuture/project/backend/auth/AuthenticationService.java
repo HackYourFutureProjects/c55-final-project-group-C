@@ -105,6 +105,13 @@ public class AuthenticationService {
         if (userOpt.isPresent()) {
             var user = userOpt.get();
 
+            // Google-only accounts have no credentials record, so a reset link would dead-end
+            // at resetPassword(). Skip it silently to keep the response indistinguishable.
+            if (userRepository.findPasswordHashByUserId(user.getId()).isEmpty()) {
+                log.info("Skipping password reset email for Google-only user ID: {}", user.getId());
+                return;
+            }
+
             // Clear any old tokens for this user
             userRepository.deletePasswordResetTokensByUserId(user.getId());
 
