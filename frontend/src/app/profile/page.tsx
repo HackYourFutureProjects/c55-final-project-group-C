@@ -1,18 +1,24 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { useAuth } from "@/context/AuthContext";
-import { deleteCurrentUser } from "@/lib/api";
+import { ApiError, deleteCurrentUser } from "@/lib/api";
 
 export default function ProfilePage() {
   const router = useRouter();
-  const { refreshUser } = useAuth();
+  const { user, isLoading, clearUser } = useAuth();
 
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (!isLoading && !user) {
+      router.replace("/login");
+    }
+  }, [isLoading, user, router]);
 
   async function handleDeleteAccount() {
     setError("");
@@ -20,14 +26,24 @@ export default function ProfilePage() {
 
     try {
       await deleteCurrentUser();
-      await refreshUser();
 
-      router.push("/");
+      clearUser();
+      router.replace("/");
       router.refresh();
-    } catch {
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 401) {
+        clearUser();
+        router.replace("/login");
+        return;
+      }
+
       setError("We could not delete your account. Please try again.");
       setIsDeleting(false);
     }
+  }
+
+  if (isLoading || !user) {
+    return null;
   }
 
   return (
