@@ -4,7 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
-import java.util.List;
+import java.time.OffsetDateTime;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -13,18 +13,26 @@ import java.util.UUID;
 public class UserRepository {
     private final JdbcClient jdbcClient;
 
+    // One SELECT for every User, so no query can quietly miss a column.
+    // LEFT JOIN: Google-only accounts have no credentials row.
+    private static final String USER_SELECT = """
+            SELECT u.id, u.email, u.name, u.terms_accepted_at, u.created_at,
+                   u.oauth_provider, u.oauth_provider_id,
+                   uc.updated_at AS password_updated_at
+            FROM users u
+            LEFT JOIN user_credentials uc ON uc.user_id = u.id
+            """;
+
     public static final RowMapper<User> USER_ROW_MAPPER = (rs, _) -> User.builder()
             .id(rs.getObject("id", UUID.class))
             .email(rs.getString("email"))
             .name(rs.getString("name"))
+            .termsAcceptedAt(rs.getObject("terms_accepted_at", OffsetDateTime.class))
+            .createdAt(rs.getObject("created_at", OffsetDateTime.class))
+            .oauthProvider(rs.getString("oauth_provider"))
+            .oauthProviderId(rs.getString("oauth_provider_id"))
+            .passwordUpdatedAt(rs.getObject("password_updated_at", OffsetDateTime.class))
             .build();
-
-    public List<User> getAllUsers() {
-        return jdbcClient
-                .sql("SELECT id, email, name FROM users")
-                .query(USER_ROW_MAPPER)
-                .list();
-    }
 
     public User createUser(User user) {
         jdbcClient
@@ -61,8 +69,8 @@ public class UserRepository {
 
     public Optional<User> findByProvider(String provider, String providerId) {
         return jdbcClient
-                .sql("SELECT id, email, name FROM users "
-                        + "WHERE oauth_provider = :provider AND oauth_provider_id = :providerId")
+                .sql(USER_SELECT + " "
+                        + "WHERE u.oauth_provider = :provider AND u.oauth_provider_id = :providerId")
                 .param("provider", provider)
                 .param("providerId", providerId)
                 .query(USER_ROW_MAPPER)
@@ -81,11 +89,12 @@ public class UserRepository {
                 .update() == 1;
     }
 
-    public record UserCredentialsRecord(UUID id, String email, String name, String passwordHash) {}
+    public record UserCredentialsRecord(UUID id, String email, String name, String passwordHash,
+                                        OffsetDateTime termsAcceptedAt) {}
     // using Optional here to prevent a db crash if the email isn't registered
     public Optional<UserCredentialsRecord> findCredentialsByEmail(String email) {
         return jdbcClient.sql("""
-                        SELECT u.id, u.email, u.name, uc.password_hash
+                        SELECT u.id, u.email, u.name, u.terms_accepted_at, uc.password_hash
                         FROM users u
                         JOIN user_credentials uc ON u.id = uc.user_id
                         WHERE u.email = :email
@@ -95,14 +104,15 @@ public class UserRepository {
                         rs.getObject("id", UUID.class),
                         rs.getString("email"),
                         rs.getString("name"),
-                        rs.getString("password_hash")
+                        rs.getString("password_hash"),
+                        rs.getObject("terms_accepted_at", OffsetDateTime.class)
                 ))
                 .optional();
     }
 
     // for the frontend to verify active authentication.
     public Optional<User> getUserByEmail(String email) {
-        return jdbcClient.sql("SELECT id, email, name FROM users WHERE email = :email")
+        return jdbcClient.sql(USER_SELECT + " WHERE u.email = :email")
                 .param("email", email)
                 .query(USER_ROW_MAPPER)
                 .optional();
@@ -171,6 +181,14 @@ public class UserRepository {
 
     public void deletePasswordResetTokensByUserId(UUID userId) {
         jdbcClient.sql("DELETE FROM password_reset_tokens WHERE user_id = :userId")
+                .param("userId", userId)
+                .update();
+    }
+
+    // now() is the database clock, not the client's. Only sets it once.
+    public void acceptTerms(UUID userId) {
+        jdbcClient.sql("UPDATE users SET terms_accepted_at = now() "
+                        + "WHERE id = :userId AND terms_accepted_at IS NULL")
                 .param("userId", userId)
                 .update();
     }
