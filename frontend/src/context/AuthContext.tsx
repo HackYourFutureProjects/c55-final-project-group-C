@@ -8,6 +8,7 @@ import {
   useEffect,
   useState,
 } from "react";
+
 import {
   type CurrentUserResponse,
   getCurrentUser,
@@ -19,6 +20,7 @@ type AuthContextValue = {
   isLoading: boolean;
   authError: string | null;
   refreshUser: () => Promise<void>;
+  clearUser: () => void;
   logout: () => Promise<void>;
 };
 
@@ -40,11 +42,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const logout = useCallback(async () => {
-    await logoutUser();
+  const clearUser = useCallback(() => {
     setUser(null);
     setAuthError(null);
   }, []);
+
+  const logout = useCallback(async () => {
+    await logoutUser();
+    clearUser();
+  }, [clearUser]);
 
   useEffect(() => {
     async function loadUser() {
@@ -62,6 +68,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isLoading,
         authError,
         refreshUser,
+        clearUser,
         logout,
       }}
     >

@@ -146,3 +146,9 @@ export async function getCurrentUser(): Promise<CurrentUserResponse | null> {
 
   return response.json() as Promise<CurrentUserResponse>;
 }
+
+export function deleteCurrentUser(): Promise<void> {
+  return request<void>("/api/users/me", {
+    method: "DELETE",
+  });
+}
