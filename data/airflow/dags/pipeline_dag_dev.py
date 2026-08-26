@@ -93,6 +93,7 @@ def final_project_pipeline_dev():
     @task
     def publish_to_backend() -> int:
         from pipeline_dag import secret, setting
+
         from src.publishing import sync
 
         os.environ.update(databricks_environment_dev())
