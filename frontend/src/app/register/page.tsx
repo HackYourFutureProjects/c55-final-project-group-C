@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useState } from "react";
+
 import { ApiError, registerUser } from "@/lib/api";
 
 type FormErrors = {
@@ -10,6 +11,7 @@ type FormErrors = {
   lastName?: string;
   email?: string;
   password?: string;
+  acceptedTerms?: string;
   form?: string;
 };
 
@@ -20,6 +22,7 @@ export default function RegisterPage() {
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -39,8 +42,13 @@ export default function RegisterPage() {
       nextErrors.email = "Email address is required.";
     }
 
-    if (password.length < 8) {
-      nextErrors.password = "Password must be at least 8 characters.";
+    if (password.length < 6) {
+      nextErrors.password = "Password must be at least 6 characters.";
+    }
+
+    if (!acceptedTerms) {
+      nextErrors.acceptedTerms =
+        "You must accept the Terms and Privacy Policy to create an account.";
     }
 
     setErrors(nextErrors);
@@ -63,6 +71,7 @@ export default function RegisterPage() {
         name: `${firstName.trim()} ${lastName.trim()}`,
         email: email.trim(),
         password,
+        acceptedTerms: true,
       });
 
       router.push("/login?registered=true");
@@ -205,14 +214,53 @@ export default function RegisterPage() {
               autoComplete="new-password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
-              placeholder="At least 8 characters"
+              placeholder="At least 6 characters"
             />
 
             {errors.password ? (
               <p className="auth-field-error">{errors.password}</p>
             ) : (
-              <p className="auth-field-hint">Use at least 8 characters.</p>
+              <p className="auth-field-hint">Use at least 6 characters.</p>
             )}
+          </div>
+
+          <div className="auth-terms">
+            <label htmlFor="acceptedTerms" className="auth-terms-label">
+              <input
+                id="acceptedTerms"
+                name="acceptedTerms"
+                type="checkbox"
+                checked={acceptedTerms}
+                onChange={(event) => {
+                  setAcceptedTerms(event.target.checked);
+
+                  if (event.target.checked) {
+                    setErrors((currentErrors) => ({
+                      ...currentErrors,
+                      acceptedTerms: undefined,
+                    }));
+                  }
+                }}
+              />
+
+              <span>
+                I agree to the{" "}
+                <Link href="/terms" target="_blank">
+                  Terms & Conditions
+                </Link>{" "}
+                and acknowledge the{" "}
+                <Link href="/privacy" target="_blank">
+                  Privacy Policy
+                </Link>
+                .
+              </span>
+            </label>
+
+            {errors.acceptedTerms ? (
+              <p className="auth-field-error" role="alert">
+                {errors.acceptedTerms}
+              </p>
+            ) : null}
           </div>
 
           <button
