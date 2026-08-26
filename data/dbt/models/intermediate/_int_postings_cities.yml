@@ -1,0 +1,25 @@
+version: 2
+
+models:
+  - name: int_postings_cities
+    description: >
+      One row per posting and city, lowercased and trimmed, deduplicated.
+      Exploded from int_postings.cities_raw. Postings with no cities do not
+      appear here at all. No city derivation or normalization happens here —
+      this is the raw source-provided city list at posting city grain, not
+      a "final" city.
+    columns:
+      - name: posting_id
+        description: The posting this city belongs to.
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('int_postings')
+                field: posting_id
+      - name: city
+        description: One city, lowercased and trimmed, as provided by the source.
+        tests: [not_null]
+      - name: posted_at
+        description: Carried from the posting, so this model can be filtered by date on its own.
+        tests: [not_null]

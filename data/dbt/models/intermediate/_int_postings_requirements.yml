@@ -1,0 +1,30 @@
+version: 2
+
+models:
+  - name: int_postings_requirements
+    description: >
+      One row per posting and requirement, split by priority (required vs
+      preferred), text trimmed and deduplicated. Exploded from
+      int_postings.requirements_raw. Postings with no requirements do not
+      appear here at all.
+    columns:
+      - name: posting_id
+        description: The posting this requirement belongs to.
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('int_postings')
+                field: posting_id
+      - name: priority
+        description: >
+          Requirement priority as provided by the source, lowercased and
+          trimmed — expected values are 'required' and 'preferred', but no
+          value list is enforced here in case a source sends something else.
+        tests: [not_null]
+      - name: requirement_text
+        description: One requirement, trimmed. Never empty.
+        tests: [not_null]
+      - name: posted_at
+        description: Carried from the posting, so this model can be filtered by date on its own.
+        tests: [not_null]
