@@ -42,11 +42,7 @@ with
             -- month needs no backfill and no change here.
             --
             -- https://docs.databricks.com/aws/en/sql/language-manual/functions/read_files
-            read_files(
-                '{{ var("landing_path") }}',
-                format => 'json',
-                schemahints
-                => '
+            read_files('{{ var("landing_path") }}', format => 'json', schemahints => '
             public_slug string,
             external_id string,
             source string,
@@ -104,8 +100,7 @@ with
                 mass_posting_count:int,
                 repost_count:int
             >
-        '
-            )
+        ')
 
     ),
 
@@ -115,7 +110,6 @@ with
             -- Change: replace these with your source's fields. Keep the pattern:
             -- rename to your own names here, so nothing downstream depends on
             -- what the API happened to call things.
-
             -- Job identity
             external_id as source_job_id,
             public_slug,
@@ -172,7 +166,6 @@ with
             -- source changes its date format you can see it in this one line
             -- instead of re-reading three weeks of files. If your source sends an
             -- ISO string, cast it instead.
-
             -- Source lifecycle timestamps.
             -- FreeHire sends ISO timestamps, so we cast them here.
             cast(posted_at as timestamp) as posted_at,
@@ -216,7 +209,10 @@ with
         select *
         from renamed
         qualify
-            row_number() over (partition by original_source, source_job_id order by ingested_at desc) = 1
+            row_number() over (
+                partition by original_source, source_job_id order by ingested_at desc
+            )
+            = 1
 
     )
 
