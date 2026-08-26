@@ -2,6 +2,7 @@ export type RegisterRequest = {
   name: string;
   email: string;
   password: string;
+  acceptedTerms: boolean;
 };
 
 export type RegisterResponse = {
@@ -150,5 +151,11 @@ export async function getCurrentUser(): Promise<CurrentUserResponse | null> {
 export function deleteCurrentUser(): Promise<void> {
   return request<void>("/api/users/me", {
     method: "DELETE",
+  });
+}
+
+export function acceptTerms(): Promise<CurrentUserResponse> {
+  return request<CurrentUserResponse>("/api/users/me/accept-terms", {
+    method: "POST",
   });
 }
