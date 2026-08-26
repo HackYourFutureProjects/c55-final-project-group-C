@@ -1,8 +1,8 @@
-import Link from "next/link";
+"use client";
 
 export default function PrivacyPage() {
   return (
-    <main className="legal-page">
+    <section className="legal-page">
       <div className="legal-container">
         <p className="legal-eyebrow">LEGAL</p>
 
@@ -66,10 +66,14 @@ export default function PrivacyPage() {
           </section>
         </div>
 
-        <Link className="legal-back-link" href="/register">
-          Back to registration
-        </Link>
+        <button
+          className="legal-back-link"
+          type="button"
+          onClick={() => window.close()}
+        >
+          Close and return to registration
+        </button>
       </div>
-    </main>
+    </section>
   );
 }

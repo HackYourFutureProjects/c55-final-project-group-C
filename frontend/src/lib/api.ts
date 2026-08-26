@@ -153,3 +153,9 @@ export function deleteCurrentUser(): Promise<void> {
     method: "DELETE",
   });
 }
+
+export function acceptTerms(): Promise<CurrentUserResponse> {
+  return request<CurrentUserResponse>("/api/users/me/accept-terms", {
+    method: "POST",
+  });
+}

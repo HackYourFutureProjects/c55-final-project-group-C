@@ -71,7 +71,7 @@ export default function RegisterPage() {
         name: `${firstName.trim()} ${lastName.trim()}`,
         email: email.trim(),
         password,
-        acceptedTerms: true,
+        acceptedTerms,
       });
 
       router.push("/login?registered=true");
