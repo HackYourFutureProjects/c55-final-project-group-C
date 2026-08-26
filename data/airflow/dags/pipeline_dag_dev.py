@@ -11,13 +11,25 @@ from __future__ import annotations
 
 import os
 import subprocess
+from datetime import timedelta
 
 import pendulum
 from airflow.sdk import dag, task
-from pipeline_dag import DEFAULT_ARGS, dbt_command, secret, setting, start_job
+from alerts import slack_alert
+
+# Copied from pipeline_dag.py so this file never imports that module at parse
+# time (which would register final_project_pipeline twice in DagBag).
+DEFAULT_ARGS = {
+    "owner": "data-team",
+    "retries": 3,
+    "retry_delay": timedelta(minutes=5),
+    "on_failure_callback": slack_alert,
+}
 
 
 def databricks_environment_dev() -> dict[str, str]:
+    from pipeline_dag import secret, setting
+
     catalog = setting("DATABRICKS_CATALOG")
     landing_default = f"/Volumes/{catalog}/landing/dev/aca-dev/postings"
     where = {
@@ -52,11 +64,15 @@ def databricks_environment_dev() -> dict[str, str]:
 def final_project_pipeline_dev():
     @task
     def ingest() -> str:
+        from pipeline_dag import setting, start_job
+
         job_name = setting("ACA_INGEST_JOB_DEV", "job-fp-ingest-dev")
         return start_job(job_name)
 
     @task
     def dbt_build() -> str:
+        from pipeline_dag import dbt_command
+
         result = subprocess.run(
             dbt_command(),
             shell=True,
@@ -76,6 +92,7 @@ def final_project_pipeline_dev():
 
     @task
     def publish_to_backend() -> int:
+        from pipeline_dag import secret, setting
         from src.publishing import sync
 
         os.environ.update(databricks_environment_dev())
