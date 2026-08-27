@@ -5,34 +5,61 @@ type JobStatusSummaryProps = {
 };
 
 export default function JobStatusSummary({ stats }: JobStatusSummaryProps) {
-  const tracked =
-    stats.saved +
-    stats.applied +
-    stats.rejected +
-    stats.accepted +
-    stats.declined;
+  const saved = stats.SAVED ?? 0;
+  const applied = stats.APPLIED ?? 0;
+  const rejected = stats.REJECTED ?? 0;
+  const accepted = stats.ACCEPTED ?? 0;
+  const declined = stats.DECLINED ?? 0;
 
-  if (tracked === 0) {
-    return (
-      <aside>
-        <h2>Job Overview</h2>
-        <p>No tracked jobs yet.</p>
-      </aside>
-    );
-  }
+  const tracked = saved + applied + rejected + accepted + declined;
 
   return (
-    <aside>
-      <h2>Job Overview</h2>
+    <aside className="job-status-summary">
+      <div className="job-status-summary-header">
+        <div>
+          <p className="saved-eyebrow">OVERVIEW</p>
+          <h2>Job Overview</h2>
+        </div>
 
-      <ul>
-        <li>Tracked: {tracked}</li>
-        <li>Not Applied Yet: {stats.saved}</li>
-        <li>Applied: {stats.applied}</li>
-        <li>Rejected: {stats.rejected}</li>
-        <li>Accepted: {stats.accepted}</li>
-        <li>Declined: {stats.declined}</li>
-      </ul>
+        <div className="job-status-total">
+          <strong>{tracked}</strong>
+          <span>Tracked</span>
+        </div>
+      </div>
+
+      {tracked === 0 ? (
+        <p className="job-status-empty">
+          No tracked jobs yet. Save a job to start building your application
+          pipeline.
+        </p>
+      ) : (
+        <dl className="job-status-grid">
+          <div>
+            <dt>Not Applied Yet</dt>
+            <dd>{saved}</dd>
+          </div>
+
+          <div>
+            <dt>Applied</dt>
+            <dd>{applied}</dd>
+          </div>
+
+          <div>
+            <dt>Rejected</dt>
+            <dd>{rejected}</dd>
+          </div>
+
+          <div>
+            <dt>Accepted</dt>
+            <dd>{accepted}</dd>
+          </div>
+
+          <div>
+            <dt>Declined</dt>
+            <dd>{declined}</dd>
+          </div>
+        </dl>
+      )}
     </aside>
   );
 }
