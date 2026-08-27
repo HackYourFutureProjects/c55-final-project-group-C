@@ -134,9 +134,7 @@ def databricks_environment() -> dict[str, str]:
         "DBT_SCHEMA": setting("DBT_SCHEMA"),
         # Same path dbt's landing_path var reads. Without this, VM dbt falls
         # back to dbt_project.yml's default and list_landing_files would lie.
-        "LANDING_PATH": setting(
-            "LANDING_PATH", f"/Volumes/{catalog}/landing/prod/postings"
-        ),
+        "LANDING_PATH": setting("LANDING_PATH", f"/Volumes/{catalog}/landing/prod/postings"),
     }
     if os.environ.get("DATABRICKS_TOKEN"):
         return where
