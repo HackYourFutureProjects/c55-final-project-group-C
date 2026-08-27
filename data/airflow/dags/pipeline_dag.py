@@ -1,11 +1,15 @@
 """Daily orchestration for the final project pipeline.
 
-    ingest -> dbt_build -> publish_to_backend
+    ingest -> list_landing_files -> dbt_build -> publish_to_backend
 
 Each step is separate so that when dbt fails you re-run dbt, not the fetch, and
 so the publish cannot run on a mart that failed its own tests. Enrichment is
 not a task here: it is a dbt Python model, so `dbt_build` already runs it in
 the right order. See data/dbt/models/marts/fct_postings_enriched.py.
+
+`list_landing_files` logs every file under LANDING_PATH via
+`read_files(..., format => 'binaryFile')` because dbt does not print those
+paths itself. Open that task's Airflow log to see what staging will read.
 
 Settings come from Airflow Variables (Admin -> Variables), read when the task
 runs. Secrets never do: each is fetched from Key Vault inside the task that
@@ -122,11 +126,15 @@ def databricks_environment() -> dict[str, str]:
     laptop with "TEAM is not set", which is the documented way to try the
     publish step locally.
     """
+    catalog = setting("DATABRICKS_CATALOG")
     where = {
         "DATABRICKS_HOST": setting("DATABRICKS_HOST"),
         "DATABRICKS_HTTP_PATH": setting("DATABRICKS_HTTP_PATH"),
-        "DATABRICKS_CATALOG": setting("DATABRICKS_CATALOG"),
+        "DATABRICKS_CATALOG": catalog,
         "DBT_SCHEMA": setting("DBT_SCHEMA"),
+        # Same path dbt's landing_path var reads. Without this, VM dbt falls
+        # back to dbt_project.yml's default and list_landing_files would lie.
+        "LANDING_PATH": setting("LANDING_PATH", f"/Volumes/{catalog}/landing/prod/postings"),
     }
     if os.environ.get("DATABRICKS_TOKEN"):
         return where
@@ -199,6 +207,30 @@ def final_project_pipeline():
         return start_job(setting("ACA_INGEST_JOB"))
 
     @task
+    def list_landing_files() -> int:
+        """List every file under LANDING_PATH before dbt reads them.
+
+        `read_files` does not print paths in dbt logs. This task runs the same
+        path through `read_files(..., format => 'binaryFile')` so the Airflow
+        log shows one line per file the staging model would open.
+        """
+        from src.common.warehouse import Warehouse
+
+        os.environ.update(databricks_environment())
+        path = os.environ["LANDING_PATH"]
+        safe = path.replace("'", "''")
+        rows = Warehouse.from_env().run(
+            "select path, length, modificationTime "
+            f"from read_files('{safe}', format => 'binaryFile') "
+            "order by path"
+        )
+        print(f"LANDING_PATH={path}")
+        print(f"files_found={len(rows)}")
+        for file_path, length, modified in rows:
+            print(f"  file={file_path} bytes={length} modified={modified}")
+        return len(rows)
+
+    @task
     def dbt_build() -> str:
         """Build the models and run the tests."""
         import subprocess
@@ -261,7 +293,7 @@ def final_project_pipeline():
 
         return sync.run()
 
-    ingest() >> dbt_build() >> publish_to_backend()
+    ingest() >> list_landing_files() >> dbt_build() >> publish_to_backend()
 
 
 final_project_pipeline()
