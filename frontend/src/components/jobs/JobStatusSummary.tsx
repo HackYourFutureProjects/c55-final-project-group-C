@@ -1,13 +1,18 @@
-import type { JobState } from "@/lib/types";
+import type { SavedJobsStatsResponse } from "@/lib/api";
 
 type JobStatusSummaryProps = {
-  jobs: {
-    jobState: JobState;
-  }[];
+  stats: SavedJobsStatsResponse;
 };
 
-export default function JobStatusSummary({ jobs }: JobStatusSummaryProps) {
-  if (jobs.length === 0) {
+export default function JobStatusSummary({ stats }: JobStatusSummaryProps) {
+  const tracked =
+    stats.saved +
+    stats.applied +
+    stats.rejected +
+    stats.accepted +
+    stats.declined;
+
+  if (tracked === 0) {
     return (
       <aside>
         <h2>Job Overview</h2>
@@ -16,29 +21,17 @@ export default function JobStatusSummary({ jobs }: JobStatusSummaryProps) {
     );
   }
 
-  const counts: Record<JobState, number> = {
-    SAVED: 0,
-    APPLIED: 0,
-    REJECTED: 0,
-    ACCEPTED: 0,
-    DECLINED: 0,
-  };
-
-  for (const job of jobs) {
-    counts[job.jobState]++;
-  }
-
   return (
     <aside>
       <h2>Job Overview</h2>
 
       <ul>
-        <li>Total: {jobs.length}</li>
-        <li>Saved: {counts.SAVED}</li>
-        <li>Applied: {counts.APPLIED}</li>
-        <li>Rejected: {counts.REJECTED}</li>
-        <li>Accepted: {counts.ACCEPTED}</li>
-        <li>Declined: {counts.DECLINED}</li>
+        <li>Tracked: {tracked}</li>
+        <li>Not Applied Yet: {stats.saved}</li>
+        <li>Applied: {stats.applied}</li>
+        <li>Rejected: {stats.rejected}</li>
+        <li>Accepted: {stats.accepted}</li>
+        <li>Declined: {stats.declined}</li>
       </ul>
     </aside>
   );
