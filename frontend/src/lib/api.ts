@@ -37,6 +37,23 @@ export type CurrentUserResponse = {
   name: string;
 };
 
+export type UpdateCurrentUserRequest = {
+  name: string;
+  email: string;
+};
+
+export type ProfilePreferences = {
+  skills: string[];
+  discipline: string | null;
+  preferredCity: string | null;
+  workMode: string | null;
+  experienceLevel: string | null;
+  employmentType: string | null;
+  salaryPreference: number | null;
+};
+
+export type UpdateProfileRequest = ProfilePreferences;
+
 type ProblemDetail = {
   title?: string;
   detail?: string;
@@ -157,5 +174,27 @@ export function deleteCurrentUser(): Promise<void> {
 export function acceptTerms(): Promise<CurrentUserResponse> {
   return request<CurrentUserResponse>("/api/users/me/accept-terms", {
     method: "POST",
+  });
+}
+
+export function getProfile(): Promise<ProfilePreferences> {
+  return request<ProfilePreferences>("/api/profile");
+}
+
+export function updateProfile(
+  payload: UpdateProfileRequest,
+): Promise<ProfilePreferences> {
+  return request<ProfilePreferences>("/api/profile", {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function updateCurrentUser(
+  payload: UpdateCurrentUserRequest,
+): Promise<CurrentUserResponse> {
+  return request<CurrentUserResponse>("/api/users/me", {
+    method: "PUT",
+    body: JSON.stringify(payload),
   });
 }
