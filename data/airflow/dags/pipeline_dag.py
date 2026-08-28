@@ -128,6 +128,11 @@ def setting(name: str, default: str | None = None) -> str:
     return value
 
 
+def team_slug() -> str:
+    """Key Vault / Log Analytics suffix (team-a) from catalog name (team_a)."""
+    return setting("DATABRICKS_CATALOG").replace("_", "-")
+
+
 def secret(env_name: str, secret_name: str) -> str:
     """One secret: the environment first, then your team's Key Vault.
 
@@ -167,7 +172,7 @@ def databricks_environment(profile: PipelineProfile) -> dict[str, str]:
     if os.environ.get("DATABRICKS_TOKEN"):
         return where
 
-    team = setting("TEAM")
+    team = team_slug()
     return {
         **where,
         "AZURE_TENANT_ID": setting("AZURE_TENANT_ID"),
@@ -193,7 +198,7 @@ def start_job(job_name: str) -> str:
         resource_group=setting("AZURE_RESOURCE_GROUP"),
         job_name=job_name,
         token=azure_token(),
-        team=setting("TEAM"),
+        team=team_slug(),
     )
 
 
@@ -315,7 +320,7 @@ def make_pipeline(profile: PipelineProfile):
             )
 
             if not os.environ.get("BACKEND_PG_PASSWORD"):
-                team = setting("TEAM")
+                team = team_slug()
                 secret_name = setting(
                     profile.backend_pg_secret_var, ""
                 ) or profile.backend_pg_secret_fallback(team)

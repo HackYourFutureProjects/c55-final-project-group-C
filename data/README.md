@@ -585,7 +585,7 @@ read when the task runs. You are an admin on your team's instance, so changing
 where the pipeline points is a change you make yourself, in one place your
 whole team can see, with no deploy:
 
-`TEAM`, `AZURE_SUBSCRIPTION`, `AZURE_RESOURCE_GROUP`, `ACA_INGEST_JOB`,
+`AZURE_SUBSCRIPTION`, `AZURE_RESOURCE_GROUP`, `ACA_INGEST_JOB`,
 `DATABRICKS_HOST`, `DATABRICKS_HTTP_PATH`, `BACKEND_PG_USER`,
 `DATABRICKS_CATALOG`, `DBT_SCHEMA`, `AZURE_TENANT_ID`, `BACKEND_PG_HOST`,
 `BACKEND_PG_DB`.
