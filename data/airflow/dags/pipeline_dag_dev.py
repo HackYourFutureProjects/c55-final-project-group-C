@@ -28,7 +28,7 @@ DEFAULT_ARGS = {
 
 
 def databricks_environment_dev() -> dict[str, str]:
-    from pipeline_dag import secret, setting
+    from pipeline_dag import secret, setting, team_slug
 
     catalog = setting("DATABRICKS_CATALOG")
     # Parent prefix only; staging appends /postings.
@@ -40,7 +40,7 @@ def databricks_environment_dev() -> dict[str, str]:
         "DBT_SCHEMA": setting("DBT_SCHEMA_DEV", "dev_airflow"),
         "LANDING_PATH": setting("LANDING_PATH_DEV", landing_default),
     }
-    team = setting("TEAM")
+    team = team_slug()
     return {
         **where,
         "AZURE_TENANT_ID": setting("AZURE_TENANT_ID"),
@@ -112,7 +112,7 @@ def final_project_pipeline_dev():
 
     @task
     def publish_to_backend() -> int:
-        from pipeline_dag import secret, setting
+        from pipeline_dag import secret, setting, team_slug
 
         from src.publishing import sync
 
@@ -134,8 +134,8 @@ def final_project_pipeline_dev():
         )
 
         if not os.environ.get("BACKEND_PG_PASSWORD"):
-            team = setting("TEAM")
-            secret_name = setting("BACKEND_PG_SECRET_DEV", "") or f"fp-pg-analytics-dev-team-{team}"
+            team = team_slug()
+            secret_name = setting("BACKEND_PG_SECRET_DEV", "") or f"fp-pg-analytics-dev-{team}"
             os.environ["BACKEND_PG_PASSWORD"] = secret("BACKEND_PG_PASSWORD", secret_name)
 
         return sync.run()
