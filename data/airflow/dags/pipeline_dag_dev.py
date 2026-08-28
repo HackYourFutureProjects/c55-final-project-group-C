@@ -31,7 +31,8 @@ def databricks_environment_dev() -> dict[str, str]:
     from pipeline_dag import secret, setting
 
     catalog = setting("DATABRICKS_CATALOG")
-    landing_default = f"/Volumes/{catalog}/landing/dev/aca-dev/postings"
+    # Parent prefix only; staging appends /postings.
+    landing_default = f"/Volumes/{catalog}/landing/dev/aca-dev"
     where = {
         "DATABRICKS_HOST": setting("DATABRICKS_HOST"),
         "DATABRICKS_HTTP_PATH": setting("DATABRICKS_HTTP_PATH"),
@@ -68,6 +69,25 @@ def final_project_pipeline_dev():
 
         job_name = setting("ACA_INGEST_JOB_DEV", "job-fp-ingest-dev")
         return start_job(job_name)
+
+    @task
+    def list_landing_files() -> int:
+        """SPIKE: list every file under LANDING_PATH_DEV before dbt reads them."""
+        from src.common.warehouse import Warehouse
+
+        os.environ.update(databricks_environment_dev())
+        path = os.environ["LANDING_PATH"]
+        safe = path.replace("'", "''")
+        rows = Warehouse.from_env().run(
+            "select path, length, modificationTime "
+            f"from read_files('{safe}', format => 'binaryFile') "
+            "order by path"
+        )
+        print(f"LANDING_PATH={path}")
+        print(f"files_found={len(rows)}")
+        for file_path, length, modified in rows:
+            print(f"  file={file_path} bytes={length} modified={modified}")
+        return len(rows)
 
     @task
     def dbt_build() -> str:
@@ -118,12 +138,9 @@ def final_project_pipeline_dev():
             secret_name = setting("BACKEND_PG_SECRET_DEV", "") or f"fp-pg-analytics-dev-team-{team}"
             os.environ["BACKEND_PG_PASSWORD"] = secret("BACKEND_PG_PASSWORD", secret_name)
 
-        if hasattr(sync, "run_all"):
-            counts = sync.run_all()
-            return sum(counts.values())
         return sync.run()
 
-    ingest() >> dbt_build() >> publish_to_backend()
+    ingest() >> list_landing_files() >> dbt_build() >> publish_to_backend()
 
 
 if not os.environ.get("DATABRICKS_TOKEN"):

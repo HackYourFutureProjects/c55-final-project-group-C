@@ -16,8 +16,10 @@
 # token in exchange. Your teacher sets this up once per team; you never handle
 # a credential.
 #
-# The variables below are set on the repository, not in this file. They are
-# identifiers, not secrets: on their own they grant nothing.
+# Team identifiers live in this file (not GitHub Actions Variables) so a PR
+# can change deploy targets and source URL in one reviewable diff. They are
+# identifiers, not secrets: on their own they grant nothing. OIDC still
+# exchanges a short-lived token; nothing here is a password.
 
 name: Data CI/CD
 
@@ -39,12 +41,28 @@ concurrency:
   group: docker-build-data-${{ github.ref }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
+env:
+  AZURE_CLIENT_ID: b6de01ed-ee7f-446e-9616-2b84c3f6edaf
+  AZURE_TENANT_ID: 07a14c4e-d88c-42f7-83b3-13af7e57ff3d
+  AZURE_SUBSCRIPTION_ID: 1120c89d-2a5f-4a15-a582-2ea34f0bb5c3
+  AZURE_RESOURCE_GROUP: rg-hyf-fp-team-c
+  ACR_NAME: acrhyffpc
+  ACA_ENVIRONMENT: env-fp-team-c
+  ACA_IDENTITY: id-fp-team-c
+  ACA_INGEST_JOB: job-fp-ingest
+  STORAGE_ACCOUNT: sthyffpteamc
+  DATABRICKS_CATALOG: team_c
+  SOURCE_API_URL: https://www.arbeitnow.com/api/job-board-api
+
 jobs:
   lint-and-test:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+        with:
+          # Need history so the changed-files script can diff against the base.
+          fetch-depth: 0
 
       - name: Install uv
         uses: astral-sh/setup-uv@v5
@@ -55,27 +73,69 @@ jobs:
         working-directory: ./data
         run: uv sync --extra dev --extra sync
 
+      # Lint/format/types only the files this change touches under data/. A
+      # full-tree `ruff check .` would fail a clean DAG PR (or merge) because of
+      # someone else's pre-existing issue elsewhere in the tree. Pytest still
+      # runs the whole suite — that is a behaviour gate, not a style gate.
+      - name: List changed data files
+        id: changes
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+          PUSH_BEFORE: ${{ github.event.before }}
+          PUSH_SHA: ${{ github.sha }}
+        run: bash .github/scripts/list-changed-data-files.sh
+
       # Four tools, four jobs. ruff finds mistakes, black settles Python
       # layout, sqlfmt settles SQL layout, and ty checks the types. Each runs
       # as its own step so a failure names itself instead of hiding in a wall
       # of output.
       - name: Lint
         working-directory: ./data
-        run: uv run ruff check .
+        env:
+          FILES: ${{ steps.changes.outputs.python }}
+        run: |
+          if [ -z "${FILES}" ]; then
+            echo "No Python files changed under data/; skipping ruff."
+          else
+            printf '%s\n' "$FILES" | xargs uv run ruff check
+          fi
 
       - name: Format (Python)
         working-directory: ./data
-        # Fix locally with `uv run black .`
-        run: uv run black --check .
+        # Fix locally with `uv run black <paths you changed>`
+        env:
+          FILES: ${{ steps.changes.outputs.python }}
+        run: |
+          if [ -z "${FILES}" ]; then
+            echo "No Python files changed under data/; skipping black."
+          else
+            printf '%s\n' "$FILES" | xargs uv run black --check
+          fi
 
       - name: Format (SQL)
         working-directory: ./data
-        # Fix locally with `uv run sqlfmt dbt/models dbt/tests`
-        run: uv run sqlfmt --check dbt/models dbt/tests
+        # Fix locally with `uv run sqlfmt <paths you changed>`
+        env:
+          FILES: ${{ steps.changes.outputs.sql }}
+        run: |
+          if [ -z "${FILES}" ]; then
+            echo "No SQL files changed under data/; skipping sqlfmt."
+          else
+            printf '%s\n' "$FILES" | xargs uv run sqlfmt --check
+          fi
 
       - name: Types
         working-directory: ./data
-        run: uv run ty check src tests
+        env:
+          FILES: ${{ steps.changes.outputs.typed }}
+        run: |
+          if [ -z "${FILES}" ]; then
+            echo "No src/ or tests/ Python files changed; skipping ty."
+          else
+            printf '%s\n' "$FILES" | xargs uv run ty check
+          fi
 
       - name: Test
         working-directory: ./data
@@ -149,18 +209,18 @@ jobs:
       - name: Sign in to Azure
         uses: azure/login@v2
         with:
-          client-id: ${{ vars.AZURE_CLIENT_ID }}
-          tenant-id: ${{ vars.AZURE_TENANT_ID }}
-          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+          client-id: ${{ env.AZURE_CLIENT_ID }}
+          tenant-id: ${{ env.AZURE_TENANT_ID }}
+          subscription-id: ${{ env.AZURE_SUBSCRIPTION_ID }}
 
       - name: Sign in to the registry
-        run: az acr login --name "${{ vars.ACR_NAME }}"
+        run: az acr login --name "${{ env.ACR_NAME }}"
 
       - name: Build and push
         working-directory: ./data
         run: |
           set -euo pipefail
-          registry="${{ vars.ACR_NAME }}.azurecr.io"
+          registry="${{ env.ACR_NAME }}.azurecr.io"
           # One image. The ingestion job runs it as it is, and any container
           # job you add later runs the same image with a different command:
           # two images would mean two builds, two tags to keep in step, and two
@@ -203,18 +263,18 @@ jobs:
       - name: Sign in to Azure
         uses: azure/login@v2
         with:
-          client-id: ${{ vars.AZURE_CLIENT_ID }}
-          tenant-id: ${{ vars.AZURE_TENANT_ID }}
-          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+          client-id: ${{ env.AZURE_CLIENT_ID }}
+          tenant-id: ${{ env.AZURE_TENANT_ID }}
+          subscription-id: ${{ env.AZURE_SUBSCRIPTION_ID }}
 
       - name: Create or update the ingestion job
         env:
-          RG: ${{ vars.AZURE_RESOURCE_GROUP }}
-          JOB: ${{ vars.ACA_INGEST_JOB }}
-          ENVIRONMENT: ${{ vars.ACA_ENVIRONMENT }}
-          IDENTITY: ${{ vars.ACA_IDENTITY }}
-          REGISTRY: ${{ vars.ACR_NAME }}.azurecr.io
-          SUBSCRIPTION: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+          RG: ${{ env.AZURE_RESOURCE_GROUP }}
+          JOB: ${{ env.ACA_INGEST_JOB }}
+          ENVIRONMENT: ${{ env.ACA_ENVIRONMENT }}
+          IDENTITY: ${{ env.ACA_IDENTITY }}
+          REGISTRY: ${{ env.ACR_NAME }}.azurecr.io
+          SUBSCRIPTION: ${{ env.AZURE_SUBSCRIPTION_ID }}
         run: |
           set -euo pipefail
           image="$REGISTRY/pipeline:${{ github.sha }}"
@@ -226,18 +286,14 @@ jobs:
           # the whole difference between a rehearsal and production. It repeats
           # the code default on purpose: this is the value that actually takes
           # effect, and it should be readable here without opening storage.py.
-          env_vars="SOURCE_API_URL=${{ vars.SOURCE_API_URL }} \
-                    SOURCE_NAME=${{ vars.SOURCE_NAME }} \
-                    STORAGE_ACCOUNT=${{ vars.STORAGE_ACCOUNT }} \
+          env_vars="SOURCE_API_URL=${{ env.SOURCE_API_URL }} \
+                    STORAGE_ACCOUNT=${{ env.STORAGE_ACCOUNT }} \
                     LANDING_CONTAINER=prod \
                     LANDING_PREFIX=raw \
-                    DATABRICKS_CATALOG=${{ vars.DATABRICKS_CATALOG }} \
+                    DATABRICKS_CATALOG=${{ env.DATABRICKS_CATALOG }} \
                     AZURE_CLIENT_ID=$client_id"
 
-          # No 2>/dev/null: if this lookup fails for a transient reason we want
-          # to see why in the log, rather than silently falling through to
-          # `create` against a job that already exists.
-          if az containerapp job show -g "$RG" -n "$JOB" -o none; then
+          if az containerapp job show -g "$RG" -n "$JOB" -o none 2>/dev/null; then
             echo "updating $JOB -> $image"
             az containerapp job update -g "$RG" -n "$JOB" \
               --image "$image" --set-env-vars $env_vars -o none
@@ -273,30 +329,29 @@ jobs:
       - name: Sign in to Azure
         uses: azure/login@v2
         with:
-          client-id: ${{ vars.AZURE_CLIENT_ID }}
-          tenant-id: ${{ vars.AZURE_TENANT_ID }}
-          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+          client-id: ${{ env.AZURE_CLIENT_ID }}
+          tenant-id: ${{ env.AZURE_TENANT_ID }}
+          subscription-id: ${{ env.AZURE_SUBSCRIPTION_ID }}
 
       - name: Create or update the dev ingestion job
         env:
-          RG: ${{ vars.AZURE_RESOURCE_GROUP }}
+          RG: ${{ env.AZURE_RESOURCE_GROUP }}
           JOB: job-fp-ingest-dev
-          ENVIRONMENT: ${{ vars.ACA_ENVIRONMENT }}
-          IDENTITY: ${{ vars.ACA_IDENTITY }}
-          REGISTRY: ${{ vars.ACR_NAME }}.azurecr.io
-          SUBSCRIPTION: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+          ENVIRONMENT: ${{ env.ACA_ENVIRONMENT }}
+          IDENTITY: ${{ env.ACA_IDENTITY }}
+          REGISTRY: ${{ env.ACR_NAME }}.azurecr.io
+          SUBSCRIPTION: ${{ env.AZURE_SUBSCRIPTION_ID }}
         run: |
           set -euo pipefail
           image="$REGISTRY/pipeline:${{ github.sha }}"
           identity="/subscriptions/$SUBSCRIPTION/resourcegroups/$RG/providers/Microsoft.ManagedIdentity/userAssignedIdentities/$IDENTITY"
           client_id="$(az identity show --ids "$identity" --query clientId -o tsv)"
 
-          env_vars="SOURCE_API_URL=${{ vars.SOURCE_API_URL }} \
-                    SOURCE_NAME=${{ vars.SOURCE_NAME }} \
-                    STORAGE_ACCOUNT=${{ vars.STORAGE_ACCOUNT }} \
+          env_vars="SOURCE_API_URL=${{ env.SOURCE_API_URL }} \
+                    STORAGE_ACCOUNT=${{ env.STORAGE_ACCOUNT }} \
                     LANDING_CONTAINER=dev \
                     LANDING_PREFIX=aca-dev \
-                    DATABRICKS_CATALOG=${{ vars.DATABRICKS_CATALOG }} \
+                    DATABRICKS_CATALOG=${{ env.DATABRICKS_CATALOG }} \
                     AZURE_CLIENT_ID=$client_id"
 
           if az containerapp job show -g "$RG" -n "$JOB" -o none 2>/dev/null; then
