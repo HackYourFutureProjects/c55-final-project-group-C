@@ -42,7 +42,8 @@ with
             -- month needs no backfill and no change here.
             --
             -- https://docs.databricks.com/aws/en/sql/language-manual/functions/read_files
-            read_files('{{ var("landing_path") }}', format => 'json', schemahints => '
+            read_files(
+                '{{ var("landing_path") }}/postings', format => 'json', schemahints => '
 
                 public_slug string,
                 external_id string,
@@ -98,7 +99,8 @@ with
                     mass_posting_count:int,
                     repost_count:int
                 >
-                ')
+                '
+            )
 
     ),
 
