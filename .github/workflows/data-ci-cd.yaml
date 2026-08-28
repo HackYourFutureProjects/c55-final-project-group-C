@@ -52,7 +52,7 @@ env:
   ACA_INGEST_JOB: job-fp-ingest
   STORAGE_ACCOUNT: sthyffpteamc
   DATABRICKS_CATALOG: team_c
-  SOURCE_API_URL: https://www.arbeitnow.com/api/job-board-api
+  SOURCE_API_URL: https://freehire.me/api/v1/jobs/search
 
 jobs:
   lint-and-test:
