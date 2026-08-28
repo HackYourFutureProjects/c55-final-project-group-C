@@ -32,6 +32,7 @@ dev = [
     "black>=24.8.0",
     "ty>=0.0.1a1",
     "shandy-sqlfmt>=0.23.0",
+    "sqlfluff>=4.3.0",
 ]
 
 [tool.pytest.ini_options]
