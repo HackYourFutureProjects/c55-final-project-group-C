@@ -127,6 +127,7 @@ def setting(name: str, default: str | None = None) -> str:
         raise RuntimeError(f"{name} is not set. Add it in the Airflow UI under Admin -> Variables.")
     return value
 
+
 def team_slug() -> str:
     """Key Vault / Log Analytics suffix (team-a) from catalog name (team_a)."""
     return setting("DATABRICKS_CATALOG").replace("_", "-")
