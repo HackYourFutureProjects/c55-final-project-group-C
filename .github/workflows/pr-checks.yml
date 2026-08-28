@@ -74,7 +74,6 @@ jobs:
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           set -euo pipefail
-          git fetch --no-tags --depth=1 origin "$BASE_SHA" 2>/dev/null || true
           # Three-dot diff: merge-base..head, same scope as GitHub's "Files changed".
           # Two-dot base..head counts main-only commits when the branch is behind.
           changed=$(git diff --numstat "$BASE_SHA"..."$HEAD_SHA" -- \
