@@ -52,6 +52,8 @@ env:
   ACA_INGEST_JOB: job-fp-ingest
   STORAGE_ACCOUNT: sthyffpteamc
   DATABRICKS_CATALOG: team_c
+  DATABRICKS_HOST: https://adb-7405619530719547.7.azuredatabricks.net
+  DATABRICKS_HTTP_PATH: /sql/1.0/warehouses/0aae52a375e34214
   SOURCE_API_URL: https://freehire.me/api/v1/jobs/search
 
 jobs:
@@ -71,7 +73,7 @@ jobs:
 
       - name: Install dependencies
         working-directory: ./data
-        run: uv sync --extra dev --extra sync
+        run: uv sync --extra dev --extra sync --extra dbt
 
       # Lint/format/types only the files this change touches under data/. A
       # full-tree `ruff check .` would fail a clean DAG PR (or merge) because of
@@ -125,6 +127,15 @@ jobs:
           else
             printf '%s\n' "$FILES" | xargs uv run sqlfmt --check
           fi
+
+      # Conflict-marker scan, dbt parse, and SQLFluff syntax (PRS) on changed
+      # dbt SQL. No warehouse or GitHub secrets. sqlfmt still owns layout.
+      - name: Check dbt project
+        env:
+          DBT_SCHEMA: ci
+          LANDING_PATH: /Volumes/${{ env.DATABRICKS_CATALOG }}/landing/prod
+          FILES: ${{ steps.changes.outputs.sql }}
+        run: bash .github/scripts/check-dbt-project.sh
 
       - name: Types
         working-directory: ./data
