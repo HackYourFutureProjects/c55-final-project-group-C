@@ -1,45 +1,65 @@
-import type { JobState } from "@/lib/types";
+import type { SavedJobsStatsResponse } from "@/lib/api";
 
 type JobStatusSummaryProps = {
-  jobs: {
-    jobState: JobState;
-  }[];
+  stats: SavedJobsStatsResponse;
 };
 
-export default function JobStatusSummary({ jobs }: JobStatusSummaryProps) {
-  if (jobs.length === 0) {
-    return (
-      <aside>
-        <h2>Job Overview</h2>
-        <p>No tracked jobs yet.</p>
-      </aside>
-    );
-  }
+export default function JobStatusSummary({ stats }: JobStatusSummaryProps) {
+  const saved = stats.SAVED ?? 0;
+  const applied = stats.APPLIED ?? 0;
+  const rejected = stats.REJECTED ?? 0;
+  const accepted = stats.ACCEPTED ?? 0;
+  const declined = stats.DECLINED ?? 0;
 
-  const counts: Record<JobState, number> = {
-    SAVED: 0,
-    APPLIED: 0,
-    REJECTED: 0,
-    ACCEPTED: 0,
-    DECLINED: 0,
-  };
-
-  for (const job of jobs) {
-    counts[job.jobState]++;
-  }
+  const tracked = saved + applied + rejected + accepted + declined;
 
   return (
-    <aside>
-      <h2>Job Overview</h2>
+    <aside className="job-status-summary">
+      <div className="job-status-summary-header">
+        <div>
+          <p className="saved-eyebrow">OVERVIEW</p>
+          <h2>Job Overview</h2>
+        </div>
 
-      <ul>
-        <li>Total: {jobs.length}</li>
-        <li>Saved: {counts.SAVED}</li>
-        <li>Applied: {counts.APPLIED}</li>
-        <li>Rejected: {counts.REJECTED}</li>
-        <li>Accepted: {counts.ACCEPTED}</li>
-        <li>Declined: {counts.DECLINED}</li>
-      </ul>
+        <div className="job-status-total">
+          <strong>{tracked}</strong>
+          <span>Tracked</span>
+        </div>
+      </div>
+
+      {tracked === 0 ? (
+        <p className="job-status-empty">
+          No tracked jobs yet. Save a job to start building your application
+          pipeline.
+        </p>
+      ) : (
+        <dl className="job-status-grid">
+          <div>
+            <dt>Not Applied Yet</dt>
+            <dd>{saved}</dd>
+          </div>
+
+          <div>
+            <dt>Applied</dt>
+            <dd>{applied}</dd>
+          </div>
+
+          <div>
+            <dt>Rejected</dt>
+            <dd>{rejected}</dd>
+          </div>
+
+          <div>
+            <dt>Accepted</dt>
+            <dd>{accepted}</dd>
+          </div>
+
+          <div>
+            <dt>Declined</dt>
+            <dd>{declined}</dd>
+          </div>
+        </dl>
+      )}
     </aside>
   );
 }

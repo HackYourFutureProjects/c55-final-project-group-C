@@ -198,3 +198,65 @@ export function updateCurrentUser(
     body: JSON.stringify(payload),
   });
 }
+export type JobState =
+  | "SAVED"
+  | "APPLIED"
+  | "REJECTED"
+  | "ACCEPTED"
+  | "DECLINED";
+
+export type SavedJobResponse = {
+  postingId: string;
+  jobState: JobState;
+  title: string | null;
+  companyName: string | null;
+  location: string | null;
+  workMode: string | null;
+  isRemote: boolean | null;
+  skills: string[];
+  employmentType: string | null;
+  postedDate: string | null;
+  source: string | null;
+  discipline: string | null;
+  freshnessClass: string | null;
+  ageDays: number | null;
+};
+
+export type SavedJobsStatsResponse = {
+  SAVED?: number;
+  APPLIED?: number;
+  REJECTED?: number;
+  ACCEPTED?: number;
+  DECLINED?: number;
+};
+
+export function saveJob(postingId: string): Promise<void> {
+  return request<void>("/api/saved-jobs", {
+    method: "POST",
+    body: JSON.stringify({ postingId }),
+  });
+}
+
+export function updateSavedJobStatus(
+  postingId: string,
+  status: JobState,
+): Promise<void> {
+  return request<void>(`/api/saved-jobs/${postingId}`, {
+    method: "PATCH",
+    body: JSON.stringify({ newState: status }),
+  });
+}
+
+export function deleteSavedJob(postingId: string): Promise<void> {
+  return request<void>(`/api/saved-jobs/${postingId}`, {
+    method: "DELETE",
+  });
+}
+
+export function getSavedJobsStats(): Promise<SavedJobsStatsResponse> {
+  return request<SavedJobsStatsResponse>("/api/saved-jobs/stats");
+}
+
+export function getSavedJobs(): Promise<SavedJobResponse[]> {
+  return request<SavedJobResponse[]>("/api/saved-jobs");
+}

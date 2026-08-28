@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import SaveJobButton from "@/components/jobs/SaveJobButton";
 
 type JobDetails = {
   id: string;
@@ -72,6 +73,8 @@ export default async function JobDetailsPage({ params }: JobDetailsPageProps) {
           </div>
 
           <div className="job-details-actions">
+            <SaveJobButton postingId={job.id} />
+
             <a
               className="job-details-apply"
               href={job.sourceUrl}
