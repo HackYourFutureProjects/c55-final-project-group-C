@@ -45,6 +45,7 @@ public class SecurityConfig {
                         .requestMatchers("/error").permitAll()
                         .requestMatchers("/api/docs/**").permitAll()
                         .requestMatchers("/api/oauth2/**", "/api/login/oauth2/**").permitAll()
+                        .requestMatchers("/api/jobs/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 // Without this, oauth2Login's entry point redirects an unauthenticated API
