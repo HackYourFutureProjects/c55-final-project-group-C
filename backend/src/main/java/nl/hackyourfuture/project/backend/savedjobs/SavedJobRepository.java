@@ -120,7 +120,7 @@ public class SavedJobRepository {
 
     // Update the job state (e.g. SAVED -> APPLIED) and return true if successful
     public boolean updateJobState(UUID userId, String postingId, JobState newState) {
-        String sql = "UPDATE saved_jobs SET job_state = ? WHERE user_id = ? AND posting_id = ?";
+        String sql = "UPDATE saved_jobs SET job_state = ?::job_state WHERE user_id = ? AND posting_id = ?";
         int rowsAffected = jdbcClient.sql(sql)
                 .params(newState.name(), userId, postingId)
                 .update();
