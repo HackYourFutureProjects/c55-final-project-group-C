@@ -16,12 +16,11 @@ print_step "Checking LANDING_PREFIX and LANDING_PATH consistency"
 [[ -n "${LANDING_PREFIX:-}" ]] || fail "LANDING_PREFIX is empty in data/.env"
 [[ -n "${LANDING_PATH:-}" ]] || fail "LANDING_PATH is empty in data/.env"
 
-# LANDING_PATH is /Volumes/<catalog>/landing/<volume>/<prefix>/<source>, where
-# `landing` is the schema holding every volume and <volume> is the container:
-# `dev` for your runs, `prod` for the scheduled one. Pull both out, because a
-# path can disagree with LANDING_CONTAINER as easily as with LANDING_PREFIX.
-path_volume="$(echo "$LANDING_PATH" | sed -n 's#^.*/landing/\([^/]*\)/.*#\1#p')"
-path_prefix="$(echo "$LANDING_PATH" | sed -n 's#^.*/landing/[^/]*/\([^/]*\)/.*#\1#p')"
+# LANDING_PATH is /Volumes/<catalog>/landing/<volume>/<prefix> (no source
+# folder). Staging models append the source name. `landing` is the schema;
+# <volume> is the container (`dev` / `prod`).
+path_volume="$(echo "$LANDING_PATH" | sed -n 's#^.*/landing/\([^/]*\)\(/.*\)\?#\1#p')"
+path_prefix="$(echo "$LANDING_PATH" | sed -n 's#^.*/landing/[^/]*/\([^/]*\).*#\1#p')"
 
 if [[ -z "$path_volume" ]]; then
   echo "warning: could not read a volume out of LANDING_PATH: $LANDING_PATH" >&2
@@ -72,7 +71,7 @@ echo "Databricks token check passed (HTTP 200)."
 print_step "Checking dbt connectivity"
 (
   cd "$REPO_ROOT/data/dbt"
-  uv run --project .. --extra dbt dbt debug
+  uv run --project .. dbt debug
 )
 
 print_step "Checking $LANDING_CONTAINER/$LANDING_PREFIX prefix visibility"

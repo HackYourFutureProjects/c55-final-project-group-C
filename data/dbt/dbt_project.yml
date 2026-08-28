@@ -7,17 +7,17 @@ test-paths: ["tests"]
 seed-paths: ["seeds"]
 macro-paths: ["macros"]
 
-# The landing volume to read. It comes from the environment, so the same value
-# drives the ingestion job and dbt and the two cannot disagree: set LANDING_PATH
-# in data/.env and both your own runs and `dbt build` follow it. On the team's
-# Airflow it is set for the scheduled run.
+# Parent landing path (no source folder). Staging models append their source
+# name, e.g. {{ var("landing_path") }}/postings, so a second source is another
+# staging model on the same parent rather than a new LANDING_PATH. Set
+# LANDING_PATH in data/.env (and on the VM via pipeline_settings.yaml).
 #
-# Your own runs should point at your own prefix, so rebuilding a model never
-# reads a half-written file somebody else is producing. See the README,
-# "Developing locally".
+# Shape: /Volumes/<catalog>/landing/<volume>/<prefix-or-empty>
+# Examples: .../landing/dev/your-name  |  .../landing/dev/aca-dev  |  .../landing/prod
+# (prod volume is rooted at the container's raw/ blob prefix, so there is no
+# extra "raw" segment in the Volume path.)
 vars:
-  # Team-c default; override with LANDING_PATH in data/.env (team_a, team_b, team_d, …).
-  landing_path: "{{ env_var('LANDING_PATH', '/Volumes/team_c/landing/prod/postings') }}"
+  landing_path: "{{ env_var('LANDING_PATH', '/Volumes/team_c/landing/prod') }}"
 
 clean-targets:
   - "target"
@@ -26,22 +26,13 @@ clean-targets:
 models:
   final_project:
     staging:
-      # Tables, not views, because staging reads files rather than a warehouse
-      # table. A view is a stored query, not a stored result: every statement
-      # that names it re-runs its `read_files`. Nine separate queries select
-      # from this model per `dbt build` (6 column tests, 2 downstream models,
-      # 1 relationship test), so the landing folder is scanned nine times
-      # instead of once. As a table it is built once and the rest read the
-      # result. See the header of stg_postings.sql.
-      +materialized: table
+      +materialized: view
+    # Views, so they cost nothing to store and you can query them while you are
+    # working out why a mart looks wrong. `ephemeral` is the other common
+    # choice: it pastes the SQL into whatever selects it, which is tidier in the
+    # warehouse but leaves you nothing to inspect when a number is off. While
+    # you are learning, being able to select from it is worth more.
     intermediate:
-      # Views here: intermediate models select from the staging table, not from
-      # files, so re-running one is cheap. They cost nothing to store and you
-      # can query them while working out why a mart looks wrong. `ephemeral` is
-      # the other common choice: it pastes the SQL into whatever selects it,
-      # which is tidier in the warehouse but leaves you nothing to inspect when
-      # a number is off. While you are learning, being able to select from it
-      # is worth more.
       +materialized: view
     marts:
       +materialized: table
@@ -53,4 +44,4 @@ models:
       # See ../optional/README.md.
       fct_title_discipline:
         +enabled: false
-        +secret_scope: team_c  # your catalog name: team_a, team_b, team_d
+        +secret_scope: team_c

@@ -154,7 +154,7 @@ def fetch_console_logs(
         )
         try:
             lines = _query_log_analytics(workspace_id, query, timespan, token, opener=opener)
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:  # noqa: BLE001 — best-effort; any failure just skips logs
             logger.warning("Log Analytics query failed for %s: %s", execution, exc)
             lines = []
         if lines:
@@ -230,7 +230,7 @@ def start_and_wait(
             workspace_id = log_analytics_customer_id(
                 subscription, resource_group, team, token, opener=opener
             )
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:  # noqa: BLE001 — best-effort; job wait continues without logs
             logger.warning("Could not resolve Log Analytics workspace for %s: %s", team, exc)
 
     def pull_console_logs() -> None:
