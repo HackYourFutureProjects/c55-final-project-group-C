@@ -260,3 +260,78 @@ export function getSavedJobsStats(): Promise<SavedJobsStatsResponse> {
 export function getSavedJobs(): Promise<SavedJobResponse[]> {
   return request<SavedJobResponse[]>("/api/saved-jobs");
 }
+
+export type JobSearchResponse = {
+  postingId: string;
+  title: string;
+  companyName: string;
+  location: string | null;
+  workMode: string | null;
+  isRemote: boolean | null;
+  skills: string[];
+  employmentType: string | null;
+  postedDate: string | null;
+  source: string | null;
+  discipline: string | null;
+  freshnessClass: string | null;
+  ageDays: number | null;
+};
+
+export type JobFiltersResponse = {
+  locations: string[];
+  disciplines: string[];
+  workModes: string[];
+  experienceLevels: string[];
+  employmentTypes: string[];
+};
+
+export type JobDetailsResponse = JobSearchResponse & {
+  description: string | null;
+  experienceLevel: string | null;
+  educationLevel: string | null;
+  salaryMin: number | null;
+  salaryMax: number | null;
+  salaryCurrency: string | null;
+  salaryPeriod: string | null;
+  sourceUrl: string | null;
+  status: string | null;
+};
+
+export type JobSearchParams = {
+  discipline?: string;
+  workMode?: string;
+  location?: string;
+};
+
+export function getJobs(
+  params: JobSearchParams = {},
+): Promise<JobSearchResponse[]> {
+  const searchParams = new URLSearchParams();
+
+  if (params.discipline) {
+    searchParams.set("discipline", params.discipline);
+  }
+
+  if (params.workMode) {
+    searchParams.set("workMode", params.workMode);
+  }
+
+  if (params.location) {
+    searchParams.set("location", params.location);
+  }
+
+  const query = searchParams.toString();
+  const path = query ? `/api/jobs?${query}` : "/api/jobs";
+
+  return request<JobSearchResponse[]>(path);
+}
+
+export function getJobFilters(): Promise<JobFiltersResponse> {
+  return request<JobFiltersResponse>("/api/jobs/filters");
+}
+
+export function getJobDetails(postingId: string): Promise<JobDetailsResponse> {
+  return request<JobDetailsResponse>(
+    `/api/jobs/${encodeURIComponent(postingId)}`,
+  );
+}

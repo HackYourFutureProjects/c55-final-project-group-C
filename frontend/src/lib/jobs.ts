@@ -1,3 +1,5 @@
+import type { JobSearchResponse } from "@/lib/api";
+
 export type JobSearchResult = {
   id: string;
   title: string;
@@ -10,6 +12,21 @@ export type JobSearchResult = {
   source: string | null;
   freshness: string | null;
 };
+
+export function mapJobSearchResponse(job: JobSearchResponse): JobSearchResult {
+  return {
+    id: job.postingId,
+    title: job.title,
+    companyName: job.companyName,
+    location: job.location,
+    skills: job.skills ?? [],
+    workMode: job.workMode,
+    employmentType: job.employmentType,
+    postedDate: job.postedDate,
+    source: job.source,
+    freshness: job.freshnessClass,
+  };
+}
 
 const mockJobs: JobSearchResult[] = [
   {

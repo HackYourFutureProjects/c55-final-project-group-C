@@ -1,19 +1,28 @@
 import JobFilters from "@/components/jobs/JobFilters";
-import JobResultItem from "@/components/jobs/JobResultItem";
-import { getMockJobs } from "@/lib/jobs";
 import JobPagination from "@/components/jobs/JobPagination";
+import JobResultItem from "@/components/jobs/JobResultItem";
+import { getJobFilters } from "@/lib/api";
+import { getMockJobs } from "@/lib/jobs";
 
 type JobsPageProps = {
   searchParams: Promise<{
     q?: string;
     page?: string;
+    discipline?: string;
+    workMode?: string;
+    location?: string;
+    employmentType?: string;
   }>;
 };
 
 export default async function JobsPage({ searchParams }: JobsPageProps) {
-  const { q, page } = await searchParams;
+  const { q, page, discipline, workMode, location, employmentType } =
+    await searchParams;
+
   const searchQuery = q?.trim() ?? "";
   const currentPage = Math.max(Number(page) || 1, 1);
+
+  const filters = await getJobFilters();
 
   const jobs = getMockJobs(searchQuery);
   const totalPages = 1;
@@ -36,6 +45,26 @@ export default async function JobsPage({ searchParams }: JobsPageProps) {
           </div>
 
           <form className="jobs-search" action="/jobs">
+            {discipline && (
+              <input type="hidden" name="discipline" value={discipline} />
+            )}
+
+            {workMode && (
+              <input type="hidden" name="workMode" value={workMode} />
+            )}
+
+            {location && (
+              <input type="hidden" name="location" value={location} />
+            )}
+
+            {employmentType && (
+              <input
+                type="hidden"
+                name="employmentType"
+                value={employmentType}
+              />
+            )}
+
             <label className="sr-only" htmlFor="jobs-search-input">
               Search by job title, keyword, or skill
             </label>
@@ -59,7 +88,17 @@ export default async function JobsPage({ searchParams }: JobsPageProps) {
               <h2>Refine results</h2>
             </div>
 
-            <JobFilters />
+            <JobFilters
+              locations={filters.locations}
+              disciplines={filters.disciplines}
+              workModes={filters.workModes}
+              employmentTypes={filters.employmentTypes}
+              searchQuery={searchQuery}
+              selectedLocation={location}
+              selectedDiscipline={discipline}
+              selectedWorkMode={workMode}
+              selectedEmploymentType={employmentType}
+            />
           </aside>
 
           <section className="jobs-results" aria-live="polite">
