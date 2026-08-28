@@ -58,7 +58,7 @@ public class SavedJobRepository {
                     p.freshness_class,
                     p.age_days
                 FROM saved_jobs sj
-                LEFT JOIN fct_postings p ON sj.posting_id = p.posting_id
+                LEFT JOIN analytics.fct_postings p ON sj.posting_id = p.posting_id
                 WHERE sj.user_id = ?
                 """;
 
