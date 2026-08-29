@@ -70,11 +70,20 @@ def _default_model(model: str | None) -> str:
     return model or os.getenv("LITELLM_MODEL", DEFAULT_MODEL)
 
 
+def _team_letter() -> str:
+    if letter := os.getenv("TEAM_LETTER"):
+        return letter
+    catalog = os.getenv("DATABRICKS_CATALOG", "")
+    if catalog.startswith("team_") and len(catalog) > len("team_"):
+        return catalog.split("_", 1)[1]
+    return "d"
+
+
 def _litellm_key() -> str:
     if key := os.getenv("LITELLM_API_KEY"):
         return key
     vault = os.getenv("KV_VAULT", "kv-hyf-data")
-    team = os.getenv("TEAM_LETTER", "d")
+    team = _team_letter()
     env = {
         **os.environ,
         "AZURE_CONFIG_DIR": os.getenv("AZURE_CONFIG_DIR", str(Path.home() / ".azure-hyf")),
