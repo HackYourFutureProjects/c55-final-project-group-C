@@ -129,7 +129,7 @@ and no fourth task to trigger and wait for.
 There is a second, optional Python model beside it. `fct_title_discipline.py`
 does the same classification with an LLM instead of a dictionary, and ships
 with `enabled: false` because it needs an API key first. See
-[`optional/README.md`](optional/README.md) for the key and the daily request
+[`optional/python_model/README.md`](optional/python_model/README.md) for the key and the daily request
 limit.
 
 Your raw files live in your team's own storage account, in a container called

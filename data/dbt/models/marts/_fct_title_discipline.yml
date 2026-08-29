@@ -1,0 +1,20 @@
+version: 2
+
+models:
+  - name: fct_title_discipline
+    description: >
+      One row per distinct job title, classified once by the LLM in
+      fct_title_discipline.py. Disabled by default; enable in dbt_project.yml
+      when your team opts in.
+    columns:
+      - name: title
+        description: Distinct job title from fct_postings.
+        tests: [unique, not_null]
+      - name: discipline
+        description: >
+          LLM-assigned category. Clamped to the closed list in the model's
+          PROMPT; anything outside becomes `other`.
+        tests:
+          - not_null
+          - accepted_values:
+              values: ["backend", "frontend", "data", "devops", "other"]
