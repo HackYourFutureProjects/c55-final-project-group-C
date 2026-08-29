@@ -45,7 +45,9 @@ public class SecurityConfig {
                         .requestMatchers("/error").permitAll()
                         .requestMatchers("/api/docs/**").permitAll()
                         .requestMatchers("/api/oauth2/**", "/api/login/oauth2/**").permitAll()
-                        .requestMatchers("/api/jobs/**").permitAll()
+                        // Whitelist public /api/jobs routes explicitly to avoid exposing private endpoints like /top-matches.
+                        .requestMatchers(HttpMethod.GET, "/api/jobs/top-matches").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/jobs", "/api/jobs/filters", "/api/jobs/*").permitAll()
                         .anyRequest().authenticated()
                 )
                 // Without this, oauth2Login's entry point redirects an unauthenticated API
