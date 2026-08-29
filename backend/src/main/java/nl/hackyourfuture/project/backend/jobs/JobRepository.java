@@ -3,6 +3,7 @@ package nl.hackyourfuture.project.backend.jobs;
 import nl.hackyourfuture.project.backend.jobs.dto.JobDetailResponse;
 import nl.hackyourfuture.project.backend.jobs.dto.JobFiltersResponse;
 import nl.hackyourfuture.project.backend.jobs.dto.JobSearchResponse;
+import nl.hackyourfuture.project.backend.mart.MartSkills;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
@@ -14,6 +15,10 @@ import java.util.Optional;
 
 @Repository
 public class JobRepository {
+
+    // Without a cap an unfiltered search returns the whole mart. Newest first, with
+    // posting_id breaking ties so the cut-off point is stable between calls.
+    private static final int MAX_SEARCH_RESULTS = 200;
 
     private final JdbcClient jdbcClient;
 
@@ -52,7 +57,9 @@ public class JobRepository {
             sql.append(" AND location ILIKE :location");
         }
 
-        var statement = jdbcClient.sql(sql.toString());
+        sql.append(" ORDER BY posted_date DESC NULLS LAST, posting_id LIMIT :limit");
+
+        var statement = jdbcClient.sql(sql.toString()).param("limit", MAX_SEARCH_RESULTS);
 
         if (discipline != null && !discipline.isBlank()) {
             statement.param("discipline", discipline);
@@ -65,7 +72,7 @@ public class JobRepository {
         }
 
         return statement.query((rs, rowNum) -> {
-            List<String> skillsList = parseSkillsObject(rs.getObject("skills"));
+            List<String> skillsList = MartSkills.parse(rs.getString("skills"));
             return new JobSearchResponse(
                     rs.getString("posting_id"),
                     rs.getString("title"),
@@ -91,7 +98,7 @@ public class JobRepository {
         return jdbcClient.sql(sql)
                 .param(postingId)
                 .query((rs, rowNum) -> {
-                    List<String> skillsList = parseSkillsObject(rs.getObject("skills"));
+                    List<String> skillsList = MartSkills.parse(rs.getString("skills"));
                     return new JobDetailResponse(
                             rs.getString("posting_id"),
                             rs.getString("title"),
@@ -118,34 +125,6 @@ public class JobRepository {
                     );
                 })
                 .optional();
-    }
-
-    // Parses raw skills database objects into a list of strings
-    private List<String> parseSkillsObject(Object skillsObj) {
-        if (skillsObj == null) {
-            return Collections.emptyList();
-        }
-        if (skillsObj instanceof String[] arr) {
-            return Arrays.asList(arr);
-        }
-        if (skillsObj instanceof Object[] objArr) {
-            return Arrays.stream(objArr).map(Object::toString).toList();
-        }
-        if (skillsObj instanceof java.sql.Array sqlArray) {
-            try {
-                Object[] arrayData = (Object[]) sqlArray.getArray();
-                if (arrayData != null) {
-                    return Arrays.stream(arrayData).map(Object::toString).toList();
-                }
-            } catch (Exception e) {
-                return Collections.emptyList();
-            }
-        }
-        if (skillsObj instanceof String skillsJson && !skillsJson.isBlank()) {
-            String cleaned = skillsJson.replace("[", "").replace("]", "").replace("\"", "");
-            return cleaned.isBlank() ? Collections.emptyList() : List.of(cleaned.split("\\s*,\\s*"));
-        }
-        return Collections.emptyList();
     }
 
     // Retrieves distinct values for search filters
