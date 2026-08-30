@@ -1,12 +1,11 @@
 package nl.hackyourfuture.project.backend.savedjobs;
 
+import nl.hackyourfuture.project.backend.mart.MartSkills;
 import nl.hackyourfuture.project.backend.savedjobs.dto.SavedJobResponse;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -65,9 +64,7 @@ public class SavedJobRepository {
         return jdbcClient.sql(sql)
                 .param(userId)
                 .query((rs, rowNum) -> {
-                    // Safely parse skills whether stored as a Postgres array, list, SQL array, or JSON/string
-                    Object skillsObj = rs.getObject("skills");
-                    List<String> skillsList = parseSkillsObject(skillsObj);
+                    List<String> skillsList = MartSkills.parse(rs.getString("skills"));
 
                     return new SavedJobResponse(
                             rs.getString("posting_id"),
@@ -87,35 +84,6 @@ public class SavedJobRepository {
                     );
                 })
                 .list();
-    }
-
-    // Helper method to parse skills safely and cleanly
-    private List<String> parseSkillsObject(Object skillsObj) {
-        if (skillsObj == null) {
-            return Collections.emptyList();
-        }
-        if (skillsObj instanceof String[] arr) {
-            return Arrays.asList(arr);
-        }
-        if (skillsObj instanceof Object[] objArr) {
-            return Arrays.stream(objArr).map(Object::toString).toList();
-        }
-        if (skillsObj instanceof java.sql.Array sqlArray) {
-            try {
-                Object[] arrayData = (Object[]) sqlArray.getArray();
-                if (arrayData != null) {
-                    return Arrays.stream(arrayData).map(Object::toString).toList();
-                }
-            } catch (Exception e) {
-                return Collections.emptyList();
-            }
-        }
-        if (skillsObj instanceof String skillsJson && !skillsJson.isBlank()) {
-            String cleaned = skillsJson.replace(
-                    "[", "").replace("]", "").replace("\"", "");
-            return cleaned.isBlank() ? Collections.emptyList() : List.of(cleaned.split("\\s*,\\s*"));
-        }
-        return Collections.emptyList();
     }
 
     // Update the job state (e.g. SAVED -> APPLIED) and return true if successful
