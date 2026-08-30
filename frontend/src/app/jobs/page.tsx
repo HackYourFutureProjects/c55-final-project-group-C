@@ -1,8 +1,8 @@
 import JobFilters from "@/components/jobs/JobFilters";
 import JobPagination from "@/components/jobs/JobPagination";
 import JobResultItem from "@/components/jobs/JobResultItem";
-import { getJobFilters } from "@/lib/api";
-import { getMockJobs } from "@/lib/jobs";
+import { mapJobSearchResponse } from "@/lib/jobs";
+import { getJobFiltersServer, getJobsServer } from "@/lib/jobs-server";
 
 type JobsPageProps = {
   searchParams: Promise<{
@@ -22,9 +22,35 @@ export default async function JobsPage({ searchParams }: JobsPageProps) {
   const searchQuery = q?.trim() ?? "";
   const currentPage = Math.max(Number(page) || 1, 1);
 
-  const filters = await getJobFilters();
+  const [filters, jobResponse] = await Promise.all([
+    getJobFiltersServer(),
+    getJobsServer({
+      discipline,
+      workMode,
+      location,
+    }),
+  ]);
 
-  const jobs = getMockJobs(searchQuery);
+  let jobs = jobResponse.map(mapJobSearchResponse);
+
+  if (searchQuery) {
+    const normalizedQuery = searchQuery.toLowerCase();
+
+    jobs = jobs.filter((job) => {
+      const searchableText = [
+        job.title,
+        job.companyName,
+        job.location,
+        ...job.skills,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+
+      return searchableText.includes(normalizedQuery);
+    });
+  }
+
   const totalPages = 1;
 
   return (
