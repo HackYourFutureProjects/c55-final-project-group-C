@@ -2,24 +2,20 @@ type JobFiltersProps = {
   locations: string[];
   disciplines: string[];
   workModes: string[];
-  employmentTypes: string[];
   searchQuery?: string;
   selectedLocation?: string;
   selectedDiscipline?: string;
   selectedWorkMode?: string;
-  selectedEmploymentType?: string;
 };
 
 export default function JobFilters({
   locations,
   disciplines,
   workModes,
-  employmentTypes,
   searchQuery = "",
   selectedLocation = "",
   selectedDiscipline = "",
   selectedWorkMode = "",
-  selectedEmploymentType = "",
 }: JobFiltersProps) {
   return (
     <form className="job-filters-form" action="/jobs">
@@ -66,24 +62,6 @@ export default function JobFilters({
           {locations.map((location) => (
             <option key={location} value={location}>
               {location}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      <div className="job-filter-group">
-        <label htmlFor="employment-type">Employment type</label>
-
-        <select
-          id="employment-type"
-          name="employmentType"
-          defaultValue={selectedEmploymentType}
-        >
-          <option value="">Any employment type</option>
-
-          {employmentTypes.map((employmentType) => (
-            <option key={employmentType} value={employmentType}>
-              {employmentType}
             </option>
           ))}
         </select>

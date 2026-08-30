@@ -9,9 +9,47 @@ export type JobSearchResult = {
   workMode: string | null;
   employmentType: string | null;
   postedDate: string | null;
+  ageDays: number | null;
   source: string | null;
   freshness: string | null;
 };
+
+function formatReadableDate(value: string): string {
+  const date = new Date(`${value}T00:00:00`);
+
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return new Intl.DateTimeFormat("en", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  }).format(date);
+}
+
+function formatPostedDate(
+  postedDate: string | null,
+  ageDays: number | null,
+): string | null {
+  if (ageDays === 0) {
+    return "Posted today";
+  }
+
+  if (ageDays === 1) {
+    return "Posted 1 day ago";
+  }
+
+  if (ageDays !== null) {
+    return `Posted ${ageDays} days ago`;
+  }
+
+  if (!postedDate) {
+    return null;
+  }
+
+  return `Posted ${formatReadableDate(postedDate)}`;
+}
 
 export function mapJobSearchResponse(job: JobSearchResponse): JobSearchResult {
   return {
@@ -22,69 +60,9 @@ export function mapJobSearchResponse(job: JobSearchResponse): JobSearchResult {
     skills: job.skills ?? [],
     workMode: job.workMode,
     employmentType: job.employmentType,
-    postedDate: job.postedDate,
+    postedDate: formatPostedDate(job.postedDate, job.ageDays),
+    ageDays: job.ageDays,
     source: job.source,
     freshness: job.freshnessClass,
   };
-}
-
-const mockJobs: JobSearchResult[] = [
-  {
-    id: "test-job-123",
-    title: "Frontend Developer",
-    companyName: "Example Company",
-    location: "Utrecht, Netherlands",
-    skills: ["React", "TypeScript", "Next.js", "CSS"],
-    workMode: "Hybrid",
-    employmentType: "Full-time",
-    postedDate: "2 days ago",
-    source: "Company website",
-    freshness: "Fresh",
-  },
-  {
-    id: "test-job-456",
-    title: "React Developer",
-    companyName: "Digital Studio",
-    location: "Amsterdam, Netherlands",
-    skills: ["React", "JavaScript", "HTML", "CSS"],
-    workMode: "Remote",
-    employmentType: "Full-time",
-    postedDate: "4 days ago",
-    source: "Job board",
-    freshness: "Fresh",
-  },
-  {
-    id: "test-job-789",
-    title: "Junior Frontend Engineer",
-    companyName: "Product Lab",
-    location: "Rotterdam, Netherlands",
-    skills: ["JavaScript", "React", "Git"],
-    workMode: null,
-    employmentType: "Full-time",
-    postedDate: "8 days ago",
-    source: "Company website",
-    freshness: "Recent",
-  },
-];
-
-export function getMockJobs(searchQuery: string): JobSearchResult[] {
-  const normalizedQuery = searchQuery.trim().toLowerCase();
-
-  if (!normalizedQuery) {
-    return mockJobs;
-  }
-
-  return mockJobs.filter((job) => {
-    const searchableText = [
-      job.title,
-      job.companyName,
-      job.location,
-      ...job.skills,
-    ]
-      .filter(Boolean)
-      .join(" ")
-      .toLowerCase();
-
-    return searchableText.includes(normalizedQuery);
-  });
 }

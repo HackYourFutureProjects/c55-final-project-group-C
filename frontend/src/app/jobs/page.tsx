@@ -1,26 +1,31 @@
 import JobFilters from "@/components/jobs/JobFilters";
-import JobPagination from "@/components/jobs/JobPagination";
 import JobResultItem from "@/components/jobs/JobResultItem";
 import { mapJobSearchResponse } from "@/lib/jobs";
 import { getJobFiltersServer, getJobsServer } from "@/lib/jobs-server";
 
+type SearchParamValue = string | string[] | undefined;
+
 type JobsPageProps = {
   searchParams: Promise<{
-    q?: string;
-    page?: string;
-    discipline?: string;
-    workMode?: string;
-    location?: string;
-    employmentType?: string;
+    q?: SearchParamValue;
+    discipline?: SearchParamValue;
+    workMode?: SearchParamValue;
+    location?: SearchParamValue;
   }>;
 };
 
+function getSingleSearchParam(value: SearchParamValue): string | undefined {
+  return Array.isArray(value) ? value[0] : value;
+}
+
 export default async function JobsPage({ searchParams }: JobsPageProps) {
-  const { q, page, discipline, workMode, location, employmentType } =
-    await searchParams;
+  const params = await searchParams;
+  const q = getSingleSearchParam(params.q);
+  const discipline = getSingleSearchParam(params.discipline);
+  const workMode = getSingleSearchParam(params.workMode);
+  const location = getSingleSearchParam(params.location);
 
   const searchQuery = q?.trim() ?? "";
-  const currentPage = Math.max(Number(page) || 1, 1);
 
   const [filters, jobResponse] = await Promise.all([
     getJobFiltersServer(),
@@ -36,6 +41,8 @@ export default async function JobsPage({ searchParams }: JobsPageProps) {
   if (searchQuery) {
     const normalizedQuery = searchQuery.toLowerCase();
 
+    // Backend does not expose a q parameter yet, so keyword search is limited
+    // to the rows returned by the current backend filters.
     jobs = jobs.filter((job) => {
       const searchableText = [
         job.title,
@@ -50,8 +57,6 @@ export default async function JobsPage({ searchParams }: JobsPageProps) {
       return searchableText.includes(normalizedQuery);
     });
   }
-
-  const totalPages = 1;
 
   return (
     <main className="jobs-page">
@@ -83,14 +88,6 @@ export default async function JobsPage({ searchParams }: JobsPageProps) {
               <input type="hidden" name="location" value={location} />
             )}
 
-            {employmentType && (
-              <input
-                type="hidden"
-                name="employmentType"
-                value={employmentType}
-              />
-            )}
-
             <label className="sr-only" htmlFor="jobs-search-input">
               Search by job title, keyword, or skill
             </label>
@@ -118,12 +115,10 @@ export default async function JobsPage({ searchParams }: JobsPageProps) {
               locations={filters.locations}
               disciplines={filters.disciplines}
               workModes={filters.workModes}
-              employmentTypes={filters.employmentTypes}
               searchQuery={searchQuery}
               selectedLocation={location}
               selectedDiscipline={discipline}
               selectedWorkMode={workMode}
-              selectedEmploymentType={employmentType}
             />
           </aside>
 
@@ -160,12 +155,6 @@ export default async function JobsPage({ searchParams }: JobsPageProps) {
                 </p>
               </div>
             )}
-
-            <JobPagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              searchQuery={searchQuery}
-            />
           </section>
         </section>
       </div>

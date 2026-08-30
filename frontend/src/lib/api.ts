@@ -302,36 +302,3 @@ export type JobSearchParams = {
   workMode?: string;
   location?: string;
 };
-
-export function getJobs(
-  params: JobSearchParams = {},
-): Promise<JobSearchResponse[]> {
-  const searchParams = new URLSearchParams();
-
-  if (params.discipline) {
-    searchParams.set("discipline", params.discipline);
-  }
-
-  if (params.workMode) {
-    searchParams.set("workMode", params.workMode);
-  }
-
-  if (params.location) {
-    searchParams.set("location", params.location);
-  }
-
-  const query = searchParams.toString();
-  const path = query ? `/api/jobs?${query}` : "/api/jobs";
-
-  return request<JobSearchResponse[]>(path);
-}
-
-export function getJobFilters(): Promise<JobFiltersResponse> {
-  return request<JobFiltersResponse>("/api/jobs/filters");
-}
-
-export function getJobDetails(postingId: string): Promise<JobDetailsResponse> {
-  return request<JobDetailsResponse>(
-    `/api/jobs/${encodeURIComponent(postingId)}`,
-  );
-}

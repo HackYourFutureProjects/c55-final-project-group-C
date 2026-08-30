@@ -6,6 +6,17 @@ type JobResultItemProps = {
 };
 
 export default function JobResultItem({ job }: JobResultItemProps) {
+  const skillOccurrences = new Map<string, number>();
+  const visibleSkills = job.skills.slice(0, 5).map((skill) => {
+    const occurrence = (skillOccurrences.get(skill) ?? 0) + 1;
+    skillOccurrences.set(skill, occurrence);
+
+    return {
+      key: `${skill}-${occurrence}`,
+      skill,
+    };
+  });
+
   return (
     <article className="job-result-item">
       <div className="job-result-main">
@@ -39,10 +50,10 @@ export default function JobResultItem({ job }: JobResultItemProps) {
           {job.source && <span>{job.source}</span>}
         </div>
 
-        {job.skills.length > 0 && (
+        {visibleSkills.length > 0 && (
           <div className="job-result-skills">
-            {job.skills.slice(0, 5).map((skill) => (
-              <span key={skill}>{skill}</span>
+            {visibleSkills.map(({ key, skill }) => (
+              <span key={key}>{skill}</span>
             ))}
           </div>
         )}
