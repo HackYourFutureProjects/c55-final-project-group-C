@@ -1,8 +1,8 @@
 import JobFilters from "@/components/jobs/JobFilters";
 import JobPagination from "@/components/jobs/JobPagination";
 import JobResultItem from "@/components/jobs/JobResultItem";
-import { mapJobSearchResponse } from "@/lib/jobs";
 import { getJobFiltersServer, getJobsServer } from "@/lib/jobs-server";
+import { mapJobSearchResponse } from "@/lib/jobs";
 
 type JobsPageProps = {
   searchParams: Promise<{
