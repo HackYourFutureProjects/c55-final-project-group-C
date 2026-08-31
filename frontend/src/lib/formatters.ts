@@ -20,6 +20,7 @@ export function formatEnumLabel(value: string | null): string | null {
   }
 
   return value
+    .toLowerCase()
     .replace(/[-_]+/g, " ")
     .trim()
     .replace(/\s+/g, " ")

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ApiError,
   deleteSavedJob,
@@ -14,13 +14,13 @@ type SaveJobButtonProps = {
 };
 
 type SaveJobAction = "checking" | "idle" | "saving" | "removing";
-type SavedJobButtonState = JobState | "EXISTS" | null;
+type SavedJobButtonState = JobState | "UNKNOWN" | null;
 
 const TRACKED_STATE_LABELS: Record<
   Exclude<SavedJobButtonState, "SAVED" | null>,
   string
 > = {
-  EXISTS: "Tracked",
+  UNKNOWN: "Already added",
   APPLIED: "Applied",
   REJECTED: "Rejected",
   ACCEPTED: "Accepted",
@@ -43,9 +43,16 @@ async function getSavedJobState(
 }
 
 export default function SaveJobButton({ postingId }: SaveJobButtonProps) {
+  const activePostingIdRef = useRef(postingId);
   const [action, setAction] = useState<SaveJobAction>("checking");
   const [savedJobState, setSavedJobState] = useState<SavedJobButtonState>(null);
   const [error, setError] = useState<string | null>(null);
+
+  activePostingIdRef.current = postingId;
+
+  function isCurrentPosting(requestPostingId: string): boolean {
+    return activePostingIdRef.current === requestPostingId;
+  }
 
   useEffect(() => {
     let isMounted = true;
@@ -84,55 +91,84 @@ export default function SaveJobButton({ postingId }: SaveJobButtonProps) {
   }, [postingId]);
 
   async function handleSave() {
+    const requestPostingId = postingId;
+
     setAction("saving");
     setError(null);
 
     try {
-      await saveJob(postingId);
-      setSavedJobState("SAVED");
+      await saveJob(requestPostingId);
+
+      if (isCurrentPosting(requestPostingId)) {
+        setSavedJobState("SAVED");
+      }
     } catch (error) {
       if (error instanceof ApiError && error.status === 409) {
         try {
-          const existingState = await getSavedJobState(postingId);
-          setSavedJobState(existingState ?? "EXISTS");
+          const existingState = await getSavedJobState(requestPostingId);
+
+          if (isCurrentPosting(requestPostingId)) {
+            setSavedJobState(existingState ?? "UNKNOWN");
+          }
         } catch {
-          setSavedJobState("EXISTS");
+          if (isCurrentPosting(requestPostingId)) {
+            setSavedJobState("UNKNOWN");
+          }
         }
         return;
       }
 
       if (error instanceof ApiError && error.status === 401) {
-        setError("Please log in to save this job.");
+        if (isCurrentPosting(requestPostingId)) {
+          setError("Please log in to save this job.");
+        }
         return;
       }
 
-      setError("Could not save this job. Please try again.");
+      if (isCurrentPosting(requestPostingId)) {
+        setError("Could not save this job. Please try again.");
+      }
     } finally {
-      setAction("idle");
+      if (isCurrentPosting(requestPostingId)) {
+        setAction("idle");
+      }
     }
   }
 
   async function handleRemove() {
+    const requestPostingId = postingId;
+
     setAction("removing");
     setError(null);
 
     try {
-      await deleteSavedJob(postingId);
-      setSavedJobState(null);
+      await deleteSavedJob(requestPostingId);
+
+      if (isCurrentPosting(requestPostingId)) {
+        setSavedJobState(null);
+      }
     } catch (error) {
       if (error instanceof ApiError && error.status === 401) {
-        setError("Please log in to update this job.");
+        if (isCurrentPosting(requestPostingId)) {
+          setError("Please log in to update this job.");
+        }
         return;
       }
 
       if (error instanceof ApiError && error.status === 404) {
-        setSavedJobState(null);
+        if (isCurrentPosting(requestPostingId)) {
+          setSavedJobState(null);
+        }
         return;
       }
 
-      setError("Could not remove this job. Please try again.");
+      if (isCurrentPosting(requestPostingId)) {
+        setError("Could not remove this job. Please try again.");
+      }
     } finally {
-      setAction("idle");
+      if (isCurrentPosting(requestPostingId)) {
+        setAction("idle");
+      }
     }
   }
 
@@ -176,7 +212,7 @@ export default function SaveJobButton({ postingId }: SaveJobButtonProps) {
 
       {trackedLabel ? (
         <p className="save-job-note">
-          This job is already tracked in your applications.
+          The saved status is not removable from this page.
         </p>
       ) : null}
 

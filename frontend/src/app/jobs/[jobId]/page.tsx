@@ -55,6 +55,24 @@ function formatSalary(job: JobDetailsResponse): string {
   return "Not specified";
 }
 
+function getSafeApplicationUrl(sourceUrl: string | null): string | null {
+  if (!sourceUrl) {
+    return null;
+  }
+
+  try {
+    const url = new URL(sourceUrl);
+
+    if (url.protocol === "http:" || url.protocol === "https:") {
+      return url.toString();
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
+}
+
 async function loadJobDetails(jobId: string): Promise<JobDetailsResponse> {
   try {
     return await getJobDetailsServer(jobId);
@@ -70,6 +88,7 @@ async function loadJobDetails(jobId: string): Promise<JobDetailsResponse> {
 export default async function JobDetailsPage({ params }: JobDetailsPageProps) {
   const { jobId } = await params;
   const job = await loadJobDetails(jobId);
+  const applicationUrl = getSafeApplicationUrl(job.sourceUrl);
   const skillOccurrences = new Map<string, number>();
   const visibleSkills = job.skills.map((skill) => {
     const occurrence = (skillOccurrences.get(skill) ?? 0) + 1;
@@ -104,10 +123,10 @@ export default async function JobDetailsPage({ params }: JobDetailsPageProps) {
           <div className="job-details-actions">
             <SaveJobButton postingId={job.postingId} />
 
-            {job.sourceUrl ? (
+            {applicationUrl ? (
               <a
                 className="job-details-apply"
-                href={job.sourceUrl}
+                href={applicationUrl}
                 target="_blank"
                 rel="noreferrer noopener"
               >

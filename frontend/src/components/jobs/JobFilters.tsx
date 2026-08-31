@@ -1,5 +1,3 @@
-import { formatEnumLabel } from "@/lib/formatters";
-
 type JobFiltersProps = {
   locations: string[];
   disciplines: string[];
@@ -35,7 +33,7 @@ export default function JobFilters({
 
           {disciplines.map((discipline) => (
             <option key={discipline} value={discipline}>
-              {formatEnumLabel(discipline)}
+              {discipline}
             </option>
           ))}
         </select>
@@ -49,7 +47,7 @@ export default function JobFilters({
 
           {workModes.map((workMode) => (
             <option key={workMode} value={workMode}>
-              {formatEnumLabel(workMode)}
+              {workMode}
             </option>
           ))}
         </select>
