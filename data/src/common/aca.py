@@ -71,11 +71,11 @@ def filter_application_log_lines(lines: list[str]) -> list[str]:
             continue
         if not in_traceback:
             continue
-        if line.startswith("During handling of") or line.startswith("The above exception"):
+        if line.startswith(("During handling of", "The above exception")):
             kept.append(line)
             after_exception = False
             continue
-        if line.startswith("Traceback ") or line.startswith("  File "):
+        if line.startswith(("Traceback ", "  File ")):
             kept.append(line)
             after_exception = False
             continue
