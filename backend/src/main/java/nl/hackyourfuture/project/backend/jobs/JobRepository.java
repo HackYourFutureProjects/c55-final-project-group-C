@@ -27,7 +27,7 @@ public class JobRepository {
     }
 
     // Searches job postings with optional filters for discipline, work mode, and location
-    public List<JobSearchResponse> searchJobs(String discipline, String workMode, String location) {
+    public List<JobSearchResponse> searchJobs(String discipline, String workMode, String location, String q) {
         StringBuilder sql = new StringBuilder("""
                 SELECT
                     posting_id,
@@ -56,6 +56,9 @@ public class JobRepository {
         if (location != null && !location.isBlank()) {
             sql.append(" AND location ILIKE :location");
         }
+        if (q != null && !q.isBlank()) {
+            sql.append(" AND (title ILIKE :q OR company_name ILIKE :q OR location ILIKE :q OR skills::text ILIKE :q)");
+        }
 
         sql.append(" ORDER BY posted_date DESC NULLS LAST, posting_id LIMIT :limit");
 
@@ -69,6 +72,9 @@ public class JobRepository {
         }
         if (location != null && !location.isBlank()) {
             statement.param("location", "%" + location + "%");
+        }
+        if (q != null && !q.isBlank()) {
+            statement.param("q", "%" + q + "%");
         }
 
         return statement.query((rs, rowNum) -> {

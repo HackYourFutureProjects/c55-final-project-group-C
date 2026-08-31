@@ -19,8 +19,8 @@ public class JobService {
     }
 
     // Coordinate job search filtering requests through the repository
-    public List<JobSearchResponse> searchJobs(String discipline, String workMode, String location) {
-        return jobRepository.searchJobs(discipline, workMode, location);
+    public List<JobSearchResponse> searchJobs(String discipline, String workMode, String location, String q) {
+        return jobRepository.searchJobs(discipline, workMode, location, q);
     }
 
     // Retrieve available filter options for frontend dropdowns
