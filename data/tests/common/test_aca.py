@@ -122,3 +122,29 @@ def test_filter_application_log_lines_drops_azure_sdk_noise():
         "2026-08-27 10:34:57,474 INFO src.ingestion.storage landed 175 records",
         "2026-08-27 10:34:57,476 INFO pipeline Pipeline finished",
     ]
+
+
+def test_filter_application_log_lines_keeps_traceback_after_error():
+    """Mode 2/3/4 ingest failures print the cause as a Traceback after ERROR."""
+    lines = [
+        "<frozen runpy>:128: RuntimeWarning: ignored noise",
+        "2026-08-31 07:00:28,525 ERROR pipeline Pipeline failed",
+        "Traceback (most recent call last):",
+        '  File "/app/src/ingestion/pipeline.py", line 175, in <module>',
+        "    run(args.run_date, args.local)",
+        '  File "/app/src/ingestion/ingest.py", line 107, in fetch_all_pages',
+        '    raise ValueError("ADZUNA_APP_ID and ADZUNA_APP_KEY environment variables must be set.")',
+        "ValueError: ADZUNA_APP_ID and ADZUNA_APP_KEY environment variables must be set.",
+        "2026-08-31 07:00:29,001 INFO azure.core.pipeline.policies.http_logging_policy noise",
+        "    'Metadata': 'REDACTED'",
+    ]
+    assert filter_application_log_lines(lines) == [
+        "2026-08-31 07:00:28,525 ERROR pipeline Pipeline failed",
+        "Traceback (most recent call last):",
+        '  File "/app/src/ingestion/pipeline.py", line 175, in <module>',
+        "    run(args.run_date, args.local)",
+        '  File "/app/src/ingestion/ingest.py", line 107, in fetch_all_pages',
+        '    raise ValueError("ADZUNA_APP_ID and ADZUNA_APP_KEY environment variables must be set.")',
+        "ValueError: ADZUNA_APP_ID and ADZUNA_APP_KEY environment variables must be set.",
+    ]
+

@@ -31,24 +31,52 @@ LOG_FETCH_POLL_SECONDS = 5
 # Container logging.basicConfig format in src.ingestion.pipeline.
 _CONTAINER_LOG_LINE = re.compile(
     r"^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3} "
-    r"(?:DEBUG|INFO|WARNING|ERROR|CRITICAL) "
+    r"(DEBUG|INFO|WARNING|ERROR|CRITICAL) "
     r"(\S+)\s+"
+)
+# Uncaught exception / traceback.logger.exception tails have no timestamp prefix.
+_EXCEPTION_LINE = re.compile(
+    r"^(?:[A-Za-z_][\w.]*(?:Error|Exception|Warning|Exit|Interrupt)|ExceptionGroup): "
 )
 
 
 def filter_application_log_lines(lines: list[str]) -> list[str]:
-    """Keep pipeline application log lines; drop Azure SDK HTTP chatter."""
+    """Keep pipeline application logs and their traceback tails; drop Azure SDK chatter.
+
+    Structured lines come from logging.basicConfig. After an application ERROR,
+    Python prints a Traceback (and the final Exception:) as plain stdout lines —
+    those must reach the Airflow task log or Mode 2/3/4 ingest failures only say
+    "Pipeline failed" with no cause.
+    """
     kept: list[str] = []
+    in_traceback = False
     for raw in lines:
         line = raw.rstrip()
         if not line:
             continue
         match = _CONTAINER_LOG_LINE.match(line)
-        if not match:
+        if match:
+            level, logger_name = match.group(1), match.group(2)
+            is_app = logger_name == "pipeline" or logger_name.startswith("src.")
+            if is_app:
+                kept.append(line)
+                in_traceback = level == "ERROR"
+            else:
+                in_traceback = False
             continue
-        logger_name = match.group(1)
-        if logger_name == "pipeline" or logger_name.startswith("src."):
+        if not in_traceback:
+            continue
+        if (
+            line.startswith("Traceback ")
+            or line.startswith("  File ")
+            or line.startswith("    ")
+            or line.startswith("During handling of")
+            or line.startswith("The above exception")
+            or _EXCEPTION_LINE.match(line)
+        ):
             kept.append(line)
+        else:
+            in_traceback = False
     return kept
 
 
@@ -170,7 +198,7 @@ def emit_console_logs(lines: list[str], execution: str, workspace_id: str) -> No
         if lines:
             logger.warning(
                 "Console log for %s had %d line(s) in Log Analytics but none from "
-                "application loggers (src.* / pipeline).",
+                "application loggers (src.* / pipeline) or their traceback tails.",
                 execution,
                 len(lines),
             )
