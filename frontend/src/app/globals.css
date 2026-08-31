@@ -2100,6 +2100,13 @@ a {
   line-height: 1.4;
 }
 
+.save-job-note {
+  max-width: 220px;
+  color: #746970;
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
 @media (max-width: 900px) {
   .job-status-grid {
     grid-template-columns: repeat(2, 1fr);

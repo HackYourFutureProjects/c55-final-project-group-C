@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import SaveJobButton from "@/components/jobs/SaveJobButton";
 import type { JobDetailsResponse } from "@/lib/api";
+import { formatEnumLabel, formatPostedDate } from "@/lib/formatters";
 import { BackendRequestError, getJobDetailsServer } from "@/lib/jobs-server";
 
 type JobDetailsPageProps = {
@@ -9,40 +10,6 @@ type JobDetailsPageProps = {
     jobId: string;
   }>;
 };
-
-function formatReadableDate(value: string): string {
-  const date = new Date(`${value}T00:00:00`);
-
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-
-  return new Intl.DateTimeFormat("en", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  }).format(date);
-}
-
-function formatPostedDate(job: JobDetailsResponse): string {
-  if (job.ageDays === 0) {
-    return "Posted today";
-  }
-
-  if (job.ageDays === 1) {
-    return "Posted 1 day ago";
-  }
-
-  if (job.ageDays !== null) {
-    return `Posted ${job.ageDays} days ago`;
-  }
-
-  if (job.postedDate) {
-    return `Posted ${formatReadableDate(job.postedDate)}`;
-  }
-
-  return "Not specified";
-}
 
 function formatCurrencyAmount(amount: number, currency: string | null): string {
   if (!currency) {
@@ -61,7 +28,8 @@ function formatCurrencyAmount(amount: number, currency: string | null): string {
 }
 
 function formatSalary(job: JobDetailsResponse): string {
-  const period = job.salaryPeriod ? ` per ${job.salaryPeriod}` : "";
+  const salaryPeriod = formatEnumLabel(job.salaryPeriod)?.toLowerCase();
+  const period = salaryPeriod ? ` per ${salaryPeriod}` : "";
 
   if (job.salaryMin !== null && job.salaryMax !== null) {
     return `${formatCurrencyAmount(
@@ -156,17 +124,21 @@ export default async function JobDetailsPage({ params }: JobDetailsPageProps) {
         <section className="job-details-meta" aria-label="Job information">
           <div>
             <span>Work mode</span>
-            <strong>{job.workMode ?? "Not specified"}</strong>
+            <strong>{formatEnumLabel(job.workMode) ?? "Not specified"}</strong>
           </div>
 
           <div>
             <span>Employment</span>
-            <strong>{job.employmentType ?? "Not specified"}</strong>
+            <strong>
+              {formatEnumLabel(job.employmentType) ?? "Not specified"}
+            </strong>
           </div>
 
           <div>
             <span>Experience</span>
-            <strong>{job.experienceLevel ?? "Not specified"}</strong>
+            <strong>
+              {formatEnumLabel(job.experienceLevel) ?? "Not specified"}
+            </strong>
           </div>
 
           <div>
@@ -208,12 +180,16 @@ export default async function JobDetailsPage({ params }: JobDetailsPageProps) {
               <dl className="job-details-requirements">
                 <div>
                   <dt>Experience</dt>
-                  <dd>{job.experienceLevel ?? "Not specified"}</dd>
+                  <dd>
+                    {formatEnumLabel(job.experienceLevel) ?? "Not specified"}
+                  </dd>
                 </div>
 
                 <div>
                   <dt>Education</dt>
-                  <dd>{job.educationLevel ?? "Not specified"}</dd>
+                  <dd>
+                    {formatEnumLabel(job.educationLevel) ?? "Not specified"}
+                  </dd>
                 </div>
               </dl>
             </section>
@@ -226,12 +202,15 @@ export default async function JobDetailsPage({ params }: JobDetailsPageProps) {
               <dl className="job-details-listing-info">
                 <div>
                   <dt>Posted</dt>
-                  <dd>{formatPostedDate(job)}</dd>
+                  <dd>
+                    {formatPostedDate(job.postedDate, job.ageDays) ??
+                      "Not specified"}
+                  </dd>
                 </div>
 
                 <div>
                   <dt>Freshness</dt>
-                  <dd>{job.freshnessClass ?? "Unknown"}</dd>
+                  <dd>{formatEnumLabel(job.freshnessClass) ?? "Unknown"}</dd>
                 </div>
 
                 <div>
