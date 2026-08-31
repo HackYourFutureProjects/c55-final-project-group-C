@@ -54,7 +54,7 @@ export type ProfileResponse = {
 };
 
 export type UpdateProfileRequest = {
-  skills: string[] | null;
+  skills: string[];
   discipline: string | null;
   preferredCity: string | null;
   workMode: string | null;

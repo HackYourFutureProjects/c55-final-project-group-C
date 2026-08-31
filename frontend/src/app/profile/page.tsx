@@ -68,7 +68,7 @@ function parseSalaryPreference(value: string): number | null {
     return null;
   }
 
-  if (!/^\d+(\.\d{1,2})?$/.test(trimmedValue)) {
+  if (!/^\d{1,8}(\.\d{1,2})?$/.test(trimmedValue)) {
     throw new Error("invalid-salary");
   }
 
@@ -317,7 +317,7 @@ export default function ProfilePage() {
       parsedSalaryPreference = parseSalaryPreference(salaryPreference);
     } catch {
       setProfileError(
-        "Salary preference must be zero or higher with up to 2 decimal places.",
+        "Salary preference must be zero or higher, with at most 8 digits before the decimal and 2 after.",
       );
       return;
     }
