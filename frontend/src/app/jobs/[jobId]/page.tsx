@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import JobDetailsMatchSection from "@/components/jobs/JobDetailsMatchSection";
 import SaveJobButton from "@/components/jobs/SaveJobButton";
 import type { JobDetailsResponse } from "@/lib/api";
 import { formatEnumLabel, formatPostedDate } from "@/lib/formatters";
@@ -89,7 +90,9 @@ export default async function JobDetailsPage({ params }: JobDetailsPageProps) {
   const { jobId } = await params;
   const job = await loadJobDetails(jobId);
   const applicationUrl = getSafeApplicationUrl(job.sourceUrl);
+
   const skillOccurrences = new Map<string, number>();
+
   const visibleSkills = job.skills.map((skill) => {
     const occurrence = (skillOccurrences.get(skill) ?? 0) + 1;
     skillOccurrences.set(skill, occurrence);
@@ -239,14 +242,7 @@ export default async function JobDetailsPage({ params }: JobDetailsPageProps) {
               </dl>
             </section>
 
-            <section className="job-details-match-note">
-              <p className="job-details-section-label">MATCH</p>
-              <h2>Match information</h2>
-              <p>
-                Match details will appear here when the backend matching service
-                is available.
-              </p>
-            </section>
+            <JobDetailsMatchSection postingId={job.postingId} />
           </aside>
         </div>
       </div>
