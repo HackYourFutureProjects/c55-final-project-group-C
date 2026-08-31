@@ -84,10 +84,8 @@ def _litellm_key() -> str:
         return key
     vault = os.getenv("KV_VAULT", "kv-hyf-data")
     team = _team_letter()
-    env = {
-        **os.environ,
-        "AZURE_CONFIG_DIR": os.getenv("AZURE_CONFIG_DIR", str(Path.home() / ".azure-hyf")),
-    }
+    # Use the default Azure CLI profile (~/.azure). Teachers with a custom
+    # profile can export AZURE_CONFIG_DIR before running the notebook.
     return subprocess.check_output(
         [
             "az",
@@ -103,7 +101,6 @@ def _litellm_key() -> str:
             "-o",
             "tsv",
         ],
-        env=env,
         text=True,
     ).strip()
 
