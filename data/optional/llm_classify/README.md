@@ -80,7 +80,7 @@ Use ▶ on a cell or **Shift+Enter**. The first LiteLLM call after idle may take
 ```bash
 cd data
 uv sync --extra notebook
-az login   # HYF tenant / ~/.azure-hyf if using Key Vault for LiteLLM
+az login   # HYF tenant (default ~/.azure profile)
 ```
 
 Open `optional/llm_classify/llm_classify_dev.ipynb` in VS Code and select the
