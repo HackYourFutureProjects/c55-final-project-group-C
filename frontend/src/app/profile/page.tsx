@@ -1,16 +1,26 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { type FormEvent, useEffect, useMemo, useState } from "react";
+import {
+  type FormEvent,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 
 import { useAuth } from "@/context/AuthContext";
 import {
   ApiError,
   deleteCurrentUser,
+  getJobFilters,
   getProfile,
+  type JobFiltersResponse,
   updateCurrentUser,
   updateProfile,
 } from "@/lib/api";
+
+const MAX_SKILLS = 50;
 
 const AVAILABLE_SKILLS = [
   "React",
@@ -35,33 +45,41 @@ const AVAILABLE_SKILLS = [
   "AWS",
 ];
 
-const DISCIPLINES = [
-  { label: "Frontend", value: "frontend" },
-  { label: "Backend", value: "backend" },
-  { label: "Data", value: "data" },
-  { label: "DevOps", value: "devops" },
-  { label: "Mobile", value: "mobile" },
-  { label: "Other", value: "other" },
-];
+const EMPTY_FILTER_OPTIONS: JobFiltersResponse = {
+  locations: [],
+  disciplines: [],
+  workModes: [],
+  experienceLevels: [],
+  employmentTypes: [],
+};
 
-const WORK_MODES = [
-  { label: "Remote", value: "remote" },
-  { label: "Hybrid", value: "hybrid" },
-  { label: "On-site", value: "onsite" },
-];
+function optionsWithCurrent(options: string[], currentValue: string): string[] {
+  if (!currentValue || options.includes(currentValue)) {
+    return options;
+  }
 
-const EXPERIENCE_OPTIONS = [
-  { label: "Entry level", value: "entry" },
-  { label: "Mid level", value: "mid" },
-  { label: "Senior level", value: "senior" },
-];
+  return [currentValue, ...options];
+}
 
-const EMPLOYMENT_TYPES = [
-  { label: "Full-time", value: "full-time" },
-  { label: "Part-time", value: "part-time" },
-  { label: "Contract", value: "contract" },
-  { label: "Internship", value: "internship" },
-];
+function parseSalaryPreference(value: string): number | null {
+  const trimmedValue = value.trim();
+
+  if (!trimmedValue) {
+    return null;
+  }
+
+  if (!/^\d+(\.\d{1,2})?$/.test(trimmedValue)) {
+    throw new Error("invalid-salary");
+  }
+
+  const salary = Number(trimmedValue);
+
+  if (Number.isNaN(salary) || salary < 0) {
+    throw new Error("invalid-salary");
+  }
+
+  return salary;
+}
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -80,6 +98,10 @@ export default function ProfilePage() {
   const [experienceLevel, setExperienceLevel] = useState("");
   const [employmentType, setEmploymentType] = useState("");
   const [salaryPreference, setSalaryPreference] = useState("");
+  const [filterOptions, setFilterOptions] =
+    useState<JobFiltersResponse>(EMPTY_FILTER_OPTIONS);
+  const [isLoadingFilterOptions, setIsLoadingFilterOptions] = useState(true);
+  const [filterOptionsError, setFilterOptionsError] = useState("");
 
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [isSavingProfile, setIsSavingProfile] = useState(false);
@@ -160,7 +182,28 @@ export default function ProfilePage() {
     };
   }, [user, clearUser, router]);
 
+  const loadFilterOptions = useCallback(async () => {
+    setIsLoadingFilterOptions(true);
+    setFilterOptionsError("");
+
+    try {
+      const filters = await getJobFilters();
+      setFilterOptions(filters);
+    } catch {
+      setFilterOptions(EMPTY_FILTER_OPTIONS);
+      setFilterOptionsError(
+        "Could not load profile options. Please try again.",
+      );
+    } finally {
+      setIsLoadingFilterOptions(false);
+    }
+  }, []);
+
   const filteredSkills = useMemo(() => {
+    if (skills.length >= MAX_SKILLS) {
+      return [];
+    }
+
     const query = skillSearch.trim().toLowerCase();
 
     if (!query) {
@@ -172,8 +215,40 @@ export default function ProfilePage() {
     ).slice(0, 6);
   }, [skillSearch, skills]);
 
+  const disciplineOptions = useMemo(
+    () => optionsWithCurrent(filterOptions.disciplines, discipline),
+    [filterOptions.disciplines, discipline],
+  );
+  const preferredCityOptions = useMemo(
+    () => optionsWithCurrent(filterOptions.locations, preferredCity),
+    [filterOptions.locations, preferredCity],
+  );
+  const workModeOptions = useMemo(
+    () => optionsWithCurrent(filterOptions.workModes, workMode),
+    [filterOptions.workModes, workMode],
+  );
+  const experienceOptions = useMemo(
+    () => optionsWithCurrent(filterOptions.experienceLevels, experienceLevel),
+    [filterOptions.experienceLevels, experienceLevel],
+  );
+  const employmentTypeOptions = useMemo(
+    () => optionsWithCurrent(filterOptions.employmentTypes, employmentType),
+    [filterOptions.employmentTypes, employmentType],
+  );
+  const areFilterOptionsUnavailable =
+    isLoadingFilterOptions || Boolean(filterOptionsError);
+
+  useEffect(() => {
+    void loadFilterOptions();
+  }, [loadFilterOptions]);
+
   function addSkill(skill: string) {
     if (skills.includes(skill)) {
+      return;
+    }
+
+    if (skills.length >= MAX_SKILLS) {
+      setProfileError(`You can select up to ${MAX_SKILLS} skills.`);
       return;
     }
 
@@ -231,8 +306,19 @@ export default function ProfilePage() {
     setProfileMessage("");
     setProfileError("");
 
-    if (skills.length === 0) {
-      setProfileError("Please select at least one skill.");
+    if (skills.length > MAX_SKILLS) {
+      setProfileError(`You can select up to ${MAX_SKILLS} skills.`);
+      return;
+    }
+
+    let parsedSalaryPreference: number | null;
+
+    try {
+      parsedSalaryPreference = parseSalaryPreference(salaryPreference);
+    } catch {
+      setProfileError(
+        "Salary preference must be zero or higher with up to 2 decimal places.",
+      );
       return;
     }
 
@@ -246,7 +332,7 @@ export default function ProfilePage() {
         workMode: workMode || null,
         experienceLevel: experienceLevel || null,
         employmentType: employmentType || null,
-        salaryPreference: salaryPreference ? Number(salaryPreference) : null,
+        salaryPreference: parsedSalaryPreference,
       });
 
       setSkills(savedProfile.skills ?? skills);
@@ -396,10 +482,11 @@ export default function ProfilePage() {
         ) : (
           <form className="profile-form" onSubmit={handleProfileSubmit}>
             <div className="profile-field profile-field-full">
-              <label htmlFor="skill-search">Skills *</label>
+              <label htmlFor="skill-search">Skills</label>
 
               <p className="profile-field-help">
-                Choose the skills that best describe your experience.
+                Choose up to 50 supported skills that best describe your
+                experience.
               </p>
 
               {skills.length > 0 ? (
@@ -428,6 +515,7 @@ export default function ProfilePage() {
                   onChange={(event) => setSkillSearch(event.target.value)}
                   placeholder="Search skills, e.g. React"
                   autoComplete="off"
+                  disabled={skills.length >= MAX_SKILLS}
                 />
 
                 {filteredSkills.length > 0 ? (
@@ -444,8 +532,15 @@ export default function ProfilePage() {
                   </div>
                 ) : null}
 
+                {skills.length >= MAX_SKILLS ? (
+                  <p className="profile-skill-empty">
+                    You have selected the maximum number of skills.
+                  </p>
+                ) : null}
+
                 {skillSearch.trim() &&
                 filteredSkills.length === 0 &&
+                skills.length < MAX_SKILLS &&
                 !skills.some(
                   (skill) =>
                     skill.toLowerCase() === skillSearch.trim().toLowerCase(),
@@ -457,19 +552,38 @@ export default function ProfilePage() {
               </div>
             </div>
 
+            {isLoadingFilterOptions ? (
+              <p className="profile-loading">Loading profile options...</p>
+            ) : null}
+
+            {filterOptionsError ? (
+              <div className="profile-error" role="alert">
+                <p>{filterOptionsError}</p>
+
+                <button
+                  className="secondary-button"
+                  type="button"
+                  onClick={() => void loadFilterOptions()}
+                >
+                  Try again
+                </button>
+              </div>
+            ) : null}
+
             <div className="profile-field">
               <label htmlFor="discipline">Target role / discipline</label>
 
               <select
                 id="discipline"
                 value={discipline}
+                disabled={areFilterOptionsUnavailable}
                 onChange={(event) => setDiscipline(event.target.value)}
               >
                 <option value="">No preference</option>
 
-                {DISCIPLINES.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
+                {disciplineOptions.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
                   </option>
                 ))}
               </select>
@@ -478,13 +592,20 @@ export default function ProfilePage() {
             <div className="profile-field">
               <label htmlFor="preferred-city">Preferred city</label>
 
-              <input
+              <select
                 id="preferred-city"
-                type="text"
                 value={preferredCity}
+                disabled={areFilterOptionsUnavailable}
                 onChange={(event) => setPreferredCity(event.target.value)}
-                placeholder="e.g. Utrecht"
-              />
+              >
+                <option value="">No preference</option>
+
+                {preferredCityOptions.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div className="profile-field">
@@ -493,13 +614,14 @@ export default function ProfilePage() {
               <select
                 id="work-mode"
                 value={workMode}
+                disabled={areFilterOptionsUnavailable}
                 onChange={(event) => setWorkMode(event.target.value)}
               >
                 <option value="">No preference</option>
 
-                {WORK_MODES.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
+                {workModeOptions.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
                   </option>
                 ))}
               </select>
@@ -511,13 +633,14 @@ export default function ProfilePage() {
               <select
                 id="experience-level"
                 value={experienceLevel}
+                disabled={areFilterOptionsUnavailable}
                 onChange={(event) => setExperienceLevel(event.target.value)}
               >
                 <option value="">No preference</option>
 
-                {EXPERIENCE_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
+                {experienceOptions.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
                   </option>
                 ))}
               </select>
@@ -529,25 +652,29 @@ export default function ProfilePage() {
               <select
                 id="employment-type"
                 value={employmentType}
+                disabled={areFilterOptionsUnavailable}
                 onChange={(event) => setEmploymentType(event.target.value)}
               >
                 <option value="">No preference</option>
 
-                {EMPLOYMENT_TYPES.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
+                {employmentTypeOptions.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
                   </option>
                 ))}
               </select>
             </div>
 
             <div className="profile-field">
-              <label htmlFor="salary-preference">Salary preference</label>
+              <label htmlFor="salary-preference">
+                Yearly gross salary preference in euros
+              </label>
 
               <input
                 id="salary-preference"
                 type="number"
                 min="0"
+                step="0.01"
                 value={salaryPreference}
                 onChange={(event) => setSalaryPreference(event.target.value)}
                 placeholder="e.g. 45000"

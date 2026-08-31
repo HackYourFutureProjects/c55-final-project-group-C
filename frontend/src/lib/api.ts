@@ -42,7 +42,8 @@ export type UpdateCurrentUserRequest = {
   email: string;
 };
 
-export type ProfilePreferences = {
+export type ProfileResponse = {
+  userId: string;
   skills: string[];
   discipline: string | null;
   preferredCity: string | null;
@@ -52,7 +53,15 @@ export type ProfilePreferences = {
   salaryPreference: number | null;
 };
 
-export type UpdateProfileRequest = ProfilePreferences;
+export type UpdateProfileRequest = {
+  skills: string[] | null;
+  discipline: string | null;
+  preferredCity: string | null;
+  workMode: string | null;
+  experienceLevel: string | null;
+  employmentType: string | null;
+  salaryPreference: number | null;
+};
 
 type ProblemDetail = {
   title?: string;
@@ -177,14 +186,14 @@ export function acceptTerms(): Promise<CurrentUserResponse> {
   });
 }
 
-export function getProfile(): Promise<ProfilePreferences> {
-  return request<ProfilePreferences>("/api/profile");
+export function getProfile(): Promise<ProfileResponse> {
+  return request<ProfileResponse>("/api/profile");
 }
 
 export function updateProfile(
   payload: UpdateProfileRequest,
-): Promise<ProfilePreferences> {
-  return request<ProfilePreferences>("/api/profile", {
+): Promise<ProfileResponse> {
+  return request<ProfileResponse>("/api/profile", {
     method: "PUT",
     body: JSON.stringify(payload),
   });
@@ -302,3 +311,7 @@ export type JobSearchParams = {
   workMode?: string;
   location?: string;
 };
+
+export function getJobFilters(): Promise<JobFiltersResponse> {
+  return request<JobFiltersResponse>("/api/jobs/filters");
+}
