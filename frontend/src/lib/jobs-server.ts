@@ -1,11 +1,22 @@
 import "server-only";
 
 import type {
+  JobDetailsResponse,
   JobFiltersResponse,
   JobSearchParams,
   JobSearchResponse,
 } from "@/lib/api";
 import { BACKEND_API_URL } from "@/lib/config";
+
+export class BackendRequestError extends Error {
+  status: number;
+
+  constructor(status: number, statusText: string) {
+    super(`Backend request failed: ${status} ${statusText}`);
+    this.name = "BackendRequestError";
+    this.status = status;
+  }
+}
 
 async function serverRequest<T>(path: string): Promise<T> {
   const response = await fetch(`${BACKEND_API_URL}${path}`, {
@@ -13,9 +24,7 @@ async function serverRequest<T>(path: string): Promise<T> {
   });
 
   if (!response.ok) {
-    throw new Error(
-      `Backend request failed: ${response.status} ${response.statusText}`,
-    );
+    throw new BackendRequestError(response.status, response.statusText);
   }
 
   return response.json() as Promise<T>;
@@ -46,4 +55,12 @@ export function getJobsServer(
 
 export function getJobFiltersServer(): Promise<JobFiltersResponse> {
   return serverRequest<JobFiltersResponse>("/api/jobs/filters");
+}
+
+export function getJobDetailsServer(
+  postingId: string,
+): Promise<JobDetailsResponse> {
+  return serverRequest<JobDetailsResponse>(
+    `/api/jobs/${encodeURIComponent(postingId)}`,
+  );
 }

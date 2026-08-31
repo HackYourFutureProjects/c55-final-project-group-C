@@ -1117,6 +1117,11 @@ a {
   background: #35102d;
 }
 
+.job-details-apply.is-disabled {
+  cursor: not-allowed;
+  background: #8f8288;
+}
+
 .job-details-meta {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
