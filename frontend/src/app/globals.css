@@ -1117,6 +1117,11 @@ a {
   background: #35102d;
 }
 
+.job-details-apply.is-disabled {
+  cursor: not-allowed;
+  background: #8f8288;
+}
+
 .job-details-meta {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -2091,6 +2096,13 @@ a {
 .save-job-error {
   max-width: 220px;
   color: #7d3030;
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+.save-job-note {
+  max-width: 220px;
+  color: #746970;
   font-size: 0.8rem;
   line-height: 1.4;
 }

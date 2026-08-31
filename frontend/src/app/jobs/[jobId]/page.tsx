@@ -1,43 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import SaveJobButton from "@/components/jobs/SaveJobButton";
-
-type JobDetails = {
-  id: string;
-  title: string;
-  companyName: string;
-  location: string;
-  workMode: string | null;
-  employmentType: string | null;
-  skills: string[];
-  experienceLevel: string | null;
-  educationLevel: string | null;
-  salary: string | null;
-  postedDate: string;
-  freshness: string | null;
-  source: string;
-  description: string;
-  sourceUrl: string;
-};
-
-const mockJob: JobDetails = {
-  id: "test-job-123",
-  title: "Frontend Developer",
-  companyName: "Example Company",
-  location: "Utrecht, Netherlands",
-  workMode: "Hybrid",
-  employmentType: "Full-time",
-  skills: ["React", "TypeScript", "Next.js", "CSS"],
-  experienceLevel: "Mid level",
-  educationLevel: "Bachelor's degree or equivalent experience",
-  salary: "€45,000 – €55,000 per year",
-  postedDate: "Posted 2 days ago",
-  freshness: "Fresh",
-  source: "Company website",
-  description:
-    "We are looking for a Frontend Developer to join our product team. You will work on accessible, responsive web experiences and collaborate closely with design and backend engineers.",
-  sourceUrl: "https://example.com/jobs/frontend-developer",
-};
+import type { JobDetailsResponse } from "@/lib/api";
+import { formatEnumLabel, formatPostedDate } from "@/lib/formatters";
+import { BackendRequestError, getJobDetailsServer } from "@/lib/jobs-server";
 
 type JobDetailsPageProps = {
   params: Promise<{
@@ -45,66 +11,158 @@ type JobDetailsPageProps = {
   }>;
 };
 
-export default async function JobDetailsPage({ params }: JobDetailsPageProps) {
-  const { jobId } = await params;
-  if (jobId === "not-found") {
-    notFound();
+function formatCurrencyAmount(amount: number, currency: string | null): string {
+  if (!currency) {
+    return new Intl.NumberFormat("en").format(amount);
   }
 
-  const job = {
-    ...mockJob,
-    id: jobId,
-  };
+  try {
+    return new Intl.NumberFormat("en", {
+      style: "currency",
+      currency,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  } catch {
+    return `${currency} ${new Intl.NumberFormat("en").format(amount)}`;
+  }
+}
+
+function formatSalary(job: JobDetailsResponse): string {
+  const salaryPeriod = formatEnumLabel(job.salaryPeriod)?.toLowerCase();
+  const period = salaryPeriod ? ` per ${salaryPeriod}` : "";
+
+  if (job.salaryMin !== null && job.salaryMax !== null) {
+    return `${formatCurrencyAmount(
+      job.salaryMin,
+      job.salaryCurrency,
+    )} - ${formatCurrencyAmount(job.salaryMax, job.salaryCurrency)}${period}`;
+  }
+
+  if (job.salaryMin !== null) {
+    return `From ${formatCurrencyAmount(
+      job.salaryMin,
+      job.salaryCurrency,
+    )}${period}`;
+  }
+
+  if (job.salaryMax !== null) {
+    return `Up to ${formatCurrencyAmount(
+      job.salaryMax,
+      job.salaryCurrency,
+    )}${period}`;
+  }
+
+  return "Not specified";
+}
+
+function getSafeApplicationUrl(sourceUrl: string | null): string | null {
+  if (!sourceUrl) {
+    return null;
+  }
+
+  try {
+    const url = new URL(sourceUrl);
+
+    if (url.protocol === "http:" || url.protocol === "https:") {
+      return url.toString();
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
+}
+
+async function loadJobDetails(jobId: string): Promise<JobDetailsResponse> {
+  try {
+    return await getJobDetailsServer(jobId);
+  } catch (error) {
+    if (error instanceof BackendRequestError && error.status === 404) {
+      notFound();
+    }
+
+    throw error;
+  }
+}
+
+export default async function JobDetailsPage({ params }: JobDetailsPageProps) {
+  const { jobId } = await params;
+  const job = await loadJobDetails(jobId);
+  const applicationUrl = getSafeApplicationUrl(job.sourceUrl);
+  const skillOccurrences = new Map<string, number>();
+  const visibleSkills = job.skills.map((skill) => {
+    const occurrence = (skillOccurrences.get(skill) ?? 0) + 1;
+    skillOccurrences.set(skill, occurrence);
+
+    return {
+      key: `${skill}-${occurrence}`,
+      skill,
+    };
+  });
 
   return (
     <main className="job-details-page">
       <div className="job-details-container">
         <Link className="job-details-back" href="/jobs">
-          ← Back to jobs
+          Back to jobs
         </Link>
 
         <section className="job-details-hero">
           <div>
-            <p className="job-details-eyebrow">{job.companyName}</p>
+            <p className="job-details-eyebrow">
+              {job.companyName ?? "Not specified"}
+            </p>
 
             <h1>{job.title}</h1>
 
-            <p className="job-details-location">{job.location}</p>
+            <p className="job-details-location">
+              {job.location ?? "Not specified"}
+            </p>
           </div>
 
           <div className="job-details-actions">
-            <SaveJobButton postingId={job.id} />
+            <SaveJobButton postingId={job.postingId} />
 
-            <a
-              className="job-details-apply"
-              href={job.sourceUrl}
-              target="_blank"
-              rel="noreferrer"
-            >
-              Apply externally
-            </a>
+            {applicationUrl ? (
+              <a
+                className="job-details-apply"
+                href={applicationUrl}
+                target="_blank"
+                rel="noreferrer noopener"
+              >
+                Apply externally
+              </a>
+            ) : (
+              <span className="job-details-apply is-disabled">
+                Application link unavailable
+              </span>
+            )}
           </div>
         </section>
 
         <section className="job-details-meta" aria-label="Job information">
           <div>
             <span>Work mode</span>
-            <strong>{job.workMode ?? "Not specified"}</strong>
+            <strong>{formatEnumLabel(job.workMode) ?? "Not specified"}</strong>
           </div>
 
           <div>
             <span>Employment</span>
-            <strong>{job.employmentType ?? "Not specified"}</strong>
+            <strong>
+              {formatEnumLabel(job.employmentType) ?? "Not specified"}
+            </strong>
           </div>
 
           <div>
             <span>Experience</span>
-            <strong>{job.experienceLevel ?? "Not specified"}</strong>
+            <strong>
+              {formatEnumLabel(job.experienceLevel) ?? "Not specified"}
+            </strong>
           </div>
 
           <div>
             <span>Salary</span>
-            <strong>{job.salary ?? "Not specified"}</strong>
+            <strong>{formatSalary(job)}</strong>
           </div>
         </section>
 
@@ -114,17 +172,19 @@ export default async function JobDetailsPage({ params }: JobDetailsPageProps) {
               <p className="job-details-section-label">ABOUT THE ROLE</p>
               <h2>Job description</h2>
 
-              <p className="job-details-description">{job.description}</p>
+              <p className="job-details-description">
+                {job.description ?? "Not specified"}
+              </p>
             </section>
 
             <section>
               <p className="job-details-section-label">SKILLS</p>
               <h2>What they are looking for</h2>
 
-              {job.skills.length > 0 ? (
+              {visibleSkills.length > 0 ? (
                 <div className="job-details-skills">
-                  {job.skills.map((skill) => (
-                    <span key={skill}>{skill}</span>
+                  {visibleSkills.map(({ key, skill }) => (
+                    <span key={key}>{skill}</span>
                   ))}
                 </div>
               ) : (
@@ -139,12 +199,16 @@ export default async function JobDetailsPage({ params }: JobDetailsPageProps) {
               <dl className="job-details-requirements">
                 <div>
                   <dt>Experience</dt>
-                  <dd>{job.experienceLevel ?? "Not specified"}</dd>
+                  <dd>
+                    {formatEnumLabel(job.experienceLevel) ?? "Not specified"}
+                  </dd>
                 </div>
 
                 <div>
                   <dt>Education</dt>
-                  <dd>{job.educationLevel ?? "Not specified"}</dd>
+                  <dd>
+                    {formatEnumLabel(job.educationLevel) ?? "Not specified"}
+                  </dd>
                 </div>
               </dl>
             </section>
@@ -157,17 +221,20 @@ export default async function JobDetailsPage({ params }: JobDetailsPageProps) {
               <dl className="job-details-listing-info">
                 <div>
                   <dt>Posted</dt>
-                  <dd>{job.postedDate}</dd>
+                  <dd>
+                    {formatPostedDate(job.postedDate, job.ageDays) ??
+                      "Not specified"}
+                  </dd>
                 </div>
 
                 <div>
                   <dt>Freshness</dt>
-                  <dd>{job.freshness ?? "Unknown"}</dd>
+                  <dd>{formatEnumLabel(job.freshnessClass) ?? "Unknown"}</dd>
                 </div>
 
                 <div>
                   <dt>Source</dt>
-                  <dd>{job.source}</dd>
+                  <dd>{job.source ?? "Not specified"}</dd>
                 </div>
               </dl>
             </section>
