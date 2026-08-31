@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import JobStatusSummary from "@/components/jobs/JobStatusSummary";
 import {
@@ -195,7 +196,13 @@ export default function SavedJobsPage() {
                           )}
                         </div>
 
-                        <h3>{job.title ?? "Job title unavailable"}</h3>
+                        <h3>
+                          <Link
+                            href={`/jobs/${encodeURIComponent(job.postingId)}`}
+                          >
+                            {job.title ?? "Job title unavailable"}
+                          </Link>
+                        </h3>
 
                         <p className="saved-job-company">
                           {job.companyName ?? "Company unavailable"}

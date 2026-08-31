@@ -1920,6 +1920,23 @@ a {
   letter-spacing: -0.035em;
 }
 
+.saved-job-card h3 a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.saved-job-card h3 a:hover {
+  color: #4b173f;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.saved-job-card h3 a:focus-visible {
+  outline: 3px solid #c973ac;
+  outline-offset: 4px;
+  border-radius: 4px;
+}
+
 .saved-job-company {
   margin-top: 8px;
   color: #665b62;
