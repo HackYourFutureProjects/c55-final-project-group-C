@@ -148,3 +148,68 @@ def test_filter_application_log_lines_keeps_traceback_after_error():
         "ValueError: ADZUNA_APP_ID and ADZUNA_APP_KEY environment variables must be set.",
     ]
 
+
+def test_filter_drops_metadata_immediately_after_exception():
+    """Indented Azure leftovers after the exception line must not ride along."""
+    lines = [
+        "2026-08-31 07:00:28,525 ERROR pipeline Pipeline failed",
+        "Traceback (most recent call last):",
+        '  File "/app/src/ingestion/ingest.py", line 107, in fetch_all_pages',
+        "    raise ValueError('boom')",
+        "ValueError: boom",
+        "    'Metadata': 'REDACTED'",
+    ]
+    assert filter_application_log_lines(lines) == [
+        "2026-08-31 07:00:28,525 ERROR pipeline Pipeline failed",
+        "Traceback (most recent call last):",
+        '  File "/app/src/ingestion/ingest.py", line 107, in fetch_all_pages',
+        "    raise ValueError('boom')",
+        "ValueError: boom",
+    ]
+
+
+def test_filter_does_not_open_traceback_on_warning_or_info():
+    warning_lines = [
+        "2026-08-31 07:00:28,525 WARNING pipeline something odd",
+        "Traceback (most recent call last):",
+        "ValueError: should stay dropped",
+    ]
+    assert filter_application_log_lines(warning_lines) == [
+        "2026-08-31 07:00:28,525 WARNING pipeline something odd",
+    ]
+    info_lines = [
+        "2026-08-31 07:00:28,525 INFO pipeline still going",
+        "Traceback (most recent call last):",
+        "ValueError: should stay dropped",
+    ]
+    assert filter_application_log_lines(info_lines) == [
+        "2026-08-31 07:00:28,525 INFO pipeline still going",
+    ]
+
+
+def test_filter_keeps_chained_exception_headers():
+    lines = [
+        "2026-08-31 07:00:28,525 ERROR pipeline Pipeline failed",
+        "Traceback (most recent call last):",
+        '  File "/app/a.py", line 1, in <module>',
+        "    raise ValueError('inner')",
+        "ValueError: inner",
+        "The above exception was the direct cause of the following exception:",
+        "Traceback (most recent call last):",
+        '  File "/app/b.py", line 2, in <module>',
+        "    raise RuntimeError('outer') from err",
+        "RuntimeError: outer",
+        "    'Metadata': 'REDACTED'",
+    ]
+    assert filter_application_log_lines(lines) == [
+        "2026-08-31 07:00:28,525 ERROR pipeline Pipeline failed",
+        "Traceback (most recent call last):",
+        '  File "/app/a.py", line 1, in <module>',
+        "    raise ValueError('inner')",
+        "ValueError: inner",
+        "The above exception was the direct cause of the following exception:",
+        "Traceback (most recent call last):",
+        '  File "/app/b.py", line 2, in <module>',
+        "    raise RuntimeError('outer') from err",
+        "RuntimeError: outer",
+    ]

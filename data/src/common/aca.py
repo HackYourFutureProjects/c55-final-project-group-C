@@ -34,7 +34,7 @@ _CONTAINER_LOG_LINE = re.compile(
     r"(DEBUG|INFO|WARNING|ERROR|CRITICAL) "
     r"(\S+)\s+"
 )
-# Uncaught exception / traceback.logger.exception tails have no timestamp prefix.
+# Uncaught-exception / logger.exception tails have no timestamp prefix.
 _EXCEPTION_LINE = re.compile(
     r"^(?:[A-Za-z_][\w.]*(?:Error|Exception|Warning|Exit|Interrupt)|ExceptionGroup): "
 )
@@ -47,9 +47,13 @@ def filter_application_log_lines(lines: list[str]) -> list[str]:
     Python prints a Traceback (and the final Exception:) as plain stdout lines —
     those must reach the Airflow task log or Mode 2/3/4 ingest failures only say
     "Pipeline failed" with no cause.
+
+    After the exception line, indented Azure SDK leftovers (e.g. Metadata) must
+    not stay attached; only chaining headers may reopen the traceback body.
     """
     kept: list[str] = []
     in_traceback = False
+    after_exception = False
     for raw in lines:
         line = raw.rstrip()
         if not line:
@@ -63,20 +67,28 @@ def filter_application_log_lines(lines: list[str]) -> list[str]:
                 in_traceback = level == "ERROR"
             else:
                 in_traceback = False
+            after_exception = False
             continue
         if not in_traceback:
             continue
-        if (
-            line.startswith("Traceback ")
-            or line.startswith("  File ")
-            or line.startswith("    ")
-            or line.startswith("During handling of")
-            or line.startswith("The above exception")
-            or _EXCEPTION_LINE.match(line)
-        ):
+        if line.startswith("During handling of") or line.startswith("The above exception"):
             kept.append(line)
-        else:
-            in_traceback = False
+            after_exception = False
+            continue
+        if line.startswith("Traceback ") or line.startswith("  File "):
+            kept.append(line)
+            after_exception = False
+            continue
+        if _EXCEPTION_LINE.match(line):
+            kept.append(line)
+            after_exception = True
+            continue
+        # Source line under a File frame — only before the exception settles.
+        if line.startswith("    ") and not after_exception:
+            kept.append(line)
+            continue
+        in_traceback = False
+        after_exception = False
     return kept
 
 
