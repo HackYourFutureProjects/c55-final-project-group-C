@@ -26,6 +26,7 @@ export default function RegisterPage() {
 
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
 
   function validateForm() {
     const nextErrors: FormErrors = {};
@@ -207,15 +208,26 @@ export default function RegisterPage() {
           <div className="auth-field">
             <label htmlFor="password">Password</label>
 
-            <input
-              id="password"
-              name="password"
-              type="password"
-              autoComplete="new-password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              placeholder="At least 6 characters"
-            />
+            <div className="auth-password-input">
+              <input
+                id="password"
+                name="password"
+                type={isPasswordVisible ? "text" : "password"}
+                autoComplete="new-password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                placeholder="At least 6 characters"
+              />
+              <button
+                type="button"
+                aria-label={
+                  isPasswordVisible ? "Hide password" : "Show password"
+                }
+                onClick={() => setIsPasswordVisible((isVisible) => !isVisible)}
+              >
+                {isPasswordVisible ? "Hide" : "Show"}
+              </button>
+            </div>
 
             {errors.password ? (
               <p className="auth-field-error">{errors.password}</p>
