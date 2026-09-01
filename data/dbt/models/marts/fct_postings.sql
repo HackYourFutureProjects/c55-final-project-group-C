@@ -1,15 +1,13 @@
 -- This mart is the contract with the backend team.
 --
--- Its columns are what backend/ reads to build API endpoints, so treat a change
--- here the way you would treat changing a public API: agree it with the backend
--- trainees first, then change it in both places.
+-- Its columns are what backend/ reads to build API endpoints
 --
 -- Airflow copies this table into the backend's database after dbt succeeds, so
 -- whatever you select here is what they get.
 --
 -- Sources from int_postings instead of stg_postings so this mart gets the
 -- surrogate posting_id design, HTML-entity-decoded description, and
--- normalized work_mode for free, without re-deriving any of it here.
+-- normalized work_mode without re-deriving any of it here.
 with postings as (select * from {{ ref("int_postings") }})
 
 select
