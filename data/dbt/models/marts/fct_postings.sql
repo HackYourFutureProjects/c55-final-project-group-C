@@ -8,9 +8,7 @@
 -- Sources from int_postings instead of stg_postings so this mart gets the
 -- surrogate posting_id design, HTML-entity-decoded description, and
 -- normalized work_mode without re-deriving any of it here.
-with
-    postings as (select * from {{ ref("int_postings") }})
-
+with postings as (select * from {{ ref("int_postings") }})
 
 select
     posting_id,
@@ -73,5 +71,4 @@ select
     ingested_at
 
 from postings
-left join {{ ref("fct_title_discipline") }} as llm
-    on postings.title = llm.title
+left join {{ ref("fct_title_discipline") }} as llm on postings.title = llm.title
