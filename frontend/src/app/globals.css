@@ -77,11 +77,50 @@ a {
   gap: 20px;
 }
 
+.nav-user {
+  max-width: 180px;
+  overflow: hidden;
+  color: #5f535a;
+  font-size: 0.92rem;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .auth-links .register-link {
   padding: 10px 16px;
   border-radius: 999px;
   background: #4b173f;
   color: #ffffff;
+}
+
+.logout-button {
+  min-height: 40px;
+  padding: 0 15px;
+  border: 1px solid #d8cdd4;
+  border-radius: 999px;
+  background: transparent;
+  color: #4b173f;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease;
+}
+
+.logout-button:hover {
+  border-color: #bfaeba;
+  background: #f2e9ee;
+}
+
+.logout-button:focus-visible,
+.nav-links a:focus-visible,
+.auth-links a:focus-visible {
+  outline: 3px solid #c973ac;
+  outline-offset: 3px;
 }
 
 .app-main {
@@ -165,10 +204,20 @@ a {
 
   .auth-links {
     margin-left: auto;
+    gap: 10px;
   }
 
   .auth-links .register-link {
     display: none;
+  }
+
+  .nav-user {
+    max-width: min(42vw, 180px);
+  }
+
+  .logout-button {
+    min-height: 38px;
+    padding: 0 13px;
   }
 
   .footer-inner {

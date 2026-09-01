@@ -1,9 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import JobStatusSummary from "@/components/jobs/JobStatusSummary";
+import { useAuth } from "@/context/AuthContext";
 import {
+  ApiError,
   deleteSavedJob,
   getSavedJobs,
   getSavedJobsStats,
@@ -32,6 +35,8 @@ type SavedJobsContentProps = {
 export default function SavedJobsContent({
   status = null,
 }: SavedJobsContentProps) {
+  const router = useRouter();
+  const { user, isLoading, clearUser } = useAuth();
   const [jobs, setJobs] = useState<SavedJobResponse[]>([]);
   const [stats, setStats] = useState<SavedJobsStatsResponse>(EMPTY_STATS);
 
@@ -53,40 +58,78 @@ export default function SavedJobsContent({
     [jobs, status],
   );
 
+  const handleExpiredSession = useCallback(() => {
+    clearUser();
+    router.replace("/login");
+  }, [clearUser, router]);
+
   const loadStats = useCallback(async () => {
+    if (!user) {
+      return;
+    }
+
     setLoadingStats(true);
     setStatsError(null);
 
     try {
       const response = await getSavedJobsStats();
       setStats(response);
-    } catch {
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 401) {
+        handleExpiredSession();
+        return;
+      }
+
       setStatsError("Could not load saved jobs statistics.");
     } finally {
       setLoadingStats(false);
     }
-  }, []);
+  }, [handleExpiredSession, user]);
 
   const loadJobs = useCallback(async () => {
+    if (!user) {
+      return;
+    }
+
     setLoadingJobs(true);
     setJobsError(null);
 
     try {
       const response = await getSavedJobs();
       setJobs(response);
-    } catch {
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 401) {
+        handleExpiredSession();
+        return;
+      }
+
       setJobsError("Could not load your saved jobs.");
     } finally {
       setLoadingJobs(false);
     }
-  }, []);
+  }, [handleExpiredSession, user]);
 
   useEffect(() => {
+    if (!isLoading && !user) {
+      router.replace("/login");
+      return;
+    }
+  }, [isLoading, user, router]);
+
+  useEffect(() => {
+    if (!user) {
+      return;
+    }
+
     void loadStats();
     void loadJobs();
-  }, [loadJobs, loadStats]);
+  }, [loadJobs, loadStats, user]);
 
   async function handleStatusChange(postingId: string, newState: JobState) {
+    if (!user) {
+      return;
+    }
+
     setActionError(null);
     setBusyPostingId(postingId);
 
@@ -100,7 +143,12 @@ export default function SavedJobsContent({
       );
 
       await loadStats();
-    } catch {
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 401) {
+        handleExpiredSession();
+        return;
+      }
+
       setActionError("Could not update the job status.");
     } finally {
       setBusyPostingId(null);
@@ -108,6 +156,10 @@ export default function SavedJobsContent({
   }
 
   async function handleRemove(postingId: string) {
+    if (!user) {
+      return;
+    }
+
     setActionError(null);
     setBusyPostingId(postingId);
 
@@ -119,11 +171,20 @@ export default function SavedJobsContent({
       );
 
       await loadStats();
-    } catch {
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 401) {
+        handleExpiredSession();
+        return;
+      }
+
       setActionError("Could not remove the saved job.");
     } finally {
       setBusyPostingId(null);
     }
+  }
+
+  if (isLoading || !user) {
+    return null;
   }
 
   return (
