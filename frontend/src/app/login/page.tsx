@@ -15,6 +15,7 @@ function LoginContent() {
   const [password, setPassword] = useState("");
   const [formError, setFormError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
 
   const oauthError = searchParams.get("error");
   const registrationSuccessful = searchParams.get("registered") === "true";
@@ -132,16 +133,27 @@ function LoginContent() {
 
           <div className="auth-field">
             <label htmlFor="password">Password</label>
-            <input
-              id="password"
-              name="password"
-              type="password"
-              autoComplete="current-password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              placeholder="Enter your password"
-              required
-            />
+            <div className="auth-password-input">
+              <input
+                id="password"
+                name="password"
+                type={isPasswordVisible ? "text" : "password"}
+                autoComplete="current-password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                placeholder="Enter your password"
+                required
+              />
+              <button
+                type="button"
+                aria-label={
+                  isPasswordVisible ? "Hide password" : "Show password"
+                }
+                onClick={() => setIsPasswordVisible((isVisible) => !isVisible)}
+              >
+                {isPasswordVisible ? "Hide" : "Show"}
+              </button>
+            </div>
           </div>
 
           <div className="auth-password-row">
