@@ -25,7 +25,7 @@ select
     countries_raw as countries,
     regions_raw as regions,
     cities_raw as cities,
-
+    has_location_data,
     work_mode,
 
     -- work_mode is already lowercased/trimmed/null-coerced in int_postings,
