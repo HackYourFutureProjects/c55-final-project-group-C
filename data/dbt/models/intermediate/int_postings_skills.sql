@@ -1,20 +1,25 @@
--- One row per posting and skill. Replaces int_posting_tags — staging has no
--- separate tags field, skills_raw was the only source array being exploded,
--- so this model absorbs that role under its correct name.
---
--- Same reasoning as int_posting_cities/requirements: skills_raw is an array
--- on a posting-grain row, so exploding it changes the grain, which is why
--- this is its own model rather than a CTE inside int_postings.
+-- One row per posting and normalized skill.
+-- Explodes skills_raw from int_postings, cleans each skill value,
+-- applies a small controlled alias mapping, and removes duplicates
+-- within the same posting.
+
 with
-    postings as (select * from {{ ref("int_postings") }}),
+    postings as (
+
+        select *
+        from {{ ref("int_postings") }}
+
+    ),
 
     exploded as (
 
-        -- `explode` drops postings whose skill array is empty or null, which is
-        -- correct: a posting with no skills has no rows at this grain. It also
-        -- means fct_postings has to put the zero back with a coalesce, rather
-        -- than losing the posting from the mart entirely.
-        select posting_id, posted_at, skill
+        -- Empty/null arrays produce no skill rows, which is correct
+        -- for this grain: one row per posting and skill.
+        select
+            posting_id,
+            posted_at,
+            skill as skill_raw
+
         from postings
         lateral view explode(skills_raw) as skill
 
@@ -24,27 +29,92 @@ with
 
         select
             posting_id,
-            -- Skills arrive as the source typed them, so "Python", "python" and
-            -- " python" are three skills until you say otherwise. Normalising
-            -- here means every consumer gets the same answer.
-            lower(trim(skill)) as skill,
+            skill_raw,
+
+            -- Basic normalization:
+            -- 1. lowercase
+            -- 2. trim outer whitespace
+            -- 3. normalize Unicode dash variants to "-"
+            -- 4. remove spaces around "-"
+            -- 5. collapse repeated internal whitespace
+            nullif(
+                trim(
+                    regexp_replace(
+                        regexp_replace(
+                            regexp_replace(
+                                lower(skill_raw),
+                                '[‐-‒–—−]',
+                                '-'
+                            ),
+                            '\\s*-\\s*',
+                            '-'
+                        ),
+                        '\\s+',
+                        ' '
+                    )
+                ),
+                ''
+            ) as skill_clean,
+
             posted_at
+
         from exploded
-        where trim(skill) <> ''
+
+        where skill_raw is not null
+          and trim(skill_raw) <> ''
+
+    ),
+
+    normalized as (
+
+        select
+            posting_id,
+            skill_raw,
+
+            -- Controlled aliases for known equivalent values.
+            -- Keep this list small and evidence-based.
+            case
+                when skill_clean = 'machine learning'
+                    then 'machine-learning'
+
+                when skill_clean = 'data science'
+                    then 'data-science'
+
+                else skill_clean
+            end as skill,
+
+            posted_at
+
+        from cleaned
+
+        where skill_clean is not null
 
     ),
 
     deduplicated as (
 
-        -- A source that lists the same skill twice on one posting would otherwise
-        -- double that posting's skill_count and its weight in the popularity
-        -- mart.
-        select *
-        from cleaned
+        -- After normalization, values such as
+        -- "Python" and " python " collapse to the same skill.
+        select
+            posting_id,
+            skill_raw,
+            skill,
+            posted_at
+
+        from normalized
+
         qualify
-            row_number() over (partition by posting_id, skill order by posted_at) = 1
+            row_number() over (
+                partition by posting_id, skill
+                order by posted_at
+            ) = 1
 
     )
 
-select *
+select
+    posting_id,
+    skill_raw,
+    skill,
+    posted_at
+
 from deduplicated

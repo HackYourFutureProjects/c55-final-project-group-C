@@ -1,54 +1,131 @@
 -- int_postings.sql
--- One row per posting — same grain as stg_postings. Cleaning: HTML
--- stripped, work_mode normalized, and a flag for missing location data.
--- location_raw/countries_raw/regions_raw are carried through unchanged —
--- no intermediate model derives from them, but fct_postings does, so they
--- stay as plain pass-through columns. Everything else (city derivation,
--- salary, is_active, education, work arrangement detail, skills split,
--- matching score) is out of scope for this model — deliberately deferred,
--- not forgotten.
-with
-    postings as (select * from {{ ref("stg_postings") }}),
+-- One row per posting — same grain as stg_postings.
+--
+-- Responsibilities of this model:
+--   * create the canonical posting_id
+--   * deduplicate postings, keeping the latest ingested version
+--   * clean job-description text
+--   * normalize work_mode
+--   * flag whether usable location information exists
+--
+-- Raw source fields are preserved alongside cleaned fields.
+-- More domain-specific transformations belong in downstream
+-- intermediate models or marts.
 
-    keyed as (
-        select
-            -- Surrogate key so every downstream model (skills, cities,
-            -- requirements) joins on one column instead of the natural
-            -- (original_source, source_job_id) pair.
-            md5(concat(original_source, '-', source_job_id)) as posting_id, *
-        from postings
+with
+    postings as (
+
+        select *
+        from {{ ref("stg_postings") }}
+
     ),
 
-    description_cleaned as (
+    keyed as (
+
+        select
+            md5(
+                concat(
+                    original_source,
+                    '-',
+                    source_job_id
+                )
+            ) as posting_id,
+
+            *
+
+        from postings
+
+    ),
+
+    -- Keep only the latest ingested version of each posting.
+    -- This prevents duplicate posting_ids from reaching downstream models.
+    deduplicated as (
+
+        select *
+
+        from keyed
+
+        qualify
+            row_number() over (
+                partition by posting_id
+                order by ingested_at desc
+            ) = 1
+
+    ),
+
+    -- Remove complete script/style blocks first.
+    -- Removing only HTML tags would leave their contents behind.
+    description_blocks_removed as (
+
         select
             *,
-            -- Strip tags, decode the handful of HTML entities FreeHire
-            -- descriptions actually contain, then collapse whitespace.
-            -- Stripping tags alone leaves entities like &#39; and &amp; as
-            -- literal text in the output — this is not cosmetic, it's a
-            -- correctness bug for anything downstream that reads the clean
-            -- description as prose (search, display, matching).
-            trim(
-                regexp_replace(
+
+            case
+                when description_raw is null then null
+                else regexp_replace(
+                    description_raw,
+                    '(?is)<(script|style)[^>]*>.*?</(script|style)>',
+                    ' '
+                )
+            end as description_without_blocks
+
+        from deduplicated
+
+    ),
+
+    -- Strip the remaining HTML tags.
+    description_tags_removed as (
+
+        select
+            *,
+
+            case
+                when description_without_blocks is null then null
+                else regexp_replace(
+                    description_without_blocks,
+                    '<[^>]+>',
+                    ' '
+                )
+            end as description_without_tags
+
+        from description_blocks_removed
+
+    ),
+
+    -- Decode common entities that occur in job descriptions.
+    description_entities_decoded as (
+
+        select
+            *,
+
+            case
+                when description_without_tags is null then null
+                else replace(
                     replace(
                         replace(
                             replace(
                                 replace(
                                     replace(
                                         replace(
-                                            regexp_replace(
-                                                description_raw, '<[^>]+>', ' '
+                                            replace(
+                                                replace(
+                                                    description_without_tags,
+                                                    '&nbsp;',
+                                                    ' '
+                                                ),
+                                                '&amp;',
+                                                '&'
                                             ),
-                                            '&nbsp;',
-                                            ' '
+                                            '&quot;',
+                                            '"'
                                         ),
-                                        '&amp;',
-                                        '&'
+                                        '&#39;',
+                                        ''''
                                     ),
-                                    '&quot;',
-                                    '"'
+                                    '&#x27;',
+                                    ''''
                                 ),
-                                '&#39;',
+                                '&apos;',
                                 ''''
                             ),
                             '&lt;',
@@ -57,39 +134,130 @@ with
                         '&gt;',
                         '>'
                     ),
-                    '\\s+',
+                    chr(160),
                     ' '
                 )
+            end as description_decoded
+
+        from description_tags_removed
+
+    ),
+
+    -- Second decoding pass for double-encoded HTML entities.
+    -- Example: &amp;amp; -> &amp; -> &
+    description_entities_decoded_again as (
+
+        select
+            *,
+
+            case
+                when description_decoded is null then null
+                else replace(
+                    replace(
+                        replace(
+                            replace(
+                                replace(
+                                    replace(
+                                        replace(
+                                            replace(
+                                                description_decoded,
+                                                '&nbsp;',
+                                                ' '
+                                            ),
+                                            '&amp;',
+                                            '&'
+                                        ),
+                                        '&quot;',
+                                        '"'
+                                    ),
+                                    '&#39;',
+                                    ''''
+                                ),
+                                '&#x27;',
+                                ''''
+                            ),
+                            '&apos;',
+                            ''''
+                        ),
+                        '&lt;',
+                        '<'
+                    ),
+                    '&gt;',
+                    '>'
+                )
+            end as description_decoded_final
+
+        from description_entities_decoded
+
+    ),
+
+    description_cleaned as (
+
+        select
+            *,
+
+            nullif(
+                trim(
+                    regexp_replace(
+                        description_decoded_final,
+                        '\\s+',
+                        ' '
+                    )
+                ),
+                ''
             ) as description_clean
-        from keyed
+
+        from description_entities_decoded_again
+
     ),
 
     work_mode_cleaned as (
+
         select
             *,
-            -- Single source of truth for normalized work mode. Anything
-            -- downstream that needs to group/filter on work mode should read
-            -- this column, not re-derive lower(trim(source_work_mode))
-            -- itself.
-            nullif(lower(trim(source_work_mode)), '') as work_mode
+
+            nullif(
+                lower(
+                    trim(
+                        regexp_replace(
+                            source_work_mode,
+                            '\\s+',
+                            ' '
+                        )
+                    )
+                ),
+                ''
+            ) as work_mode
+
         from description_cleaned
+
     ),
 
     flagged as (
+
         select
             *,
-            -- All postings are 100% Netherlands, so country/region signal is
-            -- irrelevant to whether a posting is usefully located. A posting
-            -- has usable location signal if the source gave us a city, or if
-            -- there's no city but the work is remote/hybrid (location doesn't
-            -- matter for those). Onsite work with no city is genuinely
-            -- unlocated — the mart decides what to do with it, not this
-            -- model.
+
             (
-                coalesce(size(cities_raw), 0) > 0
-                or coalesce(work_mode in ('remote', 'hybrid'), false)
+                coalesce(
+                    size(
+                        filter(
+                            cities_raw,
+                            city -> city is not null
+                                and trim(city) <> ''
+                        )
+                    ),
+                    0
+                ) > 0
+
+                or coalesce(
+                    work_mode in ('remote', 'hybrid'),
+                    false
+                )
             ) as has_location_data
+
         from work_mode_cleaned
+
     )
 
 select
