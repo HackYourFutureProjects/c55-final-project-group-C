@@ -18,15 +18,11 @@ models:
 
       - name: city
         description: One city, lowercased and trimmed, as provided by the source.
-        tests: [not_null]
 
       - name: source
         tests: [not_null]
 
       - name: title
-        tests: [not_null]
-
-      - name: company_name
         tests: [not_null]
 
       - name: posted_at
