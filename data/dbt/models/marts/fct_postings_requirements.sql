@@ -13,7 +13,7 @@ with
     requirements as (select * from {{ ref("int_postings_requirements") }}),
 
     postings as (
-        select posting_id, original_source, title, from {{ ref("int_postings") }}
+        select posting_id, original_source, title from {{ ref("int_postings") }}
     )
 
 select

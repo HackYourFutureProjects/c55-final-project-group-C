@@ -15,7 +15,7 @@ with
     cities as (select * from {{ ref("int_postings_cities") }}),
 
     postings as (
-        select posting_id, original_source, title, from {{ ref("int_postings") }}
+        select posting_id, original_source, title from {{ ref("int_postings") }}
     )
 
 select

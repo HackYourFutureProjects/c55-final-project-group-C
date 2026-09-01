@@ -16,7 +16,7 @@ with
     skills as (select * from {{ ref("int_postings_skills") }}),
 
     postings as (
-        select posting_id, original_source, title, from {{ ref("int_postings") }}
+        select posting_id, original_source, title from {{ ref("int_postings") }}
     )
 
 select
