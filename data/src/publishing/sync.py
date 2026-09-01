@@ -156,12 +156,24 @@ def dsn_from_env() -> str:
     )
 
 
-def run(mart: str = DEFAULT_MART, table: str = DEFAULT_TABLE, schema: str | None = None) -> int:
-    """Read one mart out of the warehouse and replace the backend's copy."""
+def run(
+    marts: list[tuple[str, str]] | None = None,
+    mart: str = DEFAULT_MART,
+    table: str = DEFAULT_TABLE,
+    schema: str | None = None,
+) -> int:
+    """Read one or more marts out of the warehouse and replace the backend's copies."""
     warehouse_schema = os.environ["DBT_SCHEMA"]
-    columns, rows = read_mart(Warehouse.from_env(), warehouse_schema, mart)
     target_schema = schema or os.environ.get("BACKEND_PG_PUBLISH_SCHEMA", "analytics")
-    return publish(dsn_from_env(), target_schema, table, columns, rows, source=warehouse_schema)
+    warehouse = Warehouse.from_env()
+
+    total = 0
+    for mart_name, table_name in marts or [(mart, table)]:
+        columns, rows = read_mart(warehouse, warehouse_schema, mart_name)
+        total += publish(
+            dsn_from_env(), target_schema, table_name, columns, rows, source=warehouse_schema
+        )
+    return total
 
 
 if __name__ == "__main__":
@@ -169,16 +181,27 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Publish one mart to the backend's database.")
     parser.add_argument(
-        "--mart", default=DEFAULT_MART, help=f"warehouse table to read [{DEFAULT_MART}]"
+        "--mart",
+        action="append",
+        default=None,
+        help=f"warehouse table to read (repeatable) [{DEFAULT_MART}]",
     )
     parser.add_argument(
-        "--table", default=DEFAULT_TABLE, help=f"name to write it under [{DEFAULT_TABLE}]"
+        "--table",
+        action="append",
+        default=None,
+        help=f"name to write it under (repeatable) [{DEFAULT_TABLE}]",
     )
     parser.add_argument("--schema", default=None, help="target schema [BACKEND_PG_PUBLISH_SCHEMA]")
     args = parser.parse_args()
 
+    if args.mart and len(args.mart) != len(args.table or []):
+        parser.error("--mart and --table must be given the same number of times")
+
+    marts = list(zip(args.mart, args.table, strict=True)) if args.mart else None
+
     try:
-        run(args.mart, args.table, args.schema)
+        run(marts=marts, schema=args.schema)
     except Exception:
         logger.exception("Publish failed")
         sys.exit(1)

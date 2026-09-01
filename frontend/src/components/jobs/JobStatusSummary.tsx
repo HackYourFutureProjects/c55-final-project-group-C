@@ -1,24 +1,35 @@
-import type { SavedJobsStatsResponse } from "@/lib/api";
+import Link from "next/link";
+import type { JobState, SavedJobsStatsResponse } from "@/lib/api";
+import { SAVED_JOB_STATUS_OPTIONS } from "@/lib/saved-job-status";
 
 type JobStatusSummaryProps = {
   stats: SavedJobsStatsResponse;
+  activeStatus?: JobState | null;
 };
 
-export default function JobStatusSummary({ stats }: JobStatusSummaryProps) {
-  const saved = stats.SAVED ?? 0;
-  const applied = stats.APPLIED ?? 0;
-  const rejected = stats.REJECTED ?? 0;
-  const accepted = stats.ACCEPTED ?? 0;
-  const declined = stats.DECLINED ?? 0;
-
-  const tracked = saved + applied + rejected + accepted + declined;
+export default function JobStatusSummary({
+  stats,
+  activeStatus = null,
+}: JobStatusSummaryProps) {
+  const tracked = SAVED_JOB_STATUS_OPTIONS.reduce(
+    (total, option) => total + (stats[option.value] ?? 0),
+    0,
+  );
 
   return (
     <aside className="job-status-summary">
       <div className="job-status-summary-header">
         <div>
           <p className="saved-eyebrow">OVERVIEW</p>
-          <h2>Job Overview</h2>
+          <h2>
+            <Link
+              aria-current={activeStatus === null ? "page" : undefined}
+              className="job-status-title-link"
+              href="/saved"
+            >
+              Job Overview
+            </Link>
+          </h2>
         </div>
 
         <div className="job-status-total">
@@ -32,34 +43,25 @@ export default function JobStatusSummary({ stats }: JobStatusSummaryProps) {
           No tracked jobs yet. Save a job to start building your application
           pipeline.
         </p>
-      ) : (
-        <dl className="job-status-grid">
-          <div>
-            <dt>Not Applied Yet</dt>
-            <dd>{saved}</dd>
-          </div>
+      ) : null}
 
-          <div>
-            <dt>Applied</dt>
-            <dd>{applied}</dd>
-          </div>
-
-          <div>
-            <dt>Rejected</dt>
-            <dd>{rejected}</dd>
-          </div>
-
-          <div>
-            <dt>Accepted</dt>
-            <dd>{accepted}</dd>
-          </div>
-
-          <div>
-            <dt>Declined</dt>
-            <dd>{declined}</dd>
-          </div>
-        </dl>
-      )}
+      <nav aria-label="Saved job status filters">
+        <ul className="job-status-grid">
+          {SAVED_JOB_STATUS_OPTIONS.map((option) => (
+            <li key={option.value}>
+              <Link
+                aria-current={
+                  activeStatus === option.value ? "page" : undefined
+                }
+                href={`/saved/status/${encodeURIComponent(option.value)}`}
+              >
+                <span>{option.label}</span>
+                <strong>{stats[option.value] ?? 0}</strong>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </nav>
     </aside>
   );
 }

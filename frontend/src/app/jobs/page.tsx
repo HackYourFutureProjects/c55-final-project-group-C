@@ -1,5 +1,6 @@
 import JobFilters from "@/components/jobs/JobFilters";
-import JobResultItem from "@/components/jobs/JobResultItem";
+import JobResultsWithBookmarks from "@/components/jobs/JobResultsWithBookmarks";
+import TopMatchesSection from "@/components/jobs/TopMatchesSection";
 import { mapJobSearchResponse } from "@/lib/jobs";
 import { getJobFiltersServer, getJobsServer } from "@/lib/jobs-server";
 
@@ -123,6 +124,8 @@ export default async function JobsPage({ searchParams }: JobsPageProps) {
           </aside>
 
           <section className="jobs-results" aria-live="polite">
+            <TopMatchesSection />
+
             <div className="jobs-results-header">
               <div>
                 <p className="jobs-section-label">RESULTS</p>
@@ -140,11 +143,7 @@ export default async function JobsPage({ searchParams }: JobsPageProps) {
             </div>
 
             {jobs.length > 0 ? (
-              <div className="job-results-list">
-                {jobs.map((job) => (
-                  <JobResultItem key={job.id} job={job} />
-                ))}
-              </div>
+              <JobResultsWithBookmarks jobs={jobs} />
             ) : (
               <div className="jobs-empty">
                 <h3>No jobs found</h3>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { type MouseEvent, useEffect, useRef, useState } from "react";
 import {
   ApiError,
   deleteSavedJob,
@@ -9,64 +9,74 @@ import {
   saveJob,
 } from "@/lib/api";
 
-type SaveJobButtonProps = {
+type SavedJobBookmarkState = JobState | "UNKNOWN" | null;
+type BookmarkAction = "checking" | "idle" | "saving" | "removing";
+
+type SavedJobBookmarkButtonProps = {
   postingId: string;
+  initialState?: SavedJobBookmarkState;
+  isCheckingInitialState?: boolean;
+  variant?: "icon" | "cta";
+  onStateChange?: (postingId: string, state: SavedJobBookmarkState) => void;
 };
-
-type SaveJobAction = "checking" | "idle" | "saving" | "removing";
-type SavedJobButtonState = JobState | "UNKNOWN" | null;
-
-const TRACKED_STATE_LABELS: Record<
-  Exclude<SavedJobButtonState, "SAVED" | null>,
-  string
-> = {
-  UNKNOWN: "Already added",
-  APPLIED: "Applied",
-  REJECTED: "Rejected",
-  ACCEPTED: "Accepted",
-  DECLINED: "Declined",
-};
-
-function isTrackedState(
-  jobState: SavedJobButtonState,
-): jobState is Exclude<SavedJobButtonState, "SAVED" | null> {
-  return jobState !== null && jobState !== "SAVED";
-}
 
 async function getSavedJobState(
   postingId: string,
-): Promise<SavedJobButtonState> {
+): Promise<SavedJobBookmarkState> {
   const savedJobs = await getSavedJobs();
   const savedJob = savedJobs.find((job) => job.postingId === postingId);
 
   return savedJob?.jobState ?? null;
 }
 
-export default function SaveJobButton({ postingId }: SaveJobButtonProps) {
+export default function SavedJobBookmarkButton({
+  postingId,
+  initialState,
+  isCheckingInitialState = false,
+  variant = "icon",
+  onStateChange,
+}: SavedJobBookmarkButtonProps) {
+  const shouldCheckInitialState = initialState === undefined;
   const activePostingIdRef = useRef(postingId);
-  const [action, setAction] = useState<SaveJobAction>("checking");
-  const [savedJobState, setSavedJobState] = useState<SavedJobButtonState>(null);
+  const [savedState, setSavedState] = useState<SavedJobBookmarkState>(
+    initialState ?? null,
+  );
+  const [action, setAction] = useState<BookmarkAction>(
+    shouldCheckInitialState ? "checking" : "idle",
+  );
   const [error, setError] = useState<string | null>(null);
 
   activePostingIdRef.current = postingId;
 
-  function isCurrentPosting(requestPostingId: string): boolean {
+  function isCurrentPosting(requestPostingId: string) {
     return activePostingIdRef.current === requestPostingId;
   }
 
+  function updateState(nextState: SavedJobBookmarkState) {
+    setSavedState(nextState);
+    onStateChange?.(postingId, nextState);
+  }
+
   useEffect(() => {
+    if (!shouldCheckInitialState) {
+      setSavedState(initialState);
+      setAction("idle");
+      setError(null);
+      return;
+    }
+
     let isMounted = true;
 
     async function loadSavedState() {
-      setSavedJobState(null);
+      setSavedState(null);
       setAction("checking");
       setError(null);
 
       try {
-        const loadedSavedJobState = await getSavedJobState(postingId);
+        const loadedState = await getSavedJobState(postingId);
 
         if (isMounted) {
-          setSavedJobState(loadedSavedJobState);
+          setSavedState(loadedState);
         }
       } catch (error) {
         if (error instanceof ApiError && error.status === 401) {
@@ -74,7 +84,7 @@ export default function SaveJobButton({ postingId }: SaveJobButtonProps) {
         }
 
         if (isMounted) {
-          setError("Could not check saved status. Please try again.");
+          setError("Could not check saved status.");
         }
       } finally {
         if (isMounted) {
@@ -88,7 +98,7 @@ export default function SaveJobButton({ postingId }: SaveJobButtonProps) {
     return () => {
       isMounted = false;
     };
-  }, [postingId]);
+  }, [initialState, postingId, shouldCheckInitialState]);
 
   async function handleSave() {
     const requestPostingId = postingId;
@@ -100,7 +110,7 @@ export default function SaveJobButton({ postingId }: SaveJobButtonProps) {
       await saveJob(requestPostingId);
 
       if (isCurrentPosting(requestPostingId)) {
-        setSavedJobState("SAVED");
+        updateState("SAVED");
       }
     } catch (error) {
       if (error instanceof ApiError && error.status === 409) {
@@ -108,13 +118,14 @@ export default function SaveJobButton({ postingId }: SaveJobButtonProps) {
           const existingState = await getSavedJobState(requestPostingId);
 
           if (isCurrentPosting(requestPostingId)) {
-            setSavedJobState(existingState ?? "UNKNOWN");
+            updateState(existingState ?? "UNKNOWN");
           }
         } catch {
           if (isCurrentPosting(requestPostingId)) {
-            setSavedJobState("UNKNOWN");
+            updateState("UNKNOWN");
           }
         }
+
         return;
       }
 
@@ -122,6 +133,7 @@ export default function SaveJobButton({ postingId }: SaveJobButtonProps) {
         if (isCurrentPosting(requestPostingId)) {
           setError("Please log in to save this job.");
         }
+
         return;
       }
 
@@ -145,20 +157,22 @@ export default function SaveJobButton({ postingId }: SaveJobButtonProps) {
       await deleteSavedJob(requestPostingId);
 
       if (isCurrentPosting(requestPostingId)) {
-        setSavedJobState(null);
+        updateState(null);
       }
     } catch (error) {
       if (error instanceof ApiError && error.status === 401) {
         if (isCurrentPosting(requestPostingId)) {
           setError("Please log in to update this job.");
         }
+
         return;
       }
 
       if (error instanceof ApiError && error.status === 404) {
         if (isCurrentPosting(requestPostingId)) {
-          setSavedJobState(null);
+          updateState(null);
         }
+
         return;
       }
 
@@ -172,55 +186,55 @@ export default function SaveJobButton({ postingId }: SaveJobButtonProps) {
     }
   }
 
-  const isChecking = action === "checking";
-  const isBusy = action !== "idle";
-  const canRemove = savedJobState === "SAVED";
-  const trackedLabel = isTrackedState(savedJobState)
-    ? TRACKED_STATE_LABELS[savedJobState]
-    : null;
-  const buttonLabel = canRemove
-    ? "Remove"
-    : trackedLabel
-      ? trackedLabel
-      : "Save job";
-
-  if (isChecking) {
-    return (
-      <div className="save-job-control">
-        <button type="button" className="save-job-button" disabled>
-          Checking...
-        </button>
-      </div>
-    );
+  function handleClick(event: MouseEvent<HTMLButtonElement>) {
+    event.stopPropagation();
+    void (canRemove ? handleRemove() : handleSave());
   }
 
+  const isBusy = action !== "idle" || isCheckingInitialState;
+  const isSaved = savedState !== null;
+  const canRemove = isSaved;
+  const ariaLabel = isSaved ? "Remove from saved jobs" : "Save job";
+  const buttonText =
+    action === "checking" || isCheckingInitialState
+      ? "Checking..."
+      : action === "saving"
+        ? "Saving..."
+        : action === "removing"
+          ? "Removing..."
+          : isSaved
+            ? "Saved"
+            : "Save job";
+
   return (
-    <div className="save-job-control">
+    <div className={`saved-bookmark-control is-${variant}`}>
       <button
         type="button"
-        className={`save-job-button${savedJobState ? " is-saved" : ""}`}
-        disabled={isBusy || Boolean(trackedLabel)}
-        onClick={() => void (canRemove ? handleRemove() : handleSave())}
+        className={`saved-bookmark-button is-${variant}${
+          isSaved ? " is-saved" : ""
+        }`}
+        aria-label={ariaLabel}
+        aria-pressed={isSaved}
+        disabled={isBusy}
+        onClick={handleClick}
       >
-        <span aria-hidden="true">{savedJobState ? "-" : "+"}</span>
-        {action === "saving"
-          ? "Saving..."
-          : action === "removing"
-            ? "Removing..."
-            : buttonLabel}
+        <svg
+          aria-hidden="true"
+          focusable="false"
+          viewBox="0 0 24 24"
+          width="20"
+          height="20"
+        >
+          <path d="M7 4.75C7 3.78 7.78 3 8.75 3h6.5C16.22 3 17 3.78 17 4.75V20l-5-3.2L7 20V4.75Z" />
+        </svg>
+        {variant === "cta" ? <span>{buttonText}</span> : null}
       </button>
 
-      {trackedLabel ? (
-        <p className="save-job-note">
-          The saved status is not removable from this page.
-        </p>
-      ) : null}
-
-      {error && (
-        <p className="save-job-error" role="alert">
+      {error ? (
+        <p className="saved-bookmark-error" role="alert">
           {error}
         </p>
-      )}
+      ) : null}
     </div>
   );
 }

@@ -326,7 +326,15 @@ def make_pipeline(profile: PipelineProfile):
                 ) or profile.backend_pg_secret_fallback(team)
                 os.environ["BACKEND_PG_PASSWORD"] = secret("BACKEND_PG_PASSWORD", secret_name)
 
-            return sync.run()
+            return sync.run(
+                marts=[
+                    ("fct_postings_enriched", "fct_postings"),
+                    ("fct_postings_skills", "fct_postings_skills"),
+                    ("fct_postings_cities", "fct_postings_cities"),
+                    ("fct_postings_requirements", "fct_postings_requirements"),
+                    ("fct_skill_popularity", "fct_skill_popularity"),
+                ]
+            )
 
         ingest() >> list_landing_files() >> dbt_build() >> publish_to_backend()
 

@@ -4,64 +4,57 @@ export default function PrivacyPage() {
   return (
     <section className="legal-page">
       <div className="legal-container">
-        <p className="legal-eyebrow">LEGAL</p>
+        <p className="legal-eyebrow">PRIVACY</p>
 
-        <h1>Privacy Policy</h1>
+        <h1>Privacy Notice</h1>
 
         <p className="legal-updated">
-          Temporary draft — final legal copy will be added later.
+          A simple project notice for how JobMatch uses information in the app.
         </p>
 
         <div className="legal-content">
           <section>
-            <h2>Information we use</h2>
+            <h2>Information used by JobMatch</h2>
             <p>
-              JobMatch may use information you provide, such as your name, email
-              address, profile details, skills, preferences, and saved job
-              activity.
+              JobMatch may use information you provide, such as account details,
+              profile preferences, skills, saved jobs, and application tracking
+              statuses, to support the product features.
             </p>
           </section>
 
           <section>
-            <h2>Why we use this information</h2>
+            <h2>How profile information helps</h2>
             <p>
-              This information is used to provide account features, personalize
-              your experience, support job matching, and help you organize your
-              job search.
+              Profile information and skills can help the app personalize job
+              discovery and show match information based on available profile
+              and job data.
             </p>
           </section>
 
           <section>
-            <h2>Authentication</h2>
+            <h2>Accounts and authentication</h2>
             <p>
-              JobMatch uses authenticated sessions to keep you signed in. The
-              frontend does not store authentication tokens in localStorage.
+              Some features require an account and authenticated session, such
+              as saving jobs, updating a profile, and viewing member-only
+              information.
             </p>
           </section>
 
           <section>
             <h2>External job sources</h2>
             <p>
-              When you follow an external job or application link, the
-              destination website may process information according to its own
-              privacy policy.
+              Job listings may come from external data sources. If you follow an
+              external application link, the destination website may have its
+              own privacy practices.
             </p>
           </section>
 
           <section>
-            <h2>Your account and data</h2>
+            <h2>Project limitations</h2>
             <p>
-              You may be able to update or remove account information through
-              the available account settings. Deleting your account permanently
-              removes the account according to the current service behavior.
-            </p>
-          </section>
-
-          <section>
-            <h2>Changes to this policy</h2>
-            <p>
-              This policy may be updated as JobMatch develops and new features
-              are introduced.
+              JobMatch is a student/demo project. Users should not assume that
+              it provides production-level legal, compliance, retention,
+              deletion, or third-party contractual guarantees.
             </p>
           </section>
         </div>

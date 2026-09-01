@@ -29,9 +29,10 @@ public class JobController {
     public ResponseEntity<List<JobSearchResponse>> searchJobs(
             @RequestParam(required = false) String discipline,
             @RequestParam(required = false) String workMode,
-            @RequestParam(required = false) String location
+            @RequestParam(required = false) String location,
+            @RequestParam(required = false) String q
     ) {
-        List<JobSearchResponse> jobs = jobService.searchJobs(discipline, workMode, location);
+        List<JobSearchResponse> jobs = jobService.searchJobs(discipline, workMode, location, q);
         return ResponseEntity.ok(jobs);
     }
 
