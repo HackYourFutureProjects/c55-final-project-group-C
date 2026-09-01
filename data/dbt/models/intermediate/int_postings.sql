@@ -2,36 +2,21 @@
 -- One row per posting — same grain as stg_postings.
 --
 -- Responsibilities of this model:
---   * create the canonical posting_id
---   * deduplicate postings, keeping the latest ingested version
---   * clean job-description text
---   * normalize work_mode
---   * flag whether usable location information exists
+-- * create the canonical posting_id
+-- * deduplicate postings, keeping the latest ingested version
+-- * clean job-description text
+-- * normalize work_mode
+-- * flag whether usable location information exists
 --
 -- Raw source fields are preserved alongside cleaned fields.
 -- More domain-specific transformations belong in downstream
 -- intermediate models or marts.
-
 with
-    postings as (
-
-        select *
-        from {{ ref("stg_postings") }}
-
-    ),
+    postings as (select * from {{ ref("stg_postings") }}),
 
     keyed as (
 
-        select
-            md5(
-                concat(
-                    original_source,
-                    '-',
-                    source_job_id
-                )
-            ) as posting_id,
-
-            *
+        select md5(concat(original_source, '-', source_job_id)) as posting_id, *
 
         from postings
 
@@ -46,10 +31,7 @@ with
         from keyed
 
         qualify
-            row_number() over (
-                partition by posting_id
-                order by ingested_at desc
-            ) = 1
+            row_number() over (partition by posting_id order by ingested_at desc) = 1
 
     ),
 
@@ -61,12 +43,14 @@ with
             *,
 
             case
-                when description_raw is null then null
-                else regexp_replace(
-                    description_raw,
-                    '(?is)<(script|style)[^>]*>.*?</(script|style)>',
-                    ' '
-                )
+                when description_raw is null
+                then null
+                else
+                    regexp_replace(
+                        description_raw,
+                        '(?is)<(script|style)[^>]*>.*?</(script|style)>',
+                        ' '
+                    )
             end as description_without_blocks
 
         from deduplicated
@@ -80,12 +64,9 @@ with
             *,
 
             case
-                when description_without_blocks is null then null
-                else regexp_replace(
-                    description_without_blocks,
-                    '<[^>]+>',
-                    ' '
-                )
+                when description_without_blocks is null
+                then null
+                else regexp_replace(description_without_blocks, '<[^>]+>', ' ')
             end as description_without_tags
 
         from description_blocks_removed
@@ -99,8 +80,9 @@ with
             *,
 
             case
-                when description_without_tags is null then null
-                else replace(
+                when description_without_tags is null
+                then null
+                else
                     replace(
                         replace(
                             replace(
@@ -109,9 +91,61 @@ with
                                         replace(
                                             replace(
                                                 replace(
-                                                    description_without_tags,
-                                                    '&nbsp;',
-                                                    ' '
+                                                    replace(
+                                                        description_without_tags,
+                                                        '&nbsp;',
+                                                        ' '
+                                                    ),
+                                                    '&amp;',
+                                                    '&'
+                                                ),
+                                                '&quot;',
+                                                '"'
+                                            ),
+                                            '&#39;',
+                                            ''''
+                                        ),
+                                        '&#x27;',
+                                        ''''
+                                    ),
+                                    '&apos;',
+                                    ''''
+                                ),
+                                '&lt;',
+                                '<'
+                            ),
+                            '&gt;',
+                            '>'
+                        ),
+                        chr(160),
+                        ' '
+                    )
+            end as description_decoded
+
+        from description_tags_removed
+
+    ),
+
+    -- Second decoding pass for double-encoded HTML entities.
+    -- Example: &amp;amp; -> &amp; -> &
+    description_entities_decoded_again as (
+
+        select
+            *,
+
+            case
+                when description_decoded is null
+                then null
+                else
+                    replace(
+                        replace(
+                            replace(
+                                replace(
+                                    replace(
+                                        replace(
+                                            replace(
+                                                replace(
+                                                    description_decoded, '&nbsp;', ' '
                                                 ),
                                                 '&amp;',
                                                 '&'
@@ -133,58 +167,7 @@ with
                         ),
                         '&gt;',
                         '>'
-                    ),
-                    chr(160),
-                    ' '
-                )
-            end as description_decoded
-
-        from description_tags_removed
-
-    ),
-
-    -- Second decoding pass for double-encoded HTML entities.
-    -- Example: &amp;amp; -> &amp; -> &
-    description_entities_decoded_again as (
-
-        select
-            *,
-
-            case
-                when description_decoded is null then null
-                else replace(
-                    replace(
-                        replace(
-                            replace(
-                                replace(
-                                    replace(
-                                        replace(
-                                            replace(
-                                                description_decoded,
-                                                '&nbsp;',
-                                                ' '
-                                            ),
-                                            '&amp;',
-                                            '&'
-                                        ),
-                                        '&quot;',
-                                        '"'
-                                    ),
-                                    '&#39;',
-                                    ''''
-                                ),
-                                '&#x27;',
-                                ''''
-                            ),
-                            '&apos;',
-                            ''''
-                        ),
-                        '&lt;',
-                        '<'
-                    ),
-                    '&gt;',
-                    '>'
-                )
+                    )
             end as description_decoded_final
 
         from description_entities_decoded
@@ -197,14 +180,7 @@ with
             *,
 
             nullif(
-                trim(
-                    regexp_replace(
-                        description_decoded_final,
-                        '\\s+',
-                        ' '
-                    )
-                ),
-                ''
+                trim(regexp_replace(description_decoded_final, '\\s+', ' ')), ''
             ) as description_clean
 
         from description_entities_decoded_again
@@ -217,16 +193,7 @@ with
             *,
 
             nullif(
-                lower(
-                    trim(
-                        regexp_replace(
-                            source_work_mode,
-                            '\\s+',
-                            ' '
-                        )
-                    )
-                ),
-                ''
+                lower(trim(regexp_replace(source_work_mode, '\\s+', ' '))), ''
             ) as work_mode
 
         from description_cleaned
@@ -242,18 +209,14 @@ with
                 coalesce(
                     size(
                         filter(
-                            cities_raw,
-                            city -> city is not null
-                                and trim(city) <> ''
+                            cities_raw, city -> city is not null and trim(city) <> ''
                         )
                     ),
                     0
-                ) > 0
-
-                or coalesce(
-                    work_mode in ('remote', 'hybrid'),
-                    false
                 )
+                > 0
+
+                or coalesce(work_mode in ('remote', 'hybrid'), false)
             ) as has_location_data
 
         from work_mode_cleaned
