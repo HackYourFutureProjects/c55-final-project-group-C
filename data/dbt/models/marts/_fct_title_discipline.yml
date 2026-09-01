@@ -17,4 +17,38 @@ models:
         tests:
           - not_null
           - accepted_values:
-              values: ["backend", "frontend", "data", "devops", "other"]
+              values:
+                - data_engineering
+                - data_science
+                - data_analytics
+                - ai_engineering
+                - ml_ai
+                - software_engineering
+                - backend
+                - frontend
+                - fullstack
+                - mobile
+                - devops
+                - security
+                - qa
+                - architecture
+                - network_engineering
+                - hardware
+                - product
+                - project_management
+                - management
+                - business_analysis
+                - design
+                - sales
+                - marketing
+                - operations
+                - support
+                - solutions_engineering
+                - finance
+                - hr
+                - recruiting
+                - legal
+                - technical_writing
+                - developer_relations
+                - blockchain
+                - other
