@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import JobDetailsMatchSection from "@/components/jobs/JobDetailsMatchSection";
-import SaveJobButton from "@/components/jobs/SaveJobButton";
+import SavedJobBookmarkButton from "@/components/jobs/SavedJobBookmarkButton";
 import type { JobDetailsResponse } from "@/lib/api";
 import { formatEnumLabel, formatPostedDate } from "@/lib/formatters";
 import { BackendRequestError, getJobDetailsServer } from "@/lib/jobs-server";
@@ -124,7 +124,7 @@ export default async function JobDetailsPage({ params }: JobDetailsPageProps) {
           </div>
 
           <div className="job-details-actions">
-            <SaveJobButton postingId={job.postingId} />
+            <SavedJobBookmarkButton postingId={job.postingId} variant="cta" />
 
             {applicationUrl ? (
               <a

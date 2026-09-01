@@ -1374,6 +1374,9 @@ a {
 }
 
 .job-details-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
   flex-shrink: 0;
 }
 
@@ -2018,6 +2021,12 @@ a {
 
   .job-details-actions {
     width: 100%;
+    flex-direction: column;
+  }
+
+  .job-details-actions .saved-bookmark-control,
+  .job-details-actions .saved-bookmark-button {
+    width: 100%;
   }
 }
 
@@ -2116,12 +2125,27 @@ a {
   line-height: 1.7;
 }
 
-.saved-overview-section {
+.saved-layout {
   margin-top: 56px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 320px);
+  grid-template-areas: "list overview";
+  gap: 48px;
+  align-items: start;
+}
+
+.saved-list-section {
+  grid-area: list;
+}
+
+.saved-overview-section {
+  grid-area: overview;
+  position: sticky;
+  top: 96px;
 }
 
 .job-status-summary {
-  padding: 34px 36px;
+  padding: 28px;
   border: 1px solid #dfd5da;
   border-radius: 24px;
   background: #f2e9ee;
@@ -2130,21 +2154,39 @@ a {
 .job-status-summary-header {
   display: flex;
   justify-content: space-between;
-  gap: 32px;
+  gap: 18px;
   align-items: flex-start;
 }
 
 .job-status-summary-header h2 {
   margin-top: 10px;
-  color: #211b20;
   font-size: 1.8rem;
   letter-spacing: -0.035em;
+}
+
+.job-status-title-link {
+  display: inline-block;
+  border-radius: 8px;
+  color: #211b20;
+  text-decoration: none;
+}
+
+.job-status-title-link:hover {
+  color: #4b173f;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.job-status-title-link[aria-current="page"] {
+  box-shadow: inset 0 -3px 0 #4b173f;
+  color: #4b173f;
 }
 
 .job-status-total {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
+  flex-shrink: 0;
 }
 
 .job-status-total strong {
@@ -2161,31 +2203,58 @@ a {
 }
 
 .job-status-grid {
-  margin-top: 34px;
+  margin-top: 28px;
+  list-style: none;
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: 1fr;
+  gap: 8px;
   border-top: 1px solid #d8cbd2;
+  padding-top: 16px;
 }
 
-.job-status-grid > div {
-  padding: 22px 22px 0 0;
+.job-status-grid li {
+  min-width: 0;
 }
 
-.job-status-grid > div + div {
-  padding-left: 22px;
-  border-left: 1px solid #d8cbd2;
+.job-status-grid a {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: center;
+  min-height: 46px;
+  padding: 10px 12px;
+  border: 1px solid transparent;
+  border-radius: 14px;
+  color: inherit;
+  text-decoration: none;
 }
 
-.job-status-grid dt {
+.job-status-grid a:hover {
+  border-color: #d8cbd2;
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.job-status-grid a:focus-visible,
+.job-status-title-link:focus-visible {
+  outline: 3px solid #c973ac;
+  outline-offset: 3px;
+}
+
+.job-status-grid a[aria-current="page"] {
+  border-color: #c9b8c3;
+  background: #ffffff;
+  box-shadow: inset 4px 0 0 #4b173f;
+}
+
+.job-status-grid span {
   color: #7a6d75;
   font-size: 0.82rem;
   line-height: 1.4;
 }
 
-.job-status-grid dd {
-  margin-top: 8px;
+.job-status-grid strong {
   color: #211b20;
-  font-size: 1.8rem;
+  font-size: 1.25rem;
   font-weight: 700;
 }
 
@@ -2204,10 +2273,6 @@ a {
   border-radius: 14px;
   background: #fbefef;
   color: #7d3030;
-}
-
-.saved-list-section {
-  margin-top: 72px;
 }
 
 .saved-list-heading {
@@ -2468,28 +2533,118 @@ a {
   line-height: 1.4;
 }
 
+.saved-bookmark-control {
+  display: grid;
+  gap: 6px;
+  justify-items: end;
+}
+
+.saved-bookmark-button {
+  display: grid;
+  place-items: center;
+  border: 1px solid #bfaeba;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #4b173f;
+  cursor: pointer;
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease,
+    opacity 160ms ease;
+}
+
+.saved-bookmark-button.is-icon {
+  width: 42px;
+  height: 42px;
+}
+
+.saved-bookmark-button.is-cta {
+  min-height: 48px;
+  padding: 0 18px;
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  font: inherit;
+  font-weight: 700;
+}
+
+.saved-bookmark-button svg {
+  display: block;
+}
+
+.saved-bookmark-button path {
+  fill: transparent;
+  stroke: currentColor;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+
+.saved-bookmark-button.is-saved {
+  border-color: #4b173f;
+  background: #4b173f;
+  color: #ffffff;
+}
+
+.saved-bookmark-button.is-cta.is-saved {
+  background: #f2e9ee;
+  color: #4b173f;
+}
+
+.saved-bookmark-button.is-saved path {
+  fill: currentColor;
+}
+
+.saved-bookmark-button:hover:not(:disabled) {
+  border-color: #4b173f;
+  background: #f2e9ee;
+}
+
+.saved-bookmark-button.is-saved:hover:not(:disabled) {
+  background: #35102d;
+  color: #ffffff;
+}
+
+.saved-bookmark-button.is-cta.is-saved:hover:not(:disabled) {
+  background: #e8dbe3;
+  color: #4b173f;
+}
+
+.saved-bookmark-button:focus-visible {
+  outline: 3px solid #c973ac;
+  outline-offset: 3px;
+}
+
+.saved-bookmark-button:disabled {
+  cursor: default;
+  opacity: 0.72;
+}
+
+.saved-bookmark-error {
+  max-width: 220px;
+  color: #7d3030;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  text-align: right;
+}
+
 @media (max-width: 900px) {
+  .saved-layout {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "overview"
+      "list";
+    gap: 40px;
+  }
+
+  .saved-overview-section {
+    position: static;
+  }
+
   .job-status-grid {
     grid-template-columns: repeat(2, 1fr);
-  }
-
-  .job-status-grid > div {
-    padding: 20px 0;
-    border-bottom: 1px solid #d8cbd2;
-  }
-
-  .job-status-grid > div + div {
-    padding-left: 0;
-    border-left: 0;
-  }
-
-  .job-status-grid > div:nth-child(odd) {
-    padding-right: 20px;
-  }
-
-  .job-status-grid > div:nth-child(even) {
-    padding-left: 20px;
-    border-left: 1px solid #d8cbd2;
   }
 
   .saved-list-heading {
@@ -2527,13 +2682,6 @@ a {
 
   .job-status-grid {
     grid-template-columns: 1fr;
-  }
-
-  .job-status-grid > div,
-  .job-status-grid > div:nth-child(odd),
-  .job-status-grid > div:nth-child(even) {
-    padding: 16px 0;
-    border-left: 0;
   }
 
   .saved-job-card {
@@ -2805,21 +2953,30 @@ a {
 
 .job-result-item {
   padding: 30px 0;
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "main actions"
+    "main link";
   gap: 32px;
+  align-items: start;
   border-bottom: 1px solid #e4dbe0;
 }
 
 .job-result-main {
+  grid-area: main;
   min-width: 0;
-  flex: 1;
 }
 
 .job-result-heading {
   display: flex;
   justify-content: space-between;
   gap: 24px;
+}
+
+.job-result-heading > div:first-child {
+  min-width: 0;
+  flex: 1;
 }
 
 .job-result-company {
@@ -2839,13 +2996,20 @@ a {
 }
 
 .job-result-freshness {
-  align-self: start;
   padding: 6px 10px;
   border: 1px solid #d9cdd4;
   border-radius: 999px;
   color: #5d4354;
   font-size: 0.78rem;
   font-weight: 600;
+}
+
+.job-result-action-row {
+  grid-area: actions;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: flex-end;
 }
 
 .job-result-location {
@@ -2878,8 +3042,8 @@ a {
 }
 
 .job-result-link {
-  align-self: center;
-  flex-shrink: 0;
+  grid-area: link;
+  justify-self: end;
   color: #4b173f;
   font-size: 0.9rem;
   font-weight: 700;
@@ -2909,7 +3073,11 @@ a {
   }
 
   .job-result-item {
-    flex-direction: column;
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "main"
+      "actions"
+      "link";
     gap: 20px;
   }
 
@@ -2918,8 +3086,12 @@ a {
     gap: 12px;
   }
 
+  .job-result-action-row {
+    justify-content: flex-start;
+  }
+
   .job-result-link {
-    align-self: flex-start;
+    justify-self: flex-start;
   }
 }
 .job-filters-form {

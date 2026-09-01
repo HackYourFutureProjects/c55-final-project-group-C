@@ -1,11 +1,24 @@
 import Link from "next/link";
+import SavedJobBookmarkButton from "@/components/jobs/SavedJobBookmarkButton";
+import type { JobState } from "@/lib/api";
 import type { JobSearchResult } from "@/lib/jobs";
 
 type JobResultItemProps = {
   job: JobSearchResult;
+  savedState?: JobState | "UNKNOWN" | null;
+  isCheckingSavedState?: boolean;
+  onSavedStateChange?: (
+    postingId: string,
+    state: JobState | "UNKNOWN" | null,
+  ) => void;
 };
 
-export default function JobResultItem({ job }: JobResultItemProps) {
+export default function JobResultItem({
+  job,
+  savedState,
+  isCheckingSavedState = false,
+  onSavedStateChange,
+}: JobResultItemProps) {
   const skillOccurrences = new Map<string, number>();
   const visibleSkills = job.skills.slice(0, 5).map((skill) => {
     const occurrence = (skillOccurrences.get(skill) ?? 0) + 1;
@@ -30,10 +43,6 @@ export default function JobResultItem({ job }: JobResultItemProps) {
               </Link>
             </h3>
           </div>
-
-          {job.freshness && (
-            <span className="job-result-freshness">{job.freshness}</span>
-          )}
         </div>
 
         <p className="job-result-location">
@@ -57,6 +66,19 @@ export default function JobResultItem({ job }: JobResultItemProps) {
             ))}
           </div>
         )}
+      </div>
+
+      <div className="job-result-action-row">
+        {job.freshness && (
+          <span className="job-result-freshness">{job.freshness}</span>
+        )}
+
+        <SavedJobBookmarkButton
+          postingId={job.id}
+          initialState={savedState}
+          isCheckingInitialState={isCheckingSavedState}
+          onStateChange={onSavedStateChange}
+        />
       </div>
 
       <Link
