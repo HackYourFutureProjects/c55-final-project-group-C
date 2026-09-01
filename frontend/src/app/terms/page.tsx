@@ -4,60 +4,65 @@ export default function TermsPage() {
   return (
     <section className="legal-page">
       <div className="legal-container">
-        <p className="legal-eyebrow">LEGAL</p>
+        <p className="legal-eyebrow">TERMS</p>
 
-        <h1>Terms & Conditions</h1>
+        <h1>Terms of Use</h1>
 
         <p className="legal-updated">
-          Temporary draft — final legal copy will be added later.
+          Straightforward terms for using the JobMatch project experience.
         </p>
 
         <div className="legal-content">
           <section>
             <h2>Using JobMatch</h2>
             <p>
-              JobMatch helps users discover job opportunities, understand job
-              relevance, and organize their job search.
+              JobMatch is a job discovery and matching product. It helps users
+              search for jobs, review job information, save listings, track
+              application statuses, and view match information where available.
             </p>
           </section>
 
           <section>
-            <h2>Your account</h2>
+            <h2>External listings</h2>
             <p>
-              You are responsible for providing accurate account information and
-              keeping access to your account secure.
-            </p>
-          </section>
-
-          <section>
-            <h2>Job information</h2>
-            <p>
-              Job listings may come from external sources. JobMatch does not
-              guarantee that every listing is complete, current, or available.
+              Job listings can originate from external sources. JobMatch does
+              not control those sources and cannot guarantee that every listing
+              is complete, current, accurate, or still available.
             </p>
           </section>
 
           <section>
             <h2>External applications</h2>
             <p>
-              Some application links may take you to third-party websites. Those
-              websites operate under their own terms and policies.
+              Applying for a job may redirect you to an external website.
+              JobMatch does not control external job websites, their content, or
+              their application processes.
             </p>
           </section>
 
           <section>
-            <h2>No employment guarantee</h2>
+            <h2>Match information</h2>
             <p>
-              Match information and recommendations are intended to support your
-              job search and do not guarantee interviews, offers, or employment.
+              Match percentages and related information are intended to support
+              decision-making. They do not guarantee hiring, interview
+              selection, job suitability, availability, or accuracy.
             </p>
           </section>
 
           <section>
-            <h2>Changes to the service</h2>
+            <h2>User responsibility</h2>
             <p>
-              JobMatch may change or improve its features as the service
-              develops.
+              Users are responsible for checking job details, application
+              requirements, employer information, and external website terms
+              before acting on a listing.
+            </p>
+          </section>
+
+          <section>
+            <h2>Project status</h2>
+            <p>
+              JobMatch is a project/demo product. It should not be understood as
+              offering unsupported commercial, legal, or employment guarantees.
             </p>
           </section>
         </div>
