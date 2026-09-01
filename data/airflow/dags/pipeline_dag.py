@@ -332,6 +332,7 @@ def make_pipeline(profile: PipelineProfile):
                     ("fct_postings_skills", "fct_postings_skills"),
                     ("fct_postings_cities", "fct_postings_cities"),
                     ("fct_postings_requirements", "fct_postings_requirements"),
+                    ("fct_skill_popularity", "fct_skill_popularity"),
                 ]
             )
 
