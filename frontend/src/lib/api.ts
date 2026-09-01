@@ -306,6 +306,20 @@ export type JobDetailsResponse = JobSearchResponse & {
   status: string | null;
 };
 
+export type JobMatchResponse = {
+  postingId: string;
+  title: string;
+  company: string;
+  category: string | null;
+  matchedSkills: string[];
+  matchedCount: number;
+  ofSkills: number;
+  jobSkillCount: number;
+  matchScore: number;
+  matchPercent: number;
+  label: string | null;
+};
+
 export type JobSearchParams = {
   discipline?: string;
   workMode?: string;
@@ -314,4 +328,8 @@ export type JobSearchParams = {
 
 export function getJobFilters(): Promise<JobFiltersResponse> {
   return request<JobFiltersResponse>("/api/jobs/filters");
+}
+
+export function getTopMatches(): Promise<JobMatchResponse[]> {
+  return request<JobMatchResponse[]>("/api/jobs/top-matches");
 }
