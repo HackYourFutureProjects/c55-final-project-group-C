@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 
 export default function Footer() {
@@ -5,8 +6,18 @@ export default function Footer() {
     <footer className="site-footer">
       <div className="footer-inner">
         <div className="footer-brand">
-          <Link className="brand" href="/">
-            JobMatch
+          <Link
+            className="brand footer-brand-link"
+            href="/"
+            aria-label="JobMatch home"
+          >
+            <Image
+              className="footer-logo"
+              src="/jobmatch-logo.svg"
+              alt=""
+              width={186}
+              height={32}
+            />
           </Link>
 
           <p>

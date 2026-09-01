@@ -11,6 +11,9 @@ export const metadata: Metadata = {
   },
   description:
     "Find relevant and fresh jobs, understand your match, and spend less time on outdated listings.",
+  icons: {
+    icon: "/favicon.svg",
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
