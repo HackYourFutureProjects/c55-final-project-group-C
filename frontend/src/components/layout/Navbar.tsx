@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
@@ -17,8 +18,15 @@ export default function Navbar() {
   return (
     <header className="site-header">
       <nav className="navbar" aria-label="Main navigation">
-        <Link className="brand" href="/">
-          JobMatch
+        <Link className="brand" href="/" aria-label="JobMatch home">
+          <Image
+            className="brand-logo"
+            src="/jobmatch-logo.svg"
+            alt=""
+            width={186}
+            height={32}
+            priority
+          />
         </Link>
 
         <div className="nav-links">
