@@ -16,7 +16,7 @@ select
     original_source as source,
     source_job_id,
 
-    title,
+    postings.title as title,
     company_name,
 
     location_raw as location,
@@ -42,8 +42,9 @@ select
     source_salary_max as salary_max,
     source_salary_currency as salary_currency,
     source_salary_period as salary_period,
-
-    source_category as category,
+    -- Keep the source category when available. use the LLM classification
+    -- only as a fallback when the source category is missing.
+    coalesce(postings.source_category, llm.discipline) as category,
 
     -- description_clean instead of description_raw: HTML tags stripped and
     -- entities (&#39; etc.) decoded, so the backend stops receiving raw
@@ -70,3 +71,4 @@ select
     ingested_at
 
 from postings
+left join {{ ref("fct_title_discipline") }} as llm on postings.title = llm.title

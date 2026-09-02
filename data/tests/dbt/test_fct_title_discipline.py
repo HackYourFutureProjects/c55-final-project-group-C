@@ -61,8 +61,8 @@ def test_missing_keys_default_to_other():
 
 
 def test_json_wrapped_in_prose_is_still_read():
-    content = 'Sure!\n```json\n{"0": "data"}\n```'
-    assert _parse_labels(content, 1) == ["data"]
+    content = 'Sure!\n```json\n{"0": "data_engineering"}\n```'
+    assert _parse_labels(content, 1) == ["data_engineering"]
 
 
 def test_an_answer_with_no_json_raises():

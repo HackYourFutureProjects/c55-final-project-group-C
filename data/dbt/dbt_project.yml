@@ -44,7 +44,7 @@ models:
       # See ../optional/python_model/README.md.
       fct_title_discipline:
         # Off until you turn it on. Key is already in Databricks scope team_c.
-        +enabled: false
+        +enabled: true
         +secret_scope: team_c
         # LiteLLM aliases: cheap | medium | strong. Start on cheap.
         +llm_model: cheap

@@ -30,13 +30,51 @@ import urllib.request
 from collections.abc import Callable
 
 # Synced with optional/llm_classify/llm_classify_dev.ipynb — copy prompt changes both ways.
-CATEGORIES = ("backend", "frontend", "data", "devops", "other")
+CATEGORIES = (
+    "data_engineering",
+    "data_science",
+    "data_analytics",
+    "ai_engineering",
+    "ml_ai",
+    "software_engineering",
+    "backend",
+    "frontend",
+    "fullstack",
+    "mobile",
+    "devops",
+    "security",
+    "qa",
+    "architecture",
+    "network_engineering",
+    "hardware",
+    "product",
+    "project_management",
+    "management",
+    "business_analysis",
+    "design",
+    "sales",
+    "marketing",
+    "operations",
+    "support",
+    "solutions_engineering",
+    "finance",
+    "hr",
+    "recruiting",
+    "legal",
+    "technical_writing",
+    "developer_relations",
+    "blockchain",
+    "other",
+)
 
 PROMPT = (
-    "Classify each job title into exactly one category.\n"
-    f"Categories: {', '.join(CATEGORIES)}.\n"
-    'Reply with JSON only, like {"0": "backend", "1": "data"}.\n'
-    "Use the numbers below as keys. Use other when unsure.\n\n"
+    "Classify each job title into exactly one job discipline.\n"
+    f"Allowed disciplines: {', '.join(CATEGORIES)}.\n"
+    "Choose the most specific discipline that matches the job title.\n"
+    "Use other only when the title does not provide enough information "
+    "or does not fit any allowed discipline.\n"
+    'Reply with JSON only, like {"0": "backend", "1": "data_engineering"}.\n'
+    "Use the numbers below as keys.\n\n"
     "{numbered_items}"
 )
 
@@ -132,7 +170,7 @@ def model(dbt, session):
         submission_method="serverless_cluster",
     )
 
-    postings = dbt.ref("fct_postings").select("title").distinct()
+    postings = dbt.ref("int_postings").filter("source_category IS NULL").select("title").distinct()
 
     if dbt.is_incremental:
         seen = session.table(f"{dbt.this}").select("title")
