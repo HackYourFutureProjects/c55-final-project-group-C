@@ -1,0 +1,1 @@
+CREATE INDEX saved_jobs_posting_id_idx ON app.saved_jobs (posting_id);

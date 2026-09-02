@@ -29,5 +29,5 @@ public record JobDetailResponse(
         String salaryPeriod,
         String sourceUrl,
         String status,
-        Integer savedCount
+        int savedCount
 ) {}

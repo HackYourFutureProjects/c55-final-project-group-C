@@ -30,38 +30,44 @@ public class JobRepository {
     public List<JobSearchResponse> searchJobs(String discipline, String workMode, String location, String q) {
         StringBuilder sql = new StringBuilder("""
                 SELECT
-                    posting_id,
-                    title,
-                    company_name,
-                    location,
-                    work_mode,
-                    is_remote,
-                    skills,
-                    employment_type,
-                    posted_date,
-                    source,
-                    discipline,
-                    freshness_class,
-                    age_days,
-                    (SELECT COUNT(*) FROM saved_jobs sj WHERE sj.posting_id = fct_postings.posting_id) AS saved_count
-                FROM analytics.fct_postings
+                    f.posting_id,
+                    f.title,
+                    f.company_name,
+                    f.location,
+                    f.work_mode,
+                    f.is_remote,
+                    f.skills,
+                    f.employment_type,
+                    f.posted_date,
+                    f.source,
+                    f.discipline,
+                    f.freshness_class,
+                    f.age_days,
+                    COALESCE(s.saved_count, 0) AS saved_count
+                FROM analytics.fct_postings f
+                LEFT JOIN (
+                    SELECT posting_id, COUNT(*) AS saved_count
+                    FROM app.saved_jobs
+                    WHERE job_state = 'SAVED'
+                    GROUP BY posting_id
+                ) s ON s.posting_id = f.posting_id
                 WHERE 1=1
                 """);
 
         if (discipline != null && !discipline.isBlank()) {
-            sql.append(" AND discipline = :discipline");
+            sql.append(" AND f.discipline = :discipline");
         }
         if (workMode != null && !workMode.isBlank()) {
-            sql.append(" AND work_mode = :workMode");
+            sql.append(" AND f.work_mode = :workMode");
         }
         if (location != null && !location.isBlank()) {
-            sql.append(" AND location ILIKE :location");
+            sql.append(" AND f.location ILIKE :location");
         }
         if (q != null && !q.isBlank()) {
-            sql.append(" AND (title ILIKE :q OR company_name ILIKE :q OR location ILIKE :q OR skills::text ILIKE :q)");
+            sql.append(" AND (f.title ILIKE :q OR f.company_name ILIKE :q OR f.location ILIKE :q OR f.skills::text ILIKE :q)");
         }
 
-        sql.append(" ORDER BY posted_date DESC NULLS LAST, posting_id LIMIT :limit");
+        sql.append(" ORDER BY f.posted_date DESC NULLS LAST, f.posting_id LIMIT :limit");
 
         var statement = jdbcClient.sql(sql.toString()).param("limit", MAX_SEARCH_RESULTS);
 
@@ -103,10 +109,16 @@ public class JobRepository {
     public Optional<JobDetailResponse> getJobById(String postingId) {
         String sql = """
                 SELECT
-                    *,
-                    (SELECT COUNT(*) FROM saved_jobs sj WHERE sj.posting_id = fct_postings.posting_id) AS saved_count
-                FROM analytics.fct_postings
-                WHERE posting_id = ?
+                    f.*,
+                    COALESCE(s.saved_count, 0) AS saved_count
+                FROM analytics.fct_postings f
+                LEFT JOIN (
+                    SELECT posting_id, COUNT(*) AS saved_count
+                    FROM app.saved_jobs
+                    WHERE job_state = 'SAVED'
+                    GROUP BY posting_id
+                ) s ON s.posting_id = f.posting_id
+                WHERE f.posting_id = ?
                 """;
 
         return jdbcClient.sql(sql)

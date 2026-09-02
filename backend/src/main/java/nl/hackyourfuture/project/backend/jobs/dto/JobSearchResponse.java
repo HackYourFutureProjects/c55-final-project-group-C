@@ -20,5 +20,5 @@ public record JobSearchResponse(
         String discipline,
         String freshnessClass,
         Integer ageDays,
-        Integer savedCount
+        int savedCount
 ) {}
