@@ -3185,6 +3185,7 @@ a {
   font-weight: 600;
 }
 
+.job-filter-group input,
 .job-filter-group select {
   width: 100%;
   padding: 12px 14px;
@@ -3195,9 +3196,60 @@ a {
   font: inherit;
 }
 
+.job-filter-group input::placeholder {
+  color: #968a91;
+}
+
+.job-filter-group input:focus,
+.job-filter-group select:focus {
+  border-color: #6b345d;
+  box-shadow: 0 0 0 3px rgba(75, 23, 63, 0.08);
+  outline: none;
+}
+
 .job-filter-group select:disabled {
   cursor: not-allowed;
   opacity: 0.65;
+}
+
+.job-location-combobox {
+  position: relative;
+}
+
+.job-location-suggestions {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  max-height: 240px;
+  overflow-y: auto;
+  list-style: none;
+  border: 1px solid #d8cdd4;
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 16px 32px rgba(55, 36, 48, 0.12);
+}
+
+.job-location-suggestion {
+  width: 100%;
+  min-height: 42px;
+  padding: 10px 12px;
+  color: #2b2529;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.job-location-suggestion:hover,
+.job-location-suggestion[aria-selected="true"] {
+  background: #f2e9ee;
+  color: #4b173f;
+}
+
+.job-location-suggestion:focus-visible {
+  outline: 3px solid #c973ac;
+  outline-offset: -3px;
 }
 
 .job-filter-status {

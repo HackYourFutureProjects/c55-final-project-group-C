@@ -1,3 +1,7 @@
+"use client";
+
+import { type KeyboardEvent, useEffect, useId, useMemo, useState } from "react";
+
 type JobFiltersProps = {
   locations: string[];
   disciplines: string[];
@@ -17,6 +21,108 @@ export default function JobFilters({
   selectedDiscipline = "",
   selectedWorkMode = "",
 }: JobFiltersProps) {
+  const locationInputId = useId();
+  const locationListboxId = useId();
+  const [locationInput, setLocationInput] = useState(selectedLocation);
+  const [isLocationListOpen, setIsLocationListOpen] = useState(false);
+  const [activeLocationIndex, setActiveLocationIndex] = useState(-1);
+
+  const locationSuggestions = useMemo(() => {
+    const seenLocations = new Set<string>();
+
+    return locations
+      .flatMap((location) =>
+        location
+          .split(";")
+          .map((part) => part.trim())
+          .map((part) => part.split(",")[0]?.trim() || part)
+          .filter((part) => {
+            if (!part) {
+              return false;
+            }
+
+            const normalizedPart = part.toLowerCase();
+
+            if (seenLocations.has(normalizedPart)) {
+              return false;
+            }
+
+            seenLocations.add(normalizedPart);
+            return true;
+          }),
+      )
+      .sort((leftLocation, rightLocation) =>
+        leftLocation.localeCompare(rightLocation, undefined, {
+          sensitivity: "base",
+        }),
+      );
+  }, [locations]);
+
+  const visibleLocationSuggestions = useMemo(() => {
+    const query = locationInput.trim().toLowerCase();
+
+    if (!query) {
+      return locationSuggestions.slice(0, 8);
+    }
+
+    const startsWithMatches: string[] = [];
+    const containsMatches: string[] = [];
+
+    for (const location of locationSuggestions) {
+      const normalizedLocation = location.toLowerCase();
+
+      if (normalizedLocation.startsWith(query)) {
+        startsWithMatches.push(location);
+      } else if (normalizedLocation.includes(query)) {
+        containsMatches.push(location);
+      }
+    }
+
+    return [...startsWithMatches, ...containsMatches].slice(0, 8);
+  }, [locationInput, locationSuggestions]);
+
+  useEffect(() => {
+    setLocationInput(selectedLocation);
+  }, [selectedLocation]);
+
+  function selectLocation(location: string) {
+    setLocationInput(location);
+    setIsLocationListOpen(false);
+    setActiveLocationIndex(-1);
+  }
+
+  function handleLocationKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      setIsLocationListOpen(true);
+      setActiveLocationIndex((currentIndex) =>
+        Math.min(currentIndex + 1, visibleLocationSuggestions.length - 1),
+      );
+      return;
+    }
+
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+      setActiveLocationIndex((currentIndex) => Math.max(currentIndex - 1, 0));
+      return;
+    }
+
+    if (event.key === "Escape") {
+      setIsLocationListOpen(false);
+      setActiveLocationIndex(-1);
+      return;
+    }
+
+    if (
+      event.key === "Enter" &&
+      isLocationListOpen &&
+      activeLocationIndex >= 0
+    ) {
+      event.preventDefault();
+      selectLocation(visibleLocationSuggestions[activeLocationIndex]);
+    }
+  }
+
   return (
     <form className="job-filters-form" action="/jobs">
       {searchQuery && <input type="hidden" name="q" value={searchQuery} />}
@@ -54,17 +160,64 @@ export default function JobFilters({
       </div>
 
       <div className="job-filter-group">
-        <label htmlFor="location">Location</label>
+        <label htmlFor={locationInputId}>Location</label>
 
-        <select id="location" name="location" defaultValue={selectedLocation}>
-          <option value="">Any location</option>
+        <div className="job-location-combobox">
+          <input
+            id={locationInputId}
+            name="location"
+            type="text"
+            role="combobox"
+            aria-autocomplete="list"
+            aria-controls={locationListboxId}
+            aria-expanded={isLocationListOpen}
+            aria-activedescendant={
+              activeLocationIndex >= 0
+                ? `${locationListboxId}-${activeLocationIndex}`
+                : undefined
+            }
+            autoComplete="off"
+            value={locationInput}
+            onBlur={() => setIsLocationListOpen(false)}
+            onChange={(event) => {
+              setLocationInput(event.target.value);
+              setIsLocationListOpen(true);
+              setActiveLocationIndex(-1);
+            }}
+            onFocus={() => setIsLocationListOpen(true)}
+            onKeyDown={handleLocationKeyDown}
+            placeholder="Any location"
+          />
 
-          {locations.map((location) => (
-            <option key={location} value={location}>
-              {location}
-            </option>
-          ))}
-        </select>
+          {isLocationListOpen && visibleLocationSuggestions.length > 0 ? (
+            <div
+              className="job-location-suggestions"
+              id={locationListboxId}
+              role="listbox"
+            >
+              {visibleLocationSuggestions.map((location, index) => (
+                <div
+                  id={`${locationListboxId}-${index}`}
+                  className="job-location-suggestion"
+                  key={location}
+                  role="option"
+                  tabIndex={-1}
+                  aria-selected={activeLocationIndex === index}
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => selectLocation(location)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      selectLocation(location);
+                    }
+                  }}
+                >
+                  {location}
+                </div>
+              ))}
+            </div>
+          ) : null}
+        </div>
       </div>
 
       <button className="job-filters-submit" type="submit">
