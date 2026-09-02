@@ -10,16 +10,23 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
 // Ranks open postings against the logged-in user's profile, in two steps:
 // 1. SQL narrows - city (plus remote) and exact skill overlap cut the mart to SHORTLIST_SIZE.
-// 2. The model ranks that shortlist, taking synonyms and seniority into account.
+// 2. The model ranks whatever in that shortlist is not scored yet, taking synonyms and
+//    seniority into account.
 // The split is the design: sending the whole mart to a model would be a batch job, a
 // shortlist is one cheap call. Without the model the SQL ordering stands on its own.
+// Verdicts live in job_match_scores, not memory, so a restart does not re-buy them.
 @Service
 @RequiredArgsConstructor
 public class JobMatchService {
@@ -32,11 +39,18 @@ public class JobMatchService {
     static final int STRONG_MATCH_PERCENT = 60;
 
     private final JobMatchRepository jobMatchRepository;
+    private final JobMatchScoreRepository jobMatchScoreRepository;
     private final ProfileRepository profileRepository;
     private final UserRepository userRepository;
     private final MatchScorer matchScorer;
 
     public List<JobMatchResponse> getTopMatches(String email) {
+        return getTopMatches(email, false);
+    }
+
+    // instant: skip the model, answer from SQL plus stored verdicts (a primary-key lookup),
+    // so a caller can paint a list at once and fetch the fully scored one separately.
+    public List<JobMatchResponse> getTopMatches(String email, boolean instant) {
         Profile profile = loadProfile(email);
         List<String> skills = canonicalise(profile.getSkills());
 
@@ -53,8 +67,7 @@ public class JobMatchService {
             return List.of();
         }
 
-        // Empty whenever the model is unavailable: every row then falls back to overlap order.
-        Map<String, MatchScorer.Score> scores = matchScorer.score(skills, shortlist);
+        Map<String, MatchScorer.Score> scores = resolveScores(skills, shortlist, instant);
 
         return shortlist.stream()
                 .map(row -> toResponse(row, skills.size(), scores.get(row.postingId())))
@@ -62,6 +75,36 @@ public class JobMatchService {
                         .thenComparing(JobMatchResponse::matchedCount, Comparator.reverseOrder()))
                 .limit(RESULT_LIMIT)
                 .toList();
+    }
+
+    // Stored verdicts first, the model only for what is left: a returning skill set sends
+    // the model just the postings the daily publish added.
+    private Map<String, MatchScorer.Score> resolveScores(List<String> skills,
+                                                         List<JobMatchRepository.JobMatchRow> shortlist,
+                                                         boolean instant) {
+        String skillsHash = skillsHash(skills);
+        String scorerVersion = matchScorer.version();
+        List<String> postingIds = shortlist.stream().map(JobMatchRepository.JobMatchRow::postingId).toList();
+
+        Map<String, MatchScorer.Score> scores =
+                new HashMap<>(jobMatchScoreRepository.findScores(skillsHash, scorerVersion, postingIds));
+        if (instant) {
+            return scores;
+        }
+
+        List<JobMatchRepository.JobMatchRow> unscored = shortlist.stream()
+                .filter(row -> !scores.containsKey(row.postingId()))
+                .toList();
+        if (unscored.isEmpty()) {
+            return scores;
+        }
+
+        Map<String, MatchScorer.Score> fresh = matchScorer.score(skills, unscored);
+        if (!fresh.isEmpty()) {
+            jobMatchScoreRepository.saveScores(skillsHash, scorerVersion, fresh);
+        }
+        scores.putAll(fresh);
+        return scores;
     }
 
     private Profile loadProfile(String email) {
@@ -82,6 +125,21 @@ public class JobMatchService {
                 .map(skill -> skill.trim().toLowerCase(Locale.ROOT))
                 .distinct()
                 .toList();
+    }
+
+    // Fixed-width identity for a skill set, used to file stored scores. Sorted first, so
+    // picking order does not matter, and hashed because CHAR(64) indexes better than the
+    // raw set. The city is left out: the model never sees a location.
+    private static String skillsHash(List<String> skills) {
+        String canonical = String.join("\n", skills.stream().sorted().toList());
+        try {
+            byte[] digest = MessageDigest.getInstance("SHA-256")
+                    .digest(canonical.getBytes(StandardCharsets.UTF_8));
+            return HexFormat.of().formatHex(digest);
+        } catch (NoSuchAlgorithmException e) {
+            // SHA-256 is required of every JVM; if it is missing the platform is broken.
+            throw new IllegalStateException("SHA-256 unavailable", e);
+        }
     }
 
     private static JobMatchResponse toResponse(JobMatchRepository.JobMatchRow row, int ofSkills,
