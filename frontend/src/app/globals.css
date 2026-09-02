@@ -1667,6 +1667,7 @@ a {
 
 .profile-field {
   display: grid;
+  align-content: start;
   gap: 9px;
 }
 
