@@ -1941,6 +1941,12 @@ a {
   position: relative;
 }
 
+.profile-skill-picker-group {
+  display: grid;
+  gap: 9px;
+  border: 0;
+}
+
 .profile-skill-category {
   display: grid;
   gap: 8px;

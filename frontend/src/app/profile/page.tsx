@@ -8,6 +8,7 @@ import {
   useEffect,
   useId,
   useMemo,
+  useRef,
   useState,
 } from "react";
 
@@ -73,6 +74,7 @@ export default function ProfilePage() {
   const router = useRouter();
   const { user, isLoading, clearUser, refreshUser } = useAuth();
   const skillListboxId = useId();
+  const skillPickerRef = useRef<HTMLFieldSetElement>(null);
 
   const [name, setName] = useState("");
   const [isSavingAccount, setIsSavingAccount] = useState(false);
@@ -83,6 +85,7 @@ export default function ProfilePage() {
   const [skillSearch, setSkillSearch] = useState("");
   const [selectedSkillCategory, setSelectedSkillCategory] = useState("");
   const [activeSkillIndex, setActiveSkillIndex] = useState(0);
+  const [isSkillResultsOpen, setIsSkillResultsOpen] = useState(false);
   const [discipline, setDiscipline] = useState("");
   const [preferredCity, setPreferredCity] = useState("");
   const [workMode, setWorkMode] = useState("");
@@ -245,6 +248,23 @@ export default function ProfilePage() {
     void loadFilterOptions();
   }, [loadFilterOptions]);
 
+  useEffect(() => {
+    function handleDocumentPointerDown(event: PointerEvent) {
+      if (
+        skillPickerRef.current &&
+        !skillPickerRef.current.contains(event.target as Node)
+      ) {
+        setIsSkillResultsOpen(false);
+      }
+    }
+
+    document.addEventListener("pointerdown", handleDocumentPointerDown);
+
+    return () => {
+      document.removeEventListener("pointerdown", handleDocumentPointerDown);
+    };
+  }, []);
+
   function addSkill(skill: string) {
     if (skills.includes(skill) || !PROFILE_SKILL_VALUES.has(skill)) {
       return;
@@ -258,12 +278,13 @@ export default function ProfilePage() {
     setSkills((currentSkills) => [...currentSkills, skill]);
     setSkillSearch("");
     setActiveSkillIndex(0);
+    setIsSkillResultsOpen(false);
     setProfileMessage("");
     setProfileError("");
   }
 
   function handleSkillSearchKeyDown(event: KeyboardEvent<HTMLInputElement>) {
-    if (filteredSkills.length === 0) {
+    if (!skillResultsAreOpen || filteredSkills.length === 0) {
       return;
     }
 
@@ -292,13 +313,16 @@ export default function ProfilePage() {
 
       return;
     }
+  }
 
-    if (event.key === "Escape") {
-      event.preventDefault();
-      setSkillSearch("");
-      setSelectedSkillCategory("");
-      setActiveSkillIndex(0);
+  function handleSkillPickerKeyDown(event: KeyboardEvent<HTMLFieldSetElement>) {
+    if (event.key !== "Escape") {
+      return;
     }
+
+    event.preventDefault();
+    setIsSkillResultsOpen(false);
+    setActiveSkillIndex(0);
   }
 
   function removeSkill(skill: string) {
@@ -444,12 +468,14 @@ export default function ProfilePage() {
   }
 
   const skillsNeeded = Math.max(MIN_SKILLS - skills.length, 0);
-  const skillResultsAreOpen = filteredSkills.length > 0;
+  const skillResultsAreOpen = isSkillResultsOpen && filteredSkills.length > 0;
   const safeActiveSkillIndex =
     filteredSkills.length > 0
       ? Math.min(activeSkillIndex, filteredSkills.length - 1)
       : 0;
-  const activeSkill = filteredSkills[safeActiveSkillIndex];
+  const activeSkill = skillResultsAreOpen
+    ? filteredSkills[safeActiveSkillIndex]
+    : undefined;
 
   if (isLoading || !user) {
     return null;
@@ -582,95 +608,109 @@ export default function ProfilePage() {
                 </div>
               ) : null}
 
-              <div className="profile-skill-category">
-                <label htmlFor="skill-category">Browse category</label>
+              <fieldset
+                className="profile-skill-picker-group"
+                ref={skillPickerRef}
+                aria-label="Skill picker"
+                onKeyDown={handleSkillPickerKeyDown}
+              >
+                <div className="profile-skill-category">
+                  <label htmlFor="skill-category">Browse category</label>
 
-                <select
-                  id="skill-category"
-                  value={selectedSkillCategory}
-                  onChange={(event) => {
-                    setSelectedSkillCategory(event.target.value);
-                    setActiveSkillIndex(0);
-                  }}
-                  disabled={skills.length >= MAX_SKILLS}
-                >
-                  <option value="">All categories</option>
-
-                  {PROFILE_SKILL_CATEGORIES.map((category) => (
-                    <option key={category} value={category}>
-                      {category}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="profile-skill-picker">
-                <input
-                  id="skill-search"
-                  type="search"
-                  value={skillSearch}
-                  onChange={(event) => {
-                    setSkillSearch(event.target.value);
-                    setActiveSkillIndex(0);
-                  }}
-                  onKeyDown={handleSkillSearchKeyDown}
-                  placeholder="Search skills, e.g. React"
-                  autoComplete="off"
-                  disabled={skills.length >= MAX_SKILLS}
-                  role="combobox"
-                  aria-autocomplete="list"
-                  aria-expanded={skillResultsAreOpen}
-                  aria-controls={
-                    skillResultsAreOpen ? skillListboxId : undefined
-                  }
-                  aria-activedescendant={
-                    activeSkill
-                      ? `profile-skill-option-${activeSkill.value}`
-                      : undefined
-                  }
-                />
-
-                {filteredSkills.length > 0 ? (
-                  <div
-                    className="profile-skill-options"
-                    id={skillListboxId}
-                    role="listbox"
+                  <select
+                    id="skill-category"
+                    value={selectedSkillCategory}
+                    onChange={(event) => {
+                      setSelectedSkillCategory(event.target.value);
+                      setActiveSkillIndex(0);
+                      setIsSkillResultsOpen(true);
+                    }}
+                    disabled={skills.length >= MAX_SKILLS}
                   >
-                    {filteredSkills.map((skill, index) => (
-                      <button
-                        type="button"
-                        id={`profile-skill-option-${skill.value}`}
-                        key={skill.value}
-                        onClick={() => addSkill(skill.value)}
-                        onMouseEnter={() => setActiveSkillIndex(index)}
-                        role="option"
-                        aria-selected={index === safeActiveSkillIndex}
-                      >
-                        <span>{formatProfileSkillLabel(skill.value)}</span>
-                        <small>{skill.category}</small>
-                      </button>
+                    <option value="">All categories</option>
+
+                    {PROFILE_SKILL_CATEGORIES.map((category) => (
+                      <option key={category} value={category}>
+                        {category}
+                      </option>
                     ))}
-                  </div>
-                ) : null}
+                  </select>
+                </div>
 
-                {skills.length >= MAX_SKILLS ? (
-                  <p className="profile-skill-empty">
-                    You have selected the maximum of {MAX_SKILLS} skills.
-                  </p>
-                ) : null}
+                <div className="profile-skill-picker">
+                  <input
+                    id="skill-search"
+                    type="search"
+                    value={skillSearch}
+                    onChange={(event) => {
+                      setSkillSearch(event.target.value);
+                      setActiveSkillIndex(0);
+                      setIsSkillResultsOpen(true);
+                    }}
+                    onFocus={() => {
+                      if (filteredSkills.length > 0) {
+                        setIsSkillResultsOpen(true);
+                      }
+                    }}
+                    onKeyDown={handleSkillSearchKeyDown}
+                    placeholder="Search skills, e.g. React"
+                    autoComplete="off"
+                    disabled={skills.length >= MAX_SKILLS}
+                    role="combobox"
+                    aria-autocomplete="list"
+                    aria-expanded={skillResultsAreOpen}
+                    aria-controls={
+                      skillResultsAreOpen ? skillListboxId : undefined
+                    }
+                    aria-activedescendant={
+                      activeSkill
+                        ? `profile-skill-option-${activeSkill.value}`
+                        : undefined
+                    }
+                  />
 
-                {skillSearch.trim() &&
-                filteredSkills.length === 0 &&
-                skills.length < MAX_SKILLS &&
-                !skills.some(
-                  (skill) =>
-                    skill.toLowerCase() === skillSearch.trim().toLowerCase(),
-                ) ? (
-                  <p className="profile-skill-empty">
-                    No supported skill found.
-                  </p>
-                ) : null}
-              </div>
+                  {skillResultsAreOpen ? (
+                    <div
+                      className="profile-skill-options"
+                      id={skillListboxId}
+                      role="listbox"
+                    >
+                      {filteredSkills.map((skill, index) => (
+                        <button
+                          type="button"
+                          id={`profile-skill-option-${skill.value}`}
+                          key={skill.value}
+                          onClick={() => addSkill(skill.value)}
+                          onMouseEnter={() => setActiveSkillIndex(index)}
+                          role="option"
+                          aria-selected={index === safeActiveSkillIndex}
+                        >
+                          <span>{formatProfileSkillLabel(skill.value)}</span>
+                          <small>{skill.category}</small>
+                        </button>
+                      ))}
+                    </div>
+                  ) : null}
+
+                  {skills.length >= MAX_SKILLS ? (
+                    <p className="profile-skill-empty">
+                      You have selected the maximum of {MAX_SKILLS} skills.
+                    </p>
+                  ) : null}
+
+                  {skillSearch.trim() &&
+                  filteredSkills.length === 0 &&
+                  skills.length < MAX_SKILLS &&
+                  !skills.some(
+                    (skill) =>
+                      skill.toLowerCase() === skillSearch.trim().toLowerCase(),
+                  ) ? (
+                    <p className="profile-skill-empty">
+                      No supported skill found.
+                    </p>
+                  ) : null}
+                </div>
+              </fieldset>
             </div>
 
             {isLoadingFilterOptions ? (
