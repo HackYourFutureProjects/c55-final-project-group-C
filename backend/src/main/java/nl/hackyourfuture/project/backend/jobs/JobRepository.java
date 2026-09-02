@@ -121,7 +121,7 @@ public class JobRepository {
 
     // Retrieves detailed information for a specific job posting by its ID
     public Optional<JobDetailResponse> getJobById(String postingId) {
-        // subquery to join the cities table and fetch skills
+        // Uses correlated subqueries to aggregate cities and skills for this posting_id
         String sql = """
                 SELECT
                     f.posting_id,
