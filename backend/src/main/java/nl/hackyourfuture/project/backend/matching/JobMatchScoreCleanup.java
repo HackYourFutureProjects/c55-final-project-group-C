@@ -16,15 +16,25 @@ import java.time.Instant;
 @Component
 public class JobMatchScoreCleanup {
 
+    private static final int MINIMUM_RETENTION_DAYS = 1;
+
     private final JobMatchScoreRepository scoreRepository;
     private final Duration retention;
 
+    // A day at least. Duration.ofDays of a negative number turns the cutoff into a future
+    // instant, and "older than tomorrow" is every row: one typo in the environment would
+    // empty the cache every morning, visibly only as a slow, expensive first request.
+    // Clamped rather than fatal - this is housekeeping, and it should not take the app down.
     public JobMatchScoreCleanup(
             JobMatchScoreRepository scoreRepository,
             @Value("${app.llm.score-retention-days:30}") int retentionDays
     ) {
         this.scoreRepository = scoreRepository;
-        this.retention = Duration.ofDays(retentionDays);
+        if (retentionDays < MINIMUM_RETENTION_DAYS) {
+            log.warn("app.llm.score-retention-days is {}, which would purge the whole cache; using {} instead.",
+                    retentionDays, MINIMUM_RETENTION_DAYS);
+        }
+        this.retention = Duration.ofDays(Math.max(retentionDays, MINIMUM_RETENTION_DAYS));
     }
 
     @Scheduled(cron = "${app.llm.score-purge-cron:0 30 9 * * *}", zone = "Europe/Amsterdam")
@@ -35,8 +45,9 @@ public class JobMatchScoreCleanup {
                 log.info("Purged {} job match scores older than {} days", removed, retention.toDays());
             }
         } catch (Exception e) {
-            // Housekeeping: a failed purge costs disk, not correctness.
-            log.warn("Job match score purge failed, will retry on the next schedule: {}", e.getMessage());
+            // Housekeeping: a failed purge costs disk, not correctness. The throwable rather
+            // than its message - a scheduling or connection fault is unreadable without the trace.
+            log.warn("Job match score purge failed, will retry on the next schedule", e);
         }
     }
 }

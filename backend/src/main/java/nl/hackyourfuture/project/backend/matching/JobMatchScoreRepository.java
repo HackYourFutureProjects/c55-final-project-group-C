@@ -74,8 +74,9 @@ public class JobMatchScoreRepository {
                     .param("reason", score.reason())
                     .update());
         } catch (DataAccessException e) {
-            log.warn("Could not store {} job match scores, they will be rescored later: {}",
-                    scores.size(), e.getMessage());
+            // The throwable, not just its message: the SQL state and root cause live in the
+            // trace, and without them a constraint violation looks like a dropped connection.
+            log.warn("Could not store {} job match scores, they will be rescored later", scores.size(), e);
         }
     }
 
