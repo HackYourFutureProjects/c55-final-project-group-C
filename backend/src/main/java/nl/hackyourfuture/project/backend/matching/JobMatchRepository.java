@@ -36,6 +36,11 @@ public class JobMatchRepository {
                       AND closed_at IS NULL
                       AND skills IS NOT NULL
                       AND skills <> ''
+                      -- The casts below throw on a row that is not valid JSON, which would
+                      -- fail the whole endpoint rather than that one posting. MartSkills
+                      -- still carries a comma-separated fallback for the same column, so
+                      -- treat a malformed row as one that simply does not match.
+                      AND pg_input_is_valid(skills, 'jsonb')
                 """);
 
         // Remote roles count wherever the candidate lives, else a thin city returns one row.
