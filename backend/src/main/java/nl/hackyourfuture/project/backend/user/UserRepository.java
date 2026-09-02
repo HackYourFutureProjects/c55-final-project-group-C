@@ -97,7 +97,7 @@ public class UserRepository {
                         SELECT u.id, u.email, u.name, u.terms_accepted_at, uc.password_hash
                         FROM users u
                         JOIN user_credentials uc ON u.id = uc.user_id
-                        WHERE u.email = :email
+                        WHERE LOWER(u.email) = LOWER(:email)
                         """)
                 .param("email", email)
                 .query((rs, _) -> new UserCredentialsRecord(
@@ -112,7 +112,7 @@ public class UserRepository {
 
     // for the frontend to verify active authentication.
     public Optional<User> getUserByEmail(String email) {
-        return jdbcClient.sql(USER_SELECT + " WHERE u.email = :email")
+        return jdbcClient.sql(USER_SELECT + " WHERE LOWER(u.email) = LOWER(:email)")
                 .param("email", email)
                 .query(USER_ROW_MAPPER)
                 .optional();

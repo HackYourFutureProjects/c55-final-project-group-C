@@ -38,8 +38,9 @@ public class AuthenticationService {
     // Creates the account, stores the hashed password, and records the terms agreement.
     @Transactional
     public RegisterResponse register(RegisterRequest request) {
+        String normalizedEmail = request.email().toLowerCase();
         // Checking if a user with this email already exists
-        if (userRepository.getUserByEmail(request.email()).isPresent()) {
+        if (userRepository.getUserByEmail(normalizedEmail).isPresent()) {
             throw new DuplicateKeyException("Email already registered");
         }
         // UUID for the user
@@ -48,7 +49,7 @@ public class AuthenticationService {
         // Creating the user object matching the base users table
         User newUser = User.builder()
                 .id(userId)
-                .email(request.email())
+                .email(normalizedEmail)
                 .name(request.name())
                 .build();
 
@@ -74,8 +75,9 @@ public class AuthenticationService {
 
     // Checks the password and starts the session (JSESSIONID).
     public LoginResponse login(LoginRequest request, HttpServletRequest httpRequest) {
+        String normalizedEmail = request.email().toLowerCase();
         // Look up user credentials by email or fail with a generic security error
-        var credentials = userRepository.findCredentialsByEmail(request.email())
+        var credentials = userRepository.findCredentialsByEmail(normalizedEmail)
                 .orElseThrow(() -> new BadCredentialsException("Invalid email or password"));
 
         // A Google-only account has no user_credentials row, so the lookup above already
@@ -99,7 +101,8 @@ public class AuthenticationService {
     // Creates a reset token and emails the link.
     @Transactional
     public void forgotPassword(ForgotPasswordRequest request) {
-        var userOpt = userRepository.getUserByEmail(request.email());
+        String normalizedEmail = request.email().toLowerCase();
+        var userOpt = userRepository.getUserByEmail(normalizedEmail);
 
         // for security (Always 200): Don't reveal if the email exists or not.
         if (userOpt.isPresent()) {
