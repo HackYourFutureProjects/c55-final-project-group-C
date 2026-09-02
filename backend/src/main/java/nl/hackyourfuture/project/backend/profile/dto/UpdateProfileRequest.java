@@ -3,26 +3,34 @@ package nl.hackyourfuture.project.backend.profile.dto;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 import java.math.BigDecimal;
 import java.util.List;
 
-// A PUT replaces the whole profile, so a field left out is cleared. That is the only way
-// a user can empty something they filled in before. Note this differs from PUT /api/users/me,
-// where a null name is left alone.
-@Schema(description = "The job preferences to save. Replaces the profile: a field left out is cleared.")
+// A PUT replaces the whole profile, so an optional field left out is cleared - the only way
+// to empty one. Skills are the exception: they are required, so leaving them out is a 400
+// rather than a way to clear them. Differs from PUT /api/users/me, where a null name is
+// left alone.
+@Schema(description = "The job preferences to save. Replaces the profile: an optional field "
+        + "left out is cleared. Skills are required and cannot be cleared this way.")
 public record UpdateProfileRequest(
-        // Capped at 50 so one request cannot store an unbounded list, and each skill at 100
-        // to match the widest label the pick-list could ever carry.
-        @Size(max = 50, message = "At most 50 skills")
-        @Schema(description = "Skills the user has. Spelling is kept as sent; skills that differ "
-                + "only in case or spacing are collapsed to one.",
-                example = "[\"React\", \"TypeScript\"]")
+        // 5 to 20, the same rule the picker enforces: fewer is noise, more describes nobody.
+        // Repeated here so it holds for any caller, not just our own form.
+        // This bounds what was sent, not what is stored: blanks are dropped and skills that
+        // differ only in case or spacing collapse into one, so five entries can normalise to
+        // fewer. ProfileService re-checks the normalised list, which is where the rule holds.
+        @NotNull(message = "Skills are required")
+        @Size(min = MIN_SKILLS, max = MAX_SKILLS,
+                message = "Select between " + MIN_SKILLS + " and " + MAX_SKILLS + " skills")
+        @Schema(description = "Skills the user has, between 5 and 20 of them once blanks and "
+                + "duplicates are removed. Spelling is kept as sent; skills that differ only "
+                + "in case or spacing are collapsed to one and then counted again.",
+                example = "[\"React\", \"TypeScript\", \"Node.js\", \"PostgreSQL\", \"Docker\"]")
         List<@Size(max = 100, message = "A skill may be at most 100 characters") String> skills,
 
-        // 255 to match varchar(255), so an over-long value is a 400 naming the field
-        // rather than a 500 out of Postgres.
+        // 255 to match varchar(255): an over-long value is a 400, not a 500 from Postgres.
         @Size(max = 255, message = "Discipline may be at most 255 characters")
         @Schema(description = "The field of work aimed for", example = "frontend")
         String discipline,
@@ -49,4 +57,9 @@ public record UpdateProfileRequest(
                 message = "Salary preference may have at most 8 digits and 2 decimals")
         @Schema(description = "Gross yearly salary the user is aiming for, in euros", example = "45000")
         BigDecimal salaryPreference
-) {}
+) {
+
+    // Fewer than this and the matcher has nothing to rank on; see JobMatchService.
+    public static final int MIN_SKILLS = 5;
+    public static final int MAX_SKILLS = 20;
+}
