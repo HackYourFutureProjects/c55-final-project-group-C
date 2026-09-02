@@ -66,3 +66,29 @@ export function mapJobSearchResponse(job: JobSearchResponse): JobSearchResult {
     freshness: job.freshnessClass,
   };
 }
+
+export function sortJobsByFreshness(
+  jobs: JobSearchResult[],
+): JobSearchResult[] {
+  return jobs
+    .map((job, index) => ({ job, index }))
+    .sort((left, right) => {
+      const leftAge = left.job.ageDays;
+      const rightAge = right.job.ageDays;
+
+      if (leftAge === null && rightAge === null) {
+        return left.index - right.index;
+      }
+
+      if (leftAge === null) {
+        return 1;
+      }
+
+      if (rightAge === null) {
+        return -1;
+      }
+
+      return leftAge - rightAge || left.index - right.index;
+    })
+    .map(({ job }) => job);
+}

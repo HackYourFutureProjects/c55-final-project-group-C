@@ -14,6 +14,7 @@ import org.springframework.security.web.authentication.AuthenticationSuccessHand
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -43,7 +44,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
                                         Authentication authentication) throws IOException {
         OidcUser oidcUser = (OidcUser) authentication.getPrincipal();
 
-        String email = oidcUser.getEmail();
+        String email = oidcUser.getEmail() != null ? oidcUser.getEmail().toLowerCase(Locale.ROOT) : null;
         String providerId = oidcUser.getSubject();
         String name = Optional.ofNullable(oidcUser.getFullName()).orElse(email);
 
