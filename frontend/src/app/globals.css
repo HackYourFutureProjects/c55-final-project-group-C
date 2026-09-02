@@ -337,8 +337,32 @@ a {
 }
 
 .secondary-link {
-  color: #6f6069;
-  font-weight: 500;
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 16px;
+  border: 1px solid #d8cdd4;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.45);
+  color: #4b173f;
+  font-weight: 700;
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease;
+}
+
+.secondary-link:hover {
+  border-color: #bfaeba;
+  background: #f2e9ee;
+}
+
+.primary-link:focus-visible,
+.secondary-link:focus-visible,
+.tracker-panel-link:focus-visible {
+  outline: 3px solid #c973ac;
+  outline-offset: 3px;
 }
 
 .hero-panel {
@@ -397,6 +421,80 @@ a {
   margin-top: 22px;
   color: #665b62;
   line-height: 1.65;
+}
+
+.tracker-panel-state {
+  min-height: 164px;
+  margin-top: 28px;
+  display: block;
+  color: #665b62;
+  line-height: 1.65;
+}
+
+.tracker-total {
+  margin-top: 22px;
+}
+
+.tracker-total strong {
+  display: block;
+  color: #4b173f;
+  font-size: clamp(4rem, 8vw, 6rem);
+  line-height: 1;
+  letter-spacing: -0.06em;
+}
+
+.tracker-total span {
+  display: block;
+  margin-top: 8px;
+  color: #756971;
+  font-weight: 700;
+}
+
+.tracker-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.tracker-stat-grid div {
+  padding: 14px;
+  border: 1px solid #d8cbd2;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.42);
+}
+
+.tracker-stat-grid dt {
+  color: #7a6d75;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.tracker-stat-grid dd {
+  margin-top: 6px;
+  color: #211b20;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.tracker-panel-link {
+  min-height: 42px;
+  margin-top: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 16px;
+  border-radius: 999px;
+  background: #4b173f;
+  color: #ffffff;
+  font-weight: 700;
+  transition:
+    background 160ms ease,
+    transform 160ms ease;
+}
+
+.tracker-panel-link:hover {
+  background: #3a102f;
+  transform: translateY(-1px);
 }
 
 .value-section {
