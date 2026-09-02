@@ -34,6 +34,18 @@ public class ProfileService {
     public ProfileResponse saveProfile(String email, UpdateProfileRequest request) {
         UUID userId = resolveUserId(email);
 
+        // The annotations on the request bound what was sent; this bounds what is stored.
+        // Blanks and case- or spacing-duplicates collapse below, so five entries can arrive
+        // valid and normalise to two - a profile the matcher would then refuse to rank, on a
+        // request that answered 200. Only the floor needs rechecking: normalising never adds.
+        List<String> skills = normaliseSkills(request.skills());
+        if (skills.size() < UpdateProfileRequest.MIN_SKILLS) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Select between " + UpdateProfileRequest.MIN_SKILLS + " and "
+                            + UpdateProfileRequest.MAX_SKILLS + " skills. After removing blanks and "
+                            + "duplicates you have " + skills.size() + ".");
+        }
+
         Profile profile = Profile.builder()
                 .userId(userId)
                 .discipline(blankToNull(request.discipline()))
@@ -42,7 +54,7 @@ public class ProfileService {
                 .experienceLevel(blankToNull(request.experienceLevel()))
                 .employmentType(blankToNull(request.employmentType()))
                 .salaryPreference(request.salaryPreference())
-                .skills(normaliseSkills(request.skills()))
+                .skills(skills)
                 .build();
 
         return ProfileResponse.from(profileRepository.save(profile));
