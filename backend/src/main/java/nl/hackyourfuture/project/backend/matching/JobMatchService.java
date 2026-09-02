@@ -13,17 +13,20 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
-// Ranks open postings against the logged-in user's profile: city (plus remote) and exact
-// skill overlap narrow the mart, and the share of the user's skills a job asks for orders
-// what is left. Exact string overlap only, so a job asking for postgresql does not match a
-// profile saying postgres - rescoring that is a later step.
+// Ranks open postings against the logged-in user's profile, in two steps:
+// 1. SQL narrows - city (plus remote) and exact skill overlap cut the mart to SHORTLIST_SIZE.
+// 2. The model ranks that shortlist, taking synonyms and seniority into account.
+// The split is the design: sending the whole mart to a model would be a batch job, a
+// shortlist is one cheap call. Without the model the SQL ordering stands on its own.
 @Service
 @RequiredArgsConstructor
 public class JobMatchService {
 
     // The same floor the profile form and UpdateProfileRequest enforce.
     static final int MINIMUM_PROFILE_SKILLS = UpdateProfileRequest.MIN_SKILLS;
+    static final int SHORTLIST_SIZE = 40;
     static final int RESULT_LIMIT = 25;
     // Where "strong match" starts, per the label's documented contract.
     static final int STRONG_MATCH_PERCENT = 60;
@@ -31,6 +34,7 @@ public class JobMatchService {
     private final JobMatchRepository jobMatchRepository;
     private final ProfileRepository profileRepository;
     private final UserRepository userRepository;
+    private final MatchScorer matchScorer;
 
     public List<JobMatchResponse> getTopMatches(String email) {
         Profile profile = loadProfile(email);
@@ -44,12 +48,19 @@ public class JobMatchService {
         }
 
         List<JobMatchRepository.JobMatchRow> shortlist =
-                jobMatchRepository.findTopMatches(profile.getPreferredCity(), skills, RESULT_LIMIT);
+                jobMatchRepository.findTopMatches(profile.getPreferredCity(), skills, SHORTLIST_SIZE);
+        if (shortlist.isEmpty()) {
+            return List.of();
+        }
+
+        // Empty whenever the model is unavailable: every row then falls back to overlap order.
+        Map<String, MatchScorer.Score> scores = matchScorer.score(skills, shortlist);
 
         return shortlist.stream()
-                .map(row -> toResponse(row, skills.size()))
-                .sorted(Comparator.comparingInt(JobMatchResponse::matchPercent).reversed()
+                .map(row -> toResponse(row, skills.size(), scores.get(row.postingId())))
+                .sorted(Comparator.comparingInt(JobMatchResponse::score).reversed()
                         .thenComparing(JobMatchResponse::matchedCount, Comparator.reverseOrder()))
+                .limit(RESULT_LIMIT)
                 .toList();
     }
 
@@ -73,7 +84,8 @@ public class JobMatchService {
                 .toList();
     }
 
-    private static JobMatchResponse toResponse(JobMatchRepository.JobMatchRow row, int ofSkills) {
+    private static JobMatchResponse toResponse(JobMatchRepository.JobMatchRow row, int ofSkills,
+                                               MatchScorer.Score score) {
         int percent = skillOverlapPercent(row, ofSkills);
         return new JobMatchResponse(
                 row.postingId(),
@@ -88,12 +100,15 @@ public class JobMatchService {
                 row.jobSkillCount(),
                 ofSkills == 0 ? 0d : (double) row.matchedCount() / ofSkills,
                 percent,
-                percent >= STRONG_MATCH_PERCENT ? "strong match" : null
+                percent >= STRONG_MATCH_PERCENT ? "strong match" : null,
+                score != null ? score.value() : percent,
+                score != null ? score.reason() : null,
+                score != null
         );
     }
 
-    // Share of the user's skills the job asks for. Reported as matchPercent, and the value
-    // the list is ordered by.
+    // Share of the user's skills the job asks for. Reported as matchPercent, and stands in
+    // for score on rows the model did not rank, so a partly scored list still sorts.
     private static int skillOverlapPercent(JobMatchRepository.JobMatchRow row, int ofSkills) {
         if (ofSkills == 0) {
             return 0;

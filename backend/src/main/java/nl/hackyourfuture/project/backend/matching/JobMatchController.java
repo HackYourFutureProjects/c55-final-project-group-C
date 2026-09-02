@@ -30,9 +30,10 @@ public class JobMatchController {
             description = "Self-service only: the profile comes from the session user, so a caller "
                     + "cannot rank against anyone else's. Postings are narrowed by preferred city "
                     + "(remote roles always count) and exact skill overlap, one row per title and "
-                    + "company so a reposted job is not returned twice, then ordered by the share "
-                    + "of the user's skills the job asks for. Only skills affect the order - "
-                    + "everything else on the profile is a filter, not part of the score.")
+                    + "company so a reposted job is not returned twice, then that shortlist is "
+                    + "scored 0-100 by a language model, which is what makes postgres match a job "
+                    + "asking for postgresql. If the model is unavailable the skill-overlap order is "
+                    + "returned instead, with aiScored false on every row.")
     @ApiResponse(responseCode = "200", description = "Up to 25 matching jobs, best first")
     @ApiResponse(responseCode = "401", description = "Not logged in")
     @ApiResponse(responseCode = "422", description = "No profile, or too few skills on it")
