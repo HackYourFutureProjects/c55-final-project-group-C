@@ -42,7 +42,8 @@ public class JobRepository {
                     source,
                     discipline,
                     freshness_class,
-                    age_days
+                    age_days,
+                    (SELECT COUNT(*) FROM saved_jobs sj WHERE sj.posting_id = fct_postings.posting_id) AS saved_count
                 FROM analytics.fct_postings
                 WHERE 1=1
                 """);
@@ -92,14 +93,21 @@ public class JobRepository {
                     rs.getString("source"),
                     rs.getString("discipline"),
                     rs.getString("freshness_class"),
-                    rs.getObject("age_days") != null ? rs.getInt("age_days") : null
+                    rs.getObject("age_days") != null ? rs.getInt("age_days") : null,
+                    rs.getInt("saved_count")
             );
         }).list();
     }
 
     // Retrieves detailed information for a specific job posting by its ID
     public Optional<JobDetailResponse> getJobById(String postingId) {
-        String sql = "SELECT * FROM analytics.fct_postings WHERE posting_id = ?";
+        String sql = """
+                SELECT
+                    *,
+                    (SELECT COUNT(*) FROM saved_jobs sj WHERE sj.posting_id = fct_postings.posting_id) AS saved_count
+                FROM analytics.fct_postings
+                WHERE posting_id = ?
+                """;
 
         return jdbcClient.sql(sql)
                 .param(postingId)
@@ -127,7 +135,8 @@ public class JobRepository {
                             rs.getString("salary_currency"),
                             rs.getString("salary_period"),
                             rs.getString("source_url"),
-                            rs.getString("status")
+                            rs.getString("status"),
+                            rs.getInt("saved_count")
                     );
                 })
                 .optional();
