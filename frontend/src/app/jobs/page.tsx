@@ -1,7 +1,7 @@
 import JobFilters from "@/components/jobs/JobFilters";
 import JobResultsWithBookmarks from "@/components/jobs/JobResultsWithBookmarks";
 import TopMatchesSection from "@/components/jobs/TopMatchesSection";
-import { mapJobSearchResponse } from "@/lib/jobs";
+import { mapJobSearchResponse, sortJobsByFreshness } from "@/lib/jobs";
 import { getJobFiltersServer, getJobsServer } from "@/lib/jobs-server";
 
 type SearchParamValue = string | string[] | undefined;
@@ -58,6 +58,8 @@ export default async function JobsPage({ searchParams }: JobsPageProps) {
       return searchableText.includes(normalizedQuery);
     });
   }
+
+  jobs = sortJobsByFreshness(jobs);
 
   return (
     <main className="jobs-page">
