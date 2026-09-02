@@ -128,7 +128,7 @@ function TrackerHeroPanel() {
 
           <dl className="tracker-stat-grid">
             <div>
-              <dt>Saved</dt>
+              <dt>Not applied</dt>
               <dd>{stats.SAVED ?? 0}</dd>
             </div>
             <div>
