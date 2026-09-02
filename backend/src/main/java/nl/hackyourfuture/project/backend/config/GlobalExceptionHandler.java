@@ -47,8 +47,14 @@ public class GlobalExceptionHandler {
     }
 
     // Keeps ResponseStatusException on the same ProblemDetail body in dev and prod.
+    // The ones Spring raises itself carry no reason, and a null detail serialises as a
+    // problem body with nothing in it, so fall back to the status phrase.
     @ExceptionHandler(ResponseStatusException.class)
     public ProblemDetail handleResponseStatus(ResponseStatusException ex) {
-        return ProblemDetail.forStatusAndDetail(ex.getStatusCode(), ex.getReason());
+        String reason = ex.getReason();
+        String detail = reason != null && !reason.isBlank()
+                ? reason
+                : HttpStatus.valueOf(ex.getStatusCode().value()).getReasonPhrase();
+        return ProblemDetail.forStatusAndDetail(ex.getStatusCode(), detail);
     }
 }
