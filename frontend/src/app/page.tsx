@@ -1,4 +1,7 @@
-import Link from "next/link";
+import {
+  HomeHeroActions,
+  HomeHeroPanel,
+} from "@/components/home/HomeHeroPersonalization";
 
 export default function Home() {
   return (
@@ -35,42 +38,10 @@ export default function Home() {
             <button type="submit">Find jobs</button>
           </form>
 
-          <div className="hero-actions">
-            <Link className="primary-link" href="/jobs">
-              Explore jobs
-            </Link>
-
-            <Link className="secondary-link" href="/register">
-              Create your profile
-            </Link>
-          </div>
+          <HomeHeroActions />
         </div>
 
-        <section className="hero-panel" aria-label="JobMatch product preview">
-          <div className="preview-label">TODAY&apos;S MATCH</div>
-
-          <div className="preview-score">86%</div>
-
-          <p className="preview-title">Frontend Developer</p>
-          <p className="preview-company">Amsterdam · Hybrid</p>
-
-          <div className="preview-divider" />
-
-          <div className="preview-row">
-            <span>Skills matched</span>
-            <strong>7 of 9</strong>
-          </div>
-
-          <div className="preview-row">
-            <span>Listing signal</span>
-            <strong>Fresh</strong>
-          </div>
-
-          <p className="preview-note">
-            You match most of the required frontend skills. Two skills are
-            missing.
-          </p>
-        </section>
+        <HomeHeroPanel />
       </section>
 
       <section className="value-section">
