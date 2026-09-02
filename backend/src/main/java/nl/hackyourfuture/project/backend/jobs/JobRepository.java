@@ -20,6 +20,24 @@ public class JobRepository {
     // posting_id breaking ties so the cut-off point is stable between calls.
     private static final int MAX_SEARCH_RESULTS = 200;
 
+    // fct_postings_cities mixes cities with countries and provinces, so these values are kept
+    // out of the city dropdown. Provinces that double as city names (Utrecht, Groningen) and
+    // city-states (Singapore) stay in. Derived from the data; re-derive when new ones appear.
+    // The proper fix is upstream, in the city column itself.
+    private static final List<String> NON_CITY_LOCATIONS = List.of(
+            // Countries. "netherlands" is second only to Amsterdam in this column.
+            "netherlands", "nederland", "the netherlands", "holland",
+            "australia", "belgium", "canada", "denmark", "djibouti", "france", "germany",
+            "india", "ireland", "jamaica", "liberia", "mozambique", "poland", "portugal",
+            "spain", "sweden", "switzerland", "tonga",
+            "uk", "united kingdom", "united states", "usa",
+            // Provinces.
+            "north holland", "noord-holland", "south holland", "zuid-holland",
+            "noord-brabant", "north brabant", "gelderland", "overijssel", "drenthe", "flevoland",
+            // Remote written into the city field: the is_remote flag, not a place.
+            "netherlands - remote", "netherlands remote", "remote - netherlands",
+            "remote in europe", "remote netherlands", "remote-netherlands");
+
     private final JdbcClient jdbcClient;
 
     public JobRepository(JdbcClient jdbcClient) {
@@ -33,14 +51,15 @@ public class JobRepository {
                     f.posting_id,
                     f.title,
                     f.company_name,
-                    COALESCE((SELECT array_to_string(array_agg(sub_c.city), ',')
-                    FROM analytics.fct_postings_cities sub_c
-                    WHERE sub_c.posting_id = f.posting_id), '') AS location,
+                    COALESCE(NULLIF(f.location, ''),
+                        (SELECT string_agg(sub_c.city, ', ' ORDER BY sub_c.city)
+                        FROM analytics.fct_postings_cities sub_c
+                        WHERE sub_c.posting_id = f.posting_id), '') AS location,
                     f.work_mode,
                     f.is_remote,
-                    COALESCE((SELECT array_to_string(array_agg(s.skill), ',')
+                    COALESCE((SELECT json_agg(DISTINCT s.skill ORDER BY s.skill)::text
                     FROM analytics.fct_postings_skills s
-                    WHERE s.posting_id = f.posting_id), '') AS skills,
+                    WHERE s.posting_id = f.posting_id), '[]') AS skills,
                     f.employment_type,
                     f.posted_date,
                     f.source,
@@ -58,10 +77,16 @@ public class JobRepository {
             sql.append(" AND f.work_mode = :workMode");
         }
         if (location != null && !location.isBlank()) {
+            // Both sources, because neither is complete: the city table catches postings whose
+            // raw location never names the city ("Noord-Holland", "NL - Hybrid"), the raw column
+            // catches what the resolver missed. Amsterdam: 1958 city table, 1449 raw, 1968 together.
             sql.append("""
-                     AND EXISTS (
-                         SELECT 1 FROM analytics.fct_postings_cities sub_c
-                         WHERE sub_c.posting_id = f.posting_id AND sub_c.city ILIKE :location
+                     AND (
+                         f.location ILIKE :location
+                         OR EXISTS (
+                             SELECT 1 FROM analytics.fct_postings_cities sub_c
+                             WHERE sub_c.posting_id = f.posting_id AND sub_c.city ILIKE :location
+                         )
                      )
                     """);
         }
@@ -70,6 +95,7 @@ public class JobRepository {
                      AND (
                          f.title ILIKE :q
                          OR f.company_name ILIKE :q
+                         OR f.location ILIKE :q
                          OR EXISTS (
                             SELECT 1 FROM analytics.fct_postings_cities sub_c
                             WHERE sub_c.posting_id = f.posting_id AND sub_c.city ILIKE :q
@@ -144,12 +170,13 @@ public class JobRepository {
                     f.salary_period,
                     f.source_url,
                     f.status,
-                    COALESCE((SELECT array_to_string(array_agg(sub_c.city), ',')
-                    FROM analytics.fct_postings_cities sub_c
-                    WHERE sub_c.posting_id = f.posting_id), '') AS location,
-                    COALESCE((SELECT array_to_string(array_agg(s.skill), ',')
+                    COALESCE(NULLIF(f.location, ''),
+                        (SELECT string_agg(sub_c.city, ', ' ORDER BY sub_c.city)
+                        FROM analytics.fct_postings_cities sub_c
+                        WHERE sub_c.posting_id = f.posting_id), '') AS location,
+                    COALESCE((SELECT json_agg(DISTINCT s.skill ORDER BY s.skill)::text
                     FROM analytics.fct_postings_skills s
-                    WHERE s.posting_id = f.posting_id), '') AS skills
+                    WHERE s.posting_id = f.posting_id), '[]') AS skills
                 FROM analytics.fct_postings f
                 WHERE f.posting_id = ?
                 """;
@@ -199,10 +226,6 @@ public class JobRepository {
                         FROM analytics.fct_postings
                         WHERE work_mode IS NOT NULL), '{}') AS work_modes,
                     COALESCE((
-                        SELECT array_agg(DISTINCT city)
-                        FROM analytics.fct_postings_cities
-                        WHERE city IS NOT NULL), '{}') AS locations,
-                    COALESCE((
                         SELECT array_agg(DISTINCT experience_level)
                         FROM analytics.fct_postings
                         WHERE experience_level IS NOT NULL), '{}') AS experience_levels,
@@ -215,13 +238,34 @@ public class JobRepository {
 
         return jdbcClient.sql(sql)
                 .query((rs, rowNum) -> new JobFiltersResponse(
-                        parseStringArray(rs.getObject("locations")),
+                        getCityOptions(),
                         parseStringArray(rs.getObject("disciplines")),
                         parseStringArray(rs.getObject("work_modes")),
                         parseStringArray(rs.getObject("experience_levels")),
                         parseStringArray(rs.getObject("employment_types"))
                 ))
                 .single();
+    }
+
+    // The location dropdown, from the normalised city table rather than the raw location
+    // column: aggregating location gave 877 free-text near-duplicates ("Amsterdam",
+    // "Amsterdam, Netherlands"), each matching only its own subset of the postings.
+    // initcap is display only - the value round-trips into searchJobs, compared case-insensitively.
+    private List<String> getCityOptions() {
+        String sql = """
+                SELECT initcap(city) AS city
+                FROM analytics.fct_postings_cities
+                WHERE city IS NOT NULL
+                  AND city <> ''
+                  AND lower(city) NOT IN (:excluded)
+                GROUP BY city
+                ORDER BY city
+                """;
+
+        return jdbcClient.sql(sql)
+                .param("excluded", NON_CITY_LOCATIONS)
+                .query(String.class)
+                .list();
     }
 
     private List<String> parseStringArray(Object arrayObj) {
