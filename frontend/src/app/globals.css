@@ -1901,6 +1901,12 @@ a {
   gap: 10px;
 }
 
+.profile-skill-count {
+  color: #4b173f;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
 .profile-skill-tag {
   display: inline-flex;
   align-items: center;
@@ -1935,6 +1941,18 @@ a {
   position: relative;
 }
 
+.profile-skill-category {
+  display: grid;
+  gap: 8px;
+}
+
+.profile-skill-category label {
+  color: #5f535a;
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.profile-skill-category select,
 .profile-skill-picker input {
   width: 100%;
   min-height: 54px;
@@ -1947,6 +1965,7 @@ a {
   font: inherit;
 }
 
+.profile-skill-category select:focus,
 .profile-skill-picker input:focus {
   border-color: #6b345d;
   box-shadow: 0 0 0 3px rgba(75, 23, 63, 0.09);
@@ -1969,6 +1988,8 @@ a {
 .profile-skill-options button {
   width: 100%;
   padding: 11px 12px;
+  display: grid;
+  gap: 3px;
   border: 0;
   border-radius: 9px;
   background: transparent;
@@ -1979,10 +2000,17 @@ a {
 }
 
 .profile-skill-options button:hover,
-.profile-skill-options button:focus-visible {
+.profile-skill-options button:focus-visible,
+.profile-skill-options button[aria-selected="true"] {
   outline: none;
   background: #f7f1f4;
   color: #4b173f;
+}
+
+.profile-skill-options small {
+  color: #82747c;
+  font-size: 0.78rem;
+  font-weight: 600;
 }
 
 .profile-skill-empty {

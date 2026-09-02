@@ -3,8 +3,10 @@
 import { useRouter } from "next/navigation";
 import {
   type FormEvent,
+  type KeyboardEvent,
   useCallback,
   useEffect,
+  useId,
   useMemo,
   useState,
 } from "react";
@@ -19,31 +21,17 @@ import {
   updateCurrentUser,
   updateProfile,
 } from "@/lib/api";
+import {
+  formatProfileSkillLabel,
+  normalizeProfileSkillsForCompatibility,
+  PROFILE_SKILL_CATEGORIES,
+  PROFILE_SKILL_OPTIONS,
+  PROFILE_SKILL_VALUES,
+} from "@/lib/profile-skills";
 
-const MAX_SKILLS = 50;
-
-const AVAILABLE_SKILLS = [
-  "React",
-  "TypeScript",
-  "JavaScript",
-  "Next.js",
-  "HTML",
-  "CSS",
-  "Node.js",
-  "Java",
-  "Spring Boot",
-  "Python",
-  "SQL",
-  "PostgreSQL",
-  "Git",
-  "Docker",
-  "REST API",
-  "Figma",
-  "Data Analysis",
-  "Power BI",
-  "Azure",
-  "AWS",
-];
+const MIN_SKILLS = 5;
+const MAX_SKILLS = 20;
+const MAX_VISIBLE_SKILL_RESULTS = 8;
 
 const EMPTY_FILTER_OPTIONS: JobFiltersResponse = {
   locations: [],
@@ -84,6 +72,7 @@ function parseSalaryPreference(value: string): number | null {
 export default function ProfilePage() {
   const router = useRouter();
   const { user, isLoading, clearUser, refreshUser } = useAuth();
+  const skillListboxId = useId();
 
   const [name, setName] = useState("");
   const [isSavingAccount, setIsSavingAccount] = useState(false);
@@ -92,6 +81,8 @@ export default function ProfilePage() {
 
   const [skills, setSkills] = useState<string[]>([]);
   const [skillSearch, setSkillSearch] = useState("");
+  const [selectedSkillCategory, setSelectedSkillCategory] = useState("");
+  const [activeSkillIndex, setActiveSkillIndex] = useState(0);
   const [discipline, setDiscipline] = useState("");
   const [preferredCity, setPreferredCity] = useState("");
   const [workMode, setWorkMode] = useState("");
@@ -141,7 +132,7 @@ export default function ProfilePage() {
           return;
         }
 
-        setSkills(profile.skills ?? []);
+        setSkills(normalizeProfileSkillsForCompatibility(profile.skills ?? []));
         setDiscipline(profile.discipline ?? "");
         setPreferredCity(profile.preferredCity ?? "");
         setWorkMode(profile.workMode ?? "");
@@ -206,14 +197,26 @@ export default function ProfilePage() {
 
     const query = skillSearch.trim().toLowerCase();
 
-    if (!query) {
+    if (!query && !selectedSkillCategory) {
       return [];
     }
 
-    return AVAILABLE_SKILLS.filter(
-      (skill) => skill.toLowerCase().includes(query) && !skills.includes(skill),
-    ).slice(0, 6);
-  }, [skillSearch, skills]);
+    return PROFILE_SKILL_OPTIONS.filter((skill) => {
+      if (skills.includes(skill.value)) {
+        return false;
+      }
+
+      if (selectedSkillCategory && skill.category !== selectedSkillCategory) {
+        return false;
+      }
+
+      if (!query) {
+        return true;
+      }
+
+      return formatProfileSkillLabel(skill.value).toLowerCase().includes(query);
+    }).slice(0, MAX_VISIBLE_SKILL_RESULTS);
+  }, [skillSearch, selectedSkillCategory, skills]);
 
   const disciplineOptions = useMemo(
     () => optionsWithCurrent(filterOptions.disciplines, discipline),
@@ -243,19 +246,59 @@ export default function ProfilePage() {
   }, [loadFilterOptions]);
 
   function addSkill(skill: string) {
-    if (skills.includes(skill)) {
+    if (skills.includes(skill) || !PROFILE_SKILL_VALUES.has(skill)) {
       return;
     }
 
     if (skills.length >= MAX_SKILLS) {
-      setProfileError(`You can select up to ${MAX_SKILLS} skills.`);
+      setProfileError(`Select no more than ${MAX_SKILLS} skills.`);
       return;
     }
 
     setSkills((currentSkills) => [...currentSkills, skill]);
     setSkillSearch("");
+    setActiveSkillIndex(0);
     setProfileMessage("");
     setProfileError("");
+  }
+
+  function handleSkillSearchKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    if (filteredSkills.length === 0) {
+      return;
+    }
+
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      setActiveSkillIndex((currentIndex) =>
+        Math.min(currentIndex + 1, filteredSkills.length - 1),
+      );
+      return;
+    }
+
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+      setActiveSkillIndex((currentIndex) => Math.max(currentIndex - 1, 0));
+      return;
+    }
+
+    if (event.key === "Enter") {
+      event.preventDefault();
+      const selectedSkill =
+        filteredSkills[Math.min(activeSkillIndex, filteredSkills.length - 1)];
+
+      if (selectedSkill) {
+        addSkill(selectedSkill.value);
+      }
+
+      return;
+    }
+
+    if (event.key === "Escape") {
+      event.preventDefault();
+      setSkillSearch("");
+      setSelectedSkillCategory("");
+      setActiveSkillIndex(0);
+    }
   }
 
   function removeSkill(skill: string) {
@@ -263,6 +306,7 @@ export default function ProfilePage() {
       currentSkills.filter((currentSkill) => currentSkill !== skill),
     );
     setProfileMessage("");
+    setProfileError("");
   }
 
   async function handleAccountSubmit(event: FormEvent<HTMLFormElement>) {
@@ -306,8 +350,18 @@ export default function ProfilePage() {
     setProfileMessage("");
     setProfileError("");
 
+    if (skills.length < MIN_SKILLS) {
+      const remainingSkills = MIN_SKILLS - skills.length;
+      setProfileError(
+        `Select at least ${remainingSkills} more ${
+          remainingSkills === 1 ? "skill" : "skills"
+        }.`,
+      );
+      return;
+    }
+
     if (skills.length > MAX_SKILLS) {
-      setProfileError(`You can select up to ${MAX_SKILLS} skills.`);
+      setProfileError(`Select no more than ${MAX_SKILLS} skills.`);
       return;
     }
 
@@ -335,7 +389,9 @@ export default function ProfilePage() {
         salaryPreference: parsedSalaryPreference,
       });
 
-      setSkills(savedProfile.skills ?? skills);
+      setSkills(
+        normalizeProfileSkillsForCompatibility(savedProfile.skills ?? skills),
+      );
       setDiscipline(savedProfile.discipline ?? "");
       setPreferredCity(savedProfile.preferredCity ?? "");
       setWorkMode(savedProfile.workMode ?? "");
@@ -386,6 +442,14 @@ export default function ProfilePage() {
       setIsDeleting(false);
     }
   }
+
+  const skillsNeeded = Math.max(MIN_SKILLS - skills.length, 0);
+  const skillResultsAreOpen = filteredSkills.length > 0;
+  const safeActiveSkillIndex =
+    filteredSkills.length > 0
+      ? Math.min(activeSkillIndex, filteredSkills.length - 1)
+      : 0;
+  const activeSkill = filteredSkills[safeActiveSkillIndex];
 
   if (isLoading || !user) {
     return null;
@@ -485,19 +549,30 @@ export default function ProfilePage() {
               <label htmlFor="skill-search">Skills</label>
 
               <p className="profile-field-help">
-                Choose up to 50 supported skills that best describe your
-                experience.
+                Choose 5 to 20 supported skills that best describe your
+                experience. Search or browse by category.
               </p>
+
+              <p className="profile-skill-count">
+                {skills.length} / {MAX_SKILLS} selected
+              </p>
+
+              {skillsNeeded > 0 ? (
+                <p className="profile-skill-empty">
+                  Select at least {skillsNeeded} more{" "}
+                  {skillsNeeded === 1 ? "skill" : "skills"}.
+                </p>
+              ) : null}
 
               {skills.length > 0 ? (
                 <div className="profile-selected-skills">
                   {skills.map((skill) => (
                     <span className="profile-skill-tag" key={skill}>
-                      {skill}
+                      {formatProfileSkillLabel(skill)}
 
                       <button
                         type="button"
-                        aria-label={`Remove ${skill}`}
+                        aria-label={`Remove ${formatProfileSkillLabel(skill)}`}
                         onClick={() => removeSkill(skill)}
                       >
                         ×
@@ -507,26 +582,72 @@ export default function ProfilePage() {
                 </div>
               ) : null}
 
+              <div className="profile-skill-category">
+                <label htmlFor="skill-category">Browse category</label>
+
+                <select
+                  id="skill-category"
+                  value={selectedSkillCategory}
+                  onChange={(event) => {
+                    setSelectedSkillCategory(event.target.value);
+                    setActiveSkillIndex(0);
+                  }}
+                  disabled={skills.length >= MAX_SKILLS}
+                >
+                  <option value="">All categories</option>
+
+                  {PROFILE_SKILL_CATEGORIES.map((category) => (
+                    <option key={category} value={category}>
+                      {category}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
               <div className="profile-skill-picker">
                 <input
                   id="skill-search"
                   type="search"
                   value={skillSearch}
-                  onChange={(event) => setSkillSearch(event.target.value)}
+                  onChange={(event) => {
+                    setSkillSearch(event.target.value);
+                    setActiveSkillIndex(0);
+                  }}
+                  onKeyDown={handleSkillSearchKeyDown}
                   placeholder="Search skills, e.g. React"
                   autoComplete="off"
                   disabled={skills.length >= MAX_SKILLS}
+                  role="combobox"
+                  aria-autocomplete="list"
+                  aria-expanded={skillResultsAreOpen}
+                  aria-controls={
+                    skillResultsAreOpen ? skillListboxId : undefined
+                  }
+                  aria-activedescendant={
+                    activeSkill
+                      ? `profile-skill-option-${activeSkill.value}`
+                      : undefined
+                  }
                 />
 
                 {filteredSkills.length > 0 ? (
-                  <div className="profile-skill-options">
-                    {filteredSkills.map((skill) => (
+                  <div
+                    className="profile-skill-options"
+                    id={skillListboxId}
+                    role="listbox"
+                  >
+                    {filteredSkills.map((skill, index) => (
                       <button
                         type="button"
-                        key={skill}
-                        onClick={() => addSkill(skill)}
+                        id={`profile-skill-option-${skill.value}`}
+                        key={skill.value}
+                        onClick={() => addSkill(skill.value)}
+                        onMouseEnter={() => setActiveSkillIndex(index)}
+                        role="option"
+                        aria-selected={index === safeActiveSkillIndex}
                       >
-                        {skill}
+                        <span>{formatProfileSkillLabel(skill.value)}</span>
+                        <small>{skill.category}</small>
                       </button>
                     ))}
                   </div>
@@ -534,7 +655,7 @@ export default function ProfilePage() {
 
                 {skills.length >= MAX_SKILLS ? (
                   <p className="profile-skill-empty">
-                    You have selected the maximum number of skills.
+                    You have selected the maximum of {MAX_SKILLS} skills.
                   </p>
                 ) : null}
 
