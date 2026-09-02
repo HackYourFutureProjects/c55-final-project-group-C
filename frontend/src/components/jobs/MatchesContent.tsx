@@ -12,7 +12,7 @@ type MatchState =
   | { status: "profile-incomplete" }
   | { status: "error" };
 
-export default function TopMatchesSection() {
+export default function MatchesContent() {
   const [matchState, setMatchState] = useState<MatchState>({
     status: "loading",
   });
@@ -55,9 +55,7 @@ export default function TopMatchesSection() {
 
   if (matchState.status === "loading") {
     return (
-      <section className="top-matches-panel" aria-busy="true">
-        <p className="jobs-section-label">MATCHES</p>
-        <h2>Your top matches</h2>
+      <section className="matches-panel" aria-busy="true">
         <p className="top-matches-copy">Loading your job matches...</p>
       </section>
     );
@@ -65,9 +63,7 @@ export default function TopMatchesSection() {
 
   if (matchState.status === "unauthenticated") {
     return (
-      <section className="top-matches-panel">
-        <p className="jobs-section-label">MATCHES</p>
-        <h2>Your top matches</h2>
+      <section className="matches-panel">
         <p className="top-matches-copy">
           Sign in to see jobs ranked against your profile skills.
         </p>
@@ -80,9 +76,7 @@ export default function TopMatchesSection() {
 
   if (matchState.status === "profile-incomplete") {
     return (
-      <section className="top-matches-panel">
-        <p className="jobs-section-label">MATCHES</p>
-        <h2>Your top matches</h2>
+      <section className="matches-panel">
         <p className="top-matches-copy">
           Add at least 5 skills to your profile to see job matches.
         </p>
@@ -95,9 +89,7 @@ export default function TopMatchesSection() {
 
   if (matchState.status === "error") {
     return (
-      <section className="top-matches-panel">
-        <p className="jobs-section-label">MATCHES</p>
-        <h2>Your top matches</h2>
+      <section className="matches-panel">
         <p className="top-matches-copy">
           We could not load your matches right now.
         </p>
@@ -107,9 +99,7 @@ export default function TopMatchesSection() {
 
   if (matchState.matches.length === 0) {
     return (
-      <section className="top-matches-panel">
-        <p className="jobs-section-label">MATCHES</p>
-        <h2>Your top matches</h2>
+      <section className="matches-panel">
         <p className="top-matches-copy">
           No matching jobs were found for your current profile.
         </p>
@@ -117,25 +107,5 @@ export default function TopMatchesSection() {
     );
   }
 
-  const teaserMatches = matchState.matches.slice(0, 3);
-  const hasMoreMatches = matchState.matches.length > teaserMatches.length;
-
-  return (
-    <section className="top-matches-panel">
-      <div className="top-matches-heading">
-        <div>
-          <p className="jobs-section-label">MATCHES</p>
-          <h2>Your top matches</h2>
-        </div>
-      </div>
-
-      <MatchResultsList matches={teaserMatches} />
-
-      {hasMoreMatches ? (
-        <Link className="top-matches-link" href="/matches">
-          See all matches
-        </Link>
-      ) : null}
-    </section>
-  );
+  return <MatchResultsList matches={matchState.matches} />;
 }
