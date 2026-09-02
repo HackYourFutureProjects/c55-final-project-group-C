@@ -21,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Collections;
+import java.util.Locale;
 import java.util.UUID;
 
 @Slf4j
@@ -38,7 +39,7 @@ public class AuthenticationService {
     // Creates the account, stores the hashed password, and records the terms agreement.
     @Transactional
     public RegisterResponse register(RegisterRequest request) {
-        String normalizedEmail = request.email().toLowerCase();
+        String normalizedEmail = request.email().toLowerCase(Locale.ROOT);
         // Checking if a user with this email already exists
         if (userRepository.getUserByEmail(normalizedEmail).isPresent()) {
             throw new DuplicateKeyException("Email already registered");
@@ -53,9 +54,14 @@ public class AuthenticationService {
                 .name(request.name())
                 .build();
 
-        // The check above misses a registration still in flight; users_email_idx decides the race.
-        // Its DuplicateKeyException reaches GlobalExceptionHandler as the same 409 as the check.
-        userRepository.createUser(newUser);
+
+        try {
+            userRepository.createUser(newUser);
+        } catch (DuplicateKeyException e) {
+            // Catches duplicate emails if two users register at the exact same time
+            log.info("Concurrent registration race condition caught for email: {}", normalizedEmail);
+            throw new DuplicateKeyException("Email already registered", e);
+        }
 
         // Hashing password
         String hashedPassword = passwordEncoder.encode(request.password());
@@ -75,7 +81,7 @@ public class AuthenticationService {
 
     // Checks the password and starts the session (JSESSIONID).
     public LoginResponse login(LoginRequest request, HttpServletRequest httpRequest) {
-        String normalizedEmail = request.email().toLowerCase();
+        String normalizedEmail = request.email().toLowerCase(Locale.ROOT);
         // Look up user credentials by email or fail with a generic security error
         var credentials = userRepository.findCredentialsByEmail(normalizedEmail)
                 .orElseThrow(() -> new BadCredentialsException("Invalid email or password"));
@@ -101,7 +107,7 @@ public class AuthenticationService {
     // Creates a reset token and emails the link.
     @Transactional
     public void forgotPassword(ForgotPasswordRequest request) {
-        String normalizedEmail = request.email().toLowerCase();
+        String normalizedEmail = request.email().toLowerCase(Locale.ROOT);
         var userOpt = userRepository.getUserByEmail(normalizedEmail);
 
         // for security (Always 200): Don't reveal if the email exists or not.
