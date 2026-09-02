@@ -58,6 +58,9 @@ app:
     base-url: ${LLM_BASE_URL:https://generativelanguage.googleapis.com/v1beta/openai}
     model: ${LLM_MODEL:gemini-flash-lite-latest}
     timeout-seconds: ${LLM_TIMEOUT_SECONDS:20}
+    # Sent as reasoning_effort. Set for a model that thinks by default (Gemini 3 flash costs
+    # ~14s without it, ~4s with "low"). Leave empty for a provider that rejects the field.
+    reasoning-effort: ${LLM_REASONING_EFFORT:low}
 
 # API Docs
 springdoc:

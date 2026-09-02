@@ -7,15 +7,18 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientResponseException;
 
 import java.time.Duration;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 // Asks a language model to score a shortlist of postings against a candidate's skills.
 // Talks the OpenAI chat-completions shape (Gemini compat path and Groq speak it too), so
-// switching provider is LLM_BASE_URL + LLM_MODEL, not code.
+// switching provider is LLM_BASE_URL + LLM_MODEL, not code. The one field beyond that shape
+// is reasoning_effort, which LLM_REASONING_EFFORT drops when a provider will not take it.
 // Never throws: every failure comes back as an empty map and the caller keeps its SQL ordering.
 @Slf4j
 @Component
@@ -31,15 +34,18 @@ public class MatchScorer {
     private final ObjectMapper objectMapper = JsonMapper.builder().build();
     private final String apiKey;
     private final String model;
+    private final String reasoningEffort;
 
     public MatchScorer(
             @Value("${app.llm.api-key:}") String apiKey,
             @Value("${app.llm.base-url}") String baseUrl,
             @Value("${app.llm.model}") String model,
-            @Value("${app.llm.timeout-seconds:20}") int timeoutSeconds
+            @Value("${app.llm.timeout-seconds:20}") int timeoutSeconds,
+            @Value("${app.llm.reasoning-effort:}") String reasoningEffort
     ) {
         this.apiKey = apiKey;
         this.model = model;
+        this.reasoningEffort = reasoningEffort;
         this.restClient = RestClient.builder()
                 .baseUrl(baseUrl)
                 .requestFactory(requestFactory(timeoutSeconds))
@@ -81,6 +87,13 @@ public class MatchScorer {
         try {
             String content = callModel(buildPrompt(candidateSkills, jobs));
             return parseScores(content, jobs);
+        } catch (RestClientResponseException e) {
+            // Usually the request shape, not an outage: a provider that rejects a field it
+            // does not know, reasoning_effort above all. Without the body this reads exactly
+            // like the model being down, and the fix is a config change, not a restart.
+            log.warn("LLM scoring rejected by the provider ({}), falling back to skill-overlap order: {}",
+                    e.getStatusCode(), e.getResponseBodyAsString());
+            return Map.of();
         } catch (Exception e) {
             // Broad on purpose: any failure degrades to the SQL ranking.
             log.warn("LLM scoring unavailable, falling back to skill-overlap order: {}", e.getMessage());
@@ -108,13 +121,16 @@ public class MatchScorer {
     }
 
     private String callModel(String prompt) {
-        Map<String, Object> body = Map.of(
-                "model", model,
-                "temperature", 0,
-                // Gemini 3 flash thinks by default; "low" measured ~4s against ~14s here.
-                "reasoning_effort", "low",
-                "messages", List.of(Map.of("role", "user", "content", prompt))
-        );
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("model", model);
+        body.put("temperature", 0);
+        // Gemini 3 flash thinks by default; "low" measured ~4s against ~14s here. Not every
+        // OpenAI-compatible provider takes the field and some reject unknown ones outright,
+        // so an empty LLM_REASONING_EFFORT leaves it out of the body entirely.
+        if (reasoningEffort != null && !reasoningEffort.isBlank()) {
+            body.put("reasoning_effort", reasoningEffort);
+        }
+        body.put("messages", List.of(Map.of("role", "user", "content", prompt)));
 
         // Parsed from String rather than bound to a type: the shape differs per provider.
         String raw = restClient.post()
