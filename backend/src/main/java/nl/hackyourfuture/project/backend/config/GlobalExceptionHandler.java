@@ -7,6 +7,7 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -36,14 +37,18 @@ public class GlobalExceptionHandler {
         return ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, ex.getMessage());
     }
 
-    // Every writer of users.email now meets users_email_idx; without this a duplicate
-    // surfaces as a 500 instead of a conflict. Registration throws it for its own
-    // pre-check too, so both paths answer with this one body.
+    // users.email is unique, so without this a duplicate is a 500 instead of a 409.
     @ExceptionHandler(DuplicateKeyException.class)
     public ProblemDetail handleDuplicateKey(DuplicateKeyException ex) {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(
                 HttpStatus.CONFLICT, "An account with this email address already exists. Try logging in instead.");
         problem.setTitle("Email already registered");
         return problem;
+    }
+
+    // Keeps ResponseStatusException on the same ProblemDetail body in dev and prod.
+    @ExceptionHandler(ResponseStatusException.class)
+    public ProblemDetail handleResponseStatus(ResponseStatusException ex) {
+        return ProblemDetail.forStatusAndDetail(ex.getStatusCode(), ex.getReason());
     }
 }
