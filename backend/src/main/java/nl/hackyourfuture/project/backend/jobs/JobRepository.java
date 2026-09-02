@@ -30,37 +30,59 @@ public class JobRepository {
     public List<JobSearchResponse> searchJobs(String discipline, String workMode, String location, String q) {
         StringBuilder sql = new StringBuilder("""
                 SELECT
-                    posting_id,
-                    title,
-                    company_name,
-                    location,
-                    work_mode,
-                    is_remote,
-                    skills,
-                    employment_type,
-                    posted_date,
-                    source,
-                    discipline,
-                    freshness_class,
-                    age_days
-                FROM analytics.fct_postings
+                    f.posting_id,
+                    f.title,
+                    f.company_name,
+                    COALESCE((SELECT array_to_string(array_agg(sub_c.city), ',')
+                    FROM analytics.fct_postings_cities sub_c
+                    WHERE sub_c.posting_id = f.posting_id), '') AS location,
+                    f.work_mode,
+                    f.is_remote,
+                    COALESCE((SELECT array_to_string(array_agg(s.skill), ',')
+                    FROM analytics.fct_postings_skills s
+                    WHERE s.posting_id = f.posting_id), '') AS skills,
+                    f.employment_type,
+                    f.posted_date,
+                    f.source,
+                    f.discipline,
+                    f.freshness_class,
+                    f.age_days
+                FROM analytics.fct_postings f
                 WHERE 1=1
                 """);
 
         if (discipline != null && !discipline.isBlank()) {
-            sql.append(" AND discipline = :discipline");
+            sql.append(" AND f.discipline = :discipline");
         }
         if (workMode != null && !workMode.isBlank()) {
-            sql.append(" AND work_mode = :workMode");
+            sql.append(" AND f.work_mode = :workMode");
         }
         if (location != null && !location.isBlank()) {
-            sql.append(" AND location ILIKE :location");
+            sql.append("""
+                     AND EXISTS (
+                         SELECT 1 FROM analytics.fct_postings_cities sub_c
+                         WHERE sub_c.posting_id = f.posting_id AND sub_c.city ILIKE :location
+                     )
+                    """);
         }
         if (q != null && !q.isBlank()) {
-            sql.append(" AND (title ILIKE :q OR company_name ILIKE :q OR location ILIKE :q OR skills::text ILIKE :q)");
+            sql.append("""
+                     AND (
+                         f.title ILIKE :q
+                         OR f.company_name ILIKE :q
+                         OR EXISTS (
+                            SELECT 1 FROM analytics.fct_postings_cities sub_c
+                            WHERE sub_c.posting_id = f.posting_id AND sub_c.city ILIKE :q
+                            )
+                         OR EXISTS (
+                             SELECT 1 FROM analytics.fct_postings_skills sub_s
+                             WHERE sub_s.posting_id = f.posting_id AND sub_s.skill ILIKE :q
+                             )
+                     )
+                    """);
         }
 
-        sql.append(" ORDER BY posted_date DESC NULLS LAST, posting_id LIMIT :limit");
+        sql.append(" ORDER BY f.posted_date DESC NULLS LAST, f.posting_id LIMIT :limit");
 
         var statement = jdbcClient.sql(sql.toString()).param("limit", MAX_SEARCH_RESULTS);
 
@@ -99,7 +121,38 @@ public class JobRepository {
 
     // Retrieves detailed information for a specific job posting by its ID
     public Optional<JobDetailResponse> getJobById(String postingId) {
-        String sql = "SELECT * FROM analytics.fct_postings WHERE posting_id = ?";
+        // Uses correlated subqueries to aggregate cities and skills for this posting_id
+        String sql = """
+                SELECT
+                    f.posting_id,
+                    f.title,
+                    f.company_name,
+                    f.work_mode,
+                    f.is_remote,
+                    f.employment_type,
+                    f.posted_date,
+                    f.source,
+                    f.discipline,
+                    f.freshness_class,
+                    f.age_days,
+                    f.description,
+                    f.experience_level,
+                    f.education_level,
+                    f.salary_min,
+                    f.salary_max,
+                    f.salary_currency,
+                    f.salary_period,
+                    f.source_url,
+                    f.status,
+                    COALESCE((SELECT array_to_string(array_agg(sub_c.city), ',')
+                    FROM analytics.fct_postings_cities sub_c
+                    WHERE sub_c.posting_id = f.posting_id), '') AS location,
+                    COALESCE((SELECT array_to_string(array_agg(s.skill), ',')
+                    FROM analytics.fct_postings_skills s
+                    WHERE s.posting_id = f.posting_id), '') AS skills
+                FROM analytics.fct_postings f
+                WHERE f.posting_id = ?
+                """;
 
         return jdbcClient.sql(sql)
                 .param(postingId)
@@ -137,12 +190,27 @@ public class JobRepository {
     public JobFiltersResponse getAvailableFilters() {
         String sql = """
                 SELECT
-                    array_agg(DISTINCT discipline) AS disciplines,
-                    array_agg(DISTINCT work_mode) AS work_modes,
-                    array_agg(DISTINCT location) AS locations,
-                    array_agg(DISTINCT experience_level) AS experience_levels,
-                    array_agg(DISTINCT employment_type) AS employment_types
-                FROM analytics.fct_postings
+                    COALESCE((
+                        SELECT array_agg(DISTINCT discipline)
+                        FROM analytics.fct_postings
+                        WHERE discipline IS NOT NULL), '{}') AS disciplines,
+                    COALESCE((
+                        SELECT array_agg(DISTINCT work_mode)
+                        FROM analytics.fct_postings
+                        WHERE work_mode IS NOT NULL), '{}') AS work_modes,
+                    COALESCE((
+                        SELECT array_agg(DISTINCT city)
+                        FROM analytics.fct_postings_cities
+                        WHERE city IS NOT NULL), '{}') AS locations,
+                    COALESCE((
+                        SELECT array_agg(DISTINCT experience_level)
+                        FROM analytics.fct_postings
+                        WHERE experience_level IS NOT NULL), '{}') AS experience_levels,
+                    COALESCE((
+                        SELECT array_agg(DISTINCT employment_type)
+                        FROM analytics.fct_postings
+                        WHERE employment_type IS NOT NULL), '{}') AS employment_types
+                FROM (VALUES (1)) AS t
                 """;
 
         return jdbcClient.sql(sql)
