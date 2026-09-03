@@ -1710,6 +1710,15 @@ a {
   line-height: 1.55;
 }
 
+.profile-onboarding-note {
+  padding: 14px 16px;
+  border: 1px solid #e0d5dc;
+  border-radius: var(--radius-input);
+  background: var(--color-surface-warm);
+  color: #655b61;
+  line-height: 1.55;
+}
+
 .profile-field input,
 .profile-field select {
   width: 100%;
