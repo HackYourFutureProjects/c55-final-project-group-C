@@ -2,6 +2,7 @@ package nl.hackyourfuture.project.backend.savedjobs;
 
 import nl.hackyourfuture.project.backend.mart.MartSkills;
 import nl.hackyourfuture.project.backend.savedjobs.dto.SavedJobResponse;
+import nl.hackyourfuture.project.backend.jobs.dto.PageResponse;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
@@ -38,8 +39,20 @@ public class SavedJobRepository {
         return count > 0;
     }
 
+    // Helper method to count total saved jobs for a specific user
+    public long countSavedJobs(UUID userId) {
+        String sql = "SELECT COUNT(*) FROM saved_jobs WHERE user_id = ?";
+        Long count = jdbcClient.sql(sql)
+                .param(userId)
+                .query(Long.class)
+                .single();
+        return count != null ? count : 0;
+    }
+
     // Fetch the list of saved jobs with posting details for a user
-    public List<SavedJobResponse> getSavedJobsWithDetails(UUID userId) {
+    public PageResponse<SavedJobResponse> getSavedJobsWithDetails(UUID userId, int page, int size) {
+        int offset = page * size;
+        long totalElements = countSavedJobs(userId);
         String sql = """
                 SELECT
                     sj.posting_id,
@@ -59,10 +72,13 @@ public class SavedJobRepository {
                 FROM saved_jobs sj
                 LEFT JOIN analytics.fct_postings p ON sj.posting_id = p.posting_id
                 WHERE sj.user_id = ?
+                ORDER BY p.posted_date DESC NULLS LAST, sj.posting_id ASC
+                LIMIT ? OFFSET ?
                 """;
 
-        return jdbcClient.sql(sql)
-                .param(userId)
+        // Store query results in 'content' variable
+        List<SavedJobResponse> content = jdbcClient.sql(sql)
+                .params(userId, size, offset)
                 .query((rs, rowNum) -> {
                     List<String> skillsList = MartSkills.parse(rs.getString("skills"));
 
@@ -84,6 +100,8 @@ public class SavedJobRepository {
                     );
                 })
                 .list();
+        // Return wrapped PageResponse
+        return PageResponse.of(content, page, size, totalElements);
     }
 
     // Update the job state (e.g. SAVED -> APPLIED) and return true if successful

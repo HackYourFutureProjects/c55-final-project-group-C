@@ -3,11 +3,10 @@ package nl.hackyourfuture.project.backend.jobs;
 import nl.hackyourfuture.project.backend.jobs.dto.JobDetailResponse;
 import nl.hackyourfuture.project.backend.jobs.dto.JobFiltersResponse;
 import nl.hackyourfuture.project.backend.jobs.dto.JobSearchResponse;
+import nl.hackyourfuture.project.backend.jobs.dto.PageResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
-
-import java.util.List;
 
 @Service
 public class JobService {
@@ -18,9 +17,10 @@ public class JobService {
         this.jobRepository = jobRepository;
     }
 
-    // Coordinate job search filtering requests through the repository
-    public List<JobSearchResponse> searchJobs(String discipline, String workMode, String location, String q) {
-        return jobRepository.searchJobs(discipline, workMode, location, q);
+    // Search job postings with optional filters, return a paginated list wrapped in PageResponse
+    public PageResponse<JobSearchResponse>
+    searchJobs(String discipline, String workMode, String location, String q, int page, int size) {
+        return jobRepository.searchJobs(discipline, workMode, location, q, page, size);
     }
 
     // Retrieve available filter options for frontend dropdowns

@@ -6,10 +6,11 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import nl.hackyourfuture.project.backend.jobs.dto.JobDetailResponse;
 import nl.hackyourfuture.project.backend.jobs.dto.JobFiltersResponse;
 import nl.hackyourfuture.project.backend.jobs.dto.JobSearchResponse;
+import nl.hackyourfuture.project.backend.jobs.dto.PageResponse;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
+import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @RequestMapping("/api/jobs")
@@ -26,14 +27,30 @@ public class JobController {
     @GetMapping
     @Operation(summary = "Search job postings with optional filters")
     @ApiResponse(responseCode = "200", description = "Jobs retrieved successfully")
-    public ResponseEntity<List<JobSearchResponse>> searchJobs(
+    public PageResponse<JobSearchResponse> searchJobs(
             @RequestParam(required = false) String discipline,
             @RequestParam(required = false) String workMode,
             @RequestParam(required = false) String location,
-            @RequestParam(required = false) String q
+            @RequestParam(required = false) String q,
+            @RequestParam(defaultValue = "0") int page, // Default to first page (index 0)
+            @RequestParam(defaultValue = "20") int size // Default to 20 items per page
     ) {
-        List<JobSearchResponse> jobs = jobService.searchJobs(discipline, workMode, location, q);
-        return ResponseEntity.ok(jobs);
+        // Validate page index (must be >= 0)
+        if (page < 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Page index must be greater than or equal to 0");
+        }
+
+        // Validate page size (must be >= 1)
+        if (size < 1) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Page size must be greater than 0");
+        }
+
+        // Cap maximum page size to prevent loading the whole database (e.g. max 100 items per page)
+        int cappedSize = Math.min(size, 100);
+
+        // Forward sanitized page and cappedSize to JobService
+        return jobService.searchJobs(discipline, workMode, location, q, page, cappedSize);
+
     }
 
     // retrieve available filter options for search dropdowns

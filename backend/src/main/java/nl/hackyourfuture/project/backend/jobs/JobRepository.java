@@ -3,6 +3,7 @@ package nl.hackyourfuture.project.backend.jobs;
 import nl.hackyourfuture.project.backend.jobs.dto.JobDetailResponse;
 import nl.hackyourfuture.project.backend.jobs.dto.JobFiltersResponse;
 import nl.hackyourfuture.project.backend.jobs.dto.JobSearchResponse;
+import nl.hackyourfuture.project.backend.jobs.dto.PageResponse;
 import nl.hackyourfuture.project.backend.mart.MartSkills;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
@@ -46,7 +47,10 @@ public class JobRepository {
     }
 
     // Searches job postings with optional filters for discipline, work mode, and location
-    public List<JobSearchResponse> searchJobs(String discipline, String workMode, String location, String q) {
+    public PageResponse<JobSearchResponse>
+    searchJobs(String discipline, String workMode, String location, String q, int page, int size) {
+        int offset = page * size; // Calculate row offset for database
+        long totalElements = countJobs(discipline, workMode, location, q); //Fetch totl count
         StringBuilder sql = new StringBuilder("""
                 SELECT
                     f.posting_id,
@@ -118,10 +122,11 @@ public class JobRepository {
                     """);
         }
 
-        sql.append(" ORDER BY f.posted_date DESC NULLS LAST, f.posting_id LIMIT :limit");
+        sql.append(" ORDER BY f.posted_date DESC NULLS LAST, f.posting_id LIMIT :limit OFFSET :offset");
 
         var statement = jdbcClient.sql(sql.toString())
-                .param("limit", MAX_SEARCH_RESULTS)
+                .param("limit", size) // size as limit
+                .param("offset", offset) // Bind offset parameter
                 .param("excluded", NON_CITY_LOCATIONS);
 
         if (discipline != null && !discipline.isBlank()) {
@@ -137,7 +142,8 @@ public class JobRepository {
             statement.param("q", "%" + q + "%");
         }
 
-        return statement.query((rs, rowNum) -> {
+        // Store query results in 'content' variable instead of returning directly
+        List<JobSearchResponse> content = statement.query((rs, rowNum) -> {
             List<String> skillsList = MartSkills.parse(rs.getString("skills"));
             return new JobSearchResponse(
                     rs.getString("posting_id"),
@@ -156,6 +162,71 @@ public class JobRepository {
                     rs.getInt("saved_count")
             );
         }).list();
+
+        //Return PageResponse record containing content and metadata
+        return PageResponse.of(content, page, size, totalElements);
+    }
+
+
+     // COUNT(*) query using active search filters to calculate total matching records.
+    // Helper method to get true total count from database
+    public long countJobs(String discipline, String workMode, String location, String q) {
+        StringBuilder sql = new StringBuilder("""
+                SELECT COUNT(*)
+                FROM analytics.fct_postings f
+                WHERE 1=1
+                """);
+
+        if (discipline != null && !discipline.isBlank()) {
+            sql.append(" AND f.discipline = :discipline");
+        }
+        if (workMode != null && !workMode.isBlank()) {
+            sql.append(" AND f.work_mode = :workMode");
+        }
+        if (location != null && !location.isBlank()) {
+            sql.append("""
+                     AND EXISTS (
+                         SELECT 1 FROM analytics.fct_postings_cities sub_c
+                         WHERE sub_c.posting_id = f.posting_id
+                           AND lower(sub_c.city) = lower(:location)
+                           AND lower(sub_c.city) NOT IN (:excluded)
+                     )
+                    """);
+        }
+        if (q != null && !q.isBlank()) {
+            sql.append("""
+                     AND (
+                         f.title ILIKE :q
+                         OR f.company_name ILIKE :q
+                         OR EXISTS (
+                            SELECT 1 FROM analytics.fct_postings_cities sub_c
+                            WHERE sub_c.posting_id = f.posting_id AND sub_c.city ILIKE :q
+                            )
+                         OR EXISTS (
+                             SELECT 1 FROM analytics.fct_postings_skills sub_s
+                             WHERE sub_s.posting_id = f.posting_id AND sub_s.skill ILIKE :q
+                             )
+                     )
+                    """);
+        }
+
+        var statement = jdbcClient.sql(sql.toString())
+                .param("excluded", NON_CITY_LOCATIONS);
+
+        if (discipline != null && !discipline.isBlank()) {
+            statement.param("discipline", discipline);
+        }
+        if (workMode != null && !workMode.isBlank()) {
+            statement.param("workMode", workMode);
+        }
+        if (location != null && !location.isBlank()) {
+            statement.param("location", location);
+        }
+        if (q != null && !q.isBlank()) {
+            statement.param("q", "%" + q + "%");
+        }
+
+        return statement.query(Long.class).single();
     }
 
     // Retrieves detailed information for a specific job posting by its ID
