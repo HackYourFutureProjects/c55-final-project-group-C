@@ -43,17 +43,18 @@ public class JobMatchRepository {
                       AND pg_input_is_valid(skills, 'jsonb')
                 """);
 
-        // Remote roles count wherever the candidate lives, else a thin city returns one row.
+        // The preferred city and nothing else: a remote posting elsewhere is a work-mode
+        // preference, not a city one, and mixing the two here is why "Amsterdam" used to
+        // return a list that read as unfiltered. Same rule as the /api/jobs location filter.
         // Matched against fct_postings_cities, the same resolved city the picker offers.
         // Never against the raw location text: '%Ede%' also matches every "Nederland" posting.
         if (city != null && !city.isBlank()) {
             sql.append("""
-                          AND (is_remote
-                               OR EXISTS (
-                                   SELECT 1 FROM analytics.fct_postings_cities c
-                                   WHERE c.posting_id = fct_postings.posting_id
-                                     AND lower(c.city) = lower(:city)
-                               ))
+                          AND EXISTS (
+                              SELECT 1 FROM analytics.fct_postings_cities c
+                              WHERE c.posting_id = fct_postings.posting_id
+                                AND lower(c.city) = lower(:city)
+                          )
                     """);
         }
 

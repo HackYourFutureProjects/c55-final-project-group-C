@@ -21,7 +21,7 @@ import java.util.Locale;
 import java.util.Map;
 
 // Ranks open postings against the logged-in user's profile, in two steps:
-// 1. SQL narrows - city (plus remote) and exact skill overlap cut the mart to SHORTLIST_SIZE.
+// 1. SQL narrows - the preferred city and exact skill overlap cut the mart to SHORTLIST_SIZE.
 // 2. The model ranks whatever in that shortlist is not scored yet, taking synonyms and
 //    seniority into account.
 // The split is the design: sending the whole mart to a model would be a batch job, a
