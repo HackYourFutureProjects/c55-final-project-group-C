@@ -94,31 +94,31 @@ public class SavedJobController {
     }
 
     // List all saved jobs for the authenticated user
-        @GetMapping
-        @Operation(summary = "List user's saved jobs")
-        @ApiResponse(responseCode = "200", description = "Saved jobs retrieved successfully")
-        public ResponseEntity<PageResponse<SavedJobResponse>> getSavedJobs(
-                @AuthenticationPrincipal Object principal,
-                @RequestParam(defaultValue = "0") int page, // Default page index 0
-                @RequestParam(defaultValue = "20") int size  // Default page size 20
-        ) {
-            // Validate page index (must be >= 0)
-            if (page < 0) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Page index must be greater than or equal to 0");
-            }
-
-            // Validate page size (must be >= 1)
-            if (size < 1) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Page size must be greater than 0");
-            }
-
-            // Cap maximum page size to prevent large database loads
-            int cappedSize = Math.min(size, 100);
-            String email = getCurrentUserEmail(principal)
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Not logged in"));
-            PageResponse<SavedJobResponse> savedJobs = savedJobService.getSavedJobsByEmail(email, page, cappedSize);
-            return ResponseEntity.ok(savedJobs);
+    @GetMapping
+    @Operation(summary = "List user's saved jobs")
+    @ApiResponse(responseCode = "200", description = "Saved jobs retrieved successfully")
+    public ResponseEntity<PageResponse<SavedJobResponse>> getSavedJobs(
+            @AuthenticationPrincipal Object principal,
+            @RequestParam(defaultValue = "0") int page, // Default page index 0
+            @RequestParam(defaultValue = "20") int size  // Default page size 20
+    ) {
+        // Validate page index (must be >= 0)
+        if (page < 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Page index must be greater than or equal to 0");
         }
+
+        // Validate page size (must be >= 1)
+        if (size < 1) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Page size must be greater than 0");
+        }
+
+        // Cap maximum page size to prevent large database loads
+        int cappedSize = Math.min(size, 100);
+        String email = getCurrentUserEmail(principal)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Not logged in"));
+        PageResponse<SavedJobResponse> savedJobs = savedJobService.getSavedJobsByEmail(email, page, cappedSize);
+        return ResponseEntity.ok(savedJobs);
+    }
 
     // Extracts the user email from Spring Security to identify the current user and retrieve their database ID.
     private static Optional<String> getCurrentUserEmail(Object principal) {
