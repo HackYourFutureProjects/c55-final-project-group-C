@@ -275,7 +275,9 @@ export default function SavedJobsContent({
 
                   return (
                     <li key={job.postingId}>
-                      <article className="saved-job-card">
+                      <article
+                        className={`saved-job-card is-status-${job.jobState.toLowerCase()}`}
+                      >
                         <div className="saved-job-main">
                           <div className="saved-job-topline">
                             <span>{job.discipline ?? "Job opportunity"}</span>
@@ -328,6 +330,7 @@ export default function SavedJobsContent({
 
                           <select
                             id={`status-${job.postingId}`}
+                            className={`is-status-${job.jobState.toLowerCase()}`}
                             value={job.jobState}
                             disabled={isBusy}
                             onChange={(event) =>

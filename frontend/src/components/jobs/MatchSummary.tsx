@@ -20,9 +20,11 @@ function getSkillBadges(skills: string[]) {
 
 export default function MatchSummary({ match }: MatchSummaryProps) {
   const matchedSkills = getSkillBadges(match.matchedSkills);
+  const matchToneClass =
+    match.matchPercent >= 60 && match.label ? " is-match-high" : "";
 
   return (
-    <div className="match-summary">
+    <div className={`match-summary${matchToneClass}`}>
       <div className="match-summary-header">
         <strong>{match.matchPercent}% match</strong>
 
