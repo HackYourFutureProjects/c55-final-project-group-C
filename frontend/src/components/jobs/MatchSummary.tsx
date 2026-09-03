@@ -43,6 +43,10 @@ export default function MatchSummary({ match }: MatchSummaryProps) {
       ) : (
         <p className="match-summary-empty">No matched skills returned.</p>
       )}
+
+      {match.aiScored && match.reason ? (
+        <p className="match-summary-reason">{match.reason}</p>
+      ) : null}
     </div>
   );
 }
