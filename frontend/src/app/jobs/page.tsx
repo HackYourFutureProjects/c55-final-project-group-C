@@ -31,6 +31,7 @@ export default async function JobsPage({ searchParams }: JobsPageProps) {
   const [filters, jobResponse] = await Promise.all([
     getJobFiltersServer(),
     getJobsServer({
+      q: searchQuery,
       discipline,
       workMode,
       location,
@@ -38,26 +39,6 @@ export default async function JobsPage({ searchParams }: JobsPageProps) {
   ]);
 
   let jobs = jobResponse.map(mapJobSearchResponse);
-
-  if (searchQuery) {
-    const normalizedQuery = searchQuery.toLowerCase();
-
-    // Backend does not expose a q parameter yet, so keyword search is limited
-    // to the rows returned by the current backend filters.
-    jobs = jobs.filter((job) => {
-      const searchableText = [
-        job.title,
-        job.companyName,
-        job.location,
-        ...job.skills,
-      ]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase();
-
-      return searchableText.includes(normalizedQuery);
-    });
-  }
 
   jobs = sortJobsByFreshness(jobs);
 

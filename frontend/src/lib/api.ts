@@ -324,6 +324,7 @@ export type JobMatchResponse = {
 };
 
 export type JobSearchParams = {
+  q?: string;
   discipline?: string;
   workMode?: string;
   location?: string;
