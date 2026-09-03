@@ -212,10 +212,18 @@ with
         from renamed
         qualify
             row_number() over (
-                partition by original_source, source_job_id order by ingested_at desc
+                partition by
+                    original_source,
+                    lower(trim(title)),
+                    coalesce(
+                        nullif(
+                            regexp_extract(source_job_id, '[^:]+$', 0), source_job_id
+                        ),
+                        right(source_job_id, 6)
+                    )
+                order by ingested_at desc
             )
             = 1
-
     )
 
 select *
