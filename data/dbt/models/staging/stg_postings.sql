@@ -210,16 +210,20 @@ with
         -- what it said the first time you saw it.
         select *
         from renamed
-        qualify row_number() over (
-            partition by
-                original_source,
-                lower(trim(title)),
-                COALESCE(
-                    NULLIF(regexp_extract(source_job_id, '[^:]+$', 0), source_job_id),
-                    right(source_job_id, 6)
-                )
-            order by ingested_at desc
-        ) = 1
+        qualify
+            row_number() over (
+                partition by
+                    original_source,
+                    lower(trim(title)),
+                    coalesce(
+                        nullif(
+                            regexp_extract(source_job_id, '[^:]+$', 0), source_job_id
+                        ),
+                        right(source_job_id, 6)
+                    )
+                order by ingested_at desc
+            )
+            = 1
     )
 
 select *
