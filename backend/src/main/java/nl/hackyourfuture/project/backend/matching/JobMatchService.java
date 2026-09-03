@@ -45,12 +45,6 @@ public class JobMatchService {
     private final MatchScorer matchScorer;
 
     public List<JobMatchResponse> getTopMatches(String email) {
-        return getTopMatches(email, false);
-    }
-
-    // instant: skip the model, answer from SQL plus stored verdicts (a primary-key lookup),
-    // so a caller can paint a list at once and fetch the fully scored one separately.
-    public List<JobMatchResponse> getTopMatches(String email, boolean instant) {
         Profile profile = loadProfile(email);
         List<String> skills = canonicalise(profile.getSkills());
 
@@ -67,7 +61,7 @@ public class JobMatchService {
             return List.of();
         }
 
-        Map<String, MatchScorer.Score> scores = resolveScores(skills, shortlist, instant);
+        Map<String, MatchScorer.Score> scores = resolveScores(skills, shortlist);
 
         return shortlist.stream()
                 .map(row -> toResponse(row, skills.size(), scores.get(row.postingId())))
@@ -80,17 +74,13 @@ public class JobMatchService {
     // Stored verdicts first, the model only for what is left: a returning skill set sends
     // the model just the postings the daily publish added.
     private Map<String, MatchScorer.Score> resolveScores(List<String> skills,
-                                                         List<JobMatchRepository.JobMatchRow> shortlist,
-                                                         boolean instant) {
+                                                         List<JobMatchRepository.JobMatchRow> shortlist) {
         String skillsHash = skillsHash(skills);
         String scorerVersion = matchScorer.version();
         List<String> postingIds = shortlist.stream().map(JobMatchRepository.JobMatchRow::postingId).toList();
 
         Map<String, MatchScorer.Score> scores =
                 new HashMap<>(jobMatchScoreRepository.findScores(skillsHash, scorerVersion, postingIds));
-        if (instant) {
-            return scores;
-        }
 
         List<JobMatchRepository.JobMatchRow> unscored = shortlist.stream()
                 .filter(row -> !scores.containsKey(row.postingId()))

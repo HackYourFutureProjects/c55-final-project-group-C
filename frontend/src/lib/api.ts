@@ -318,6 +318,9 @@ export type JobMatchResponse = {
   matchScore: number;
   matchPercent: number;
   label: string | null;
+  score: number;
+  reason: string | null;
+  aiScored: boolean;
 };
 
 export type JobSearchParams = {

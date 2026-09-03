@@ -61,10 +61,11 @@ app:
     # Sent as reasoning_effort. Set for a model that thinks by default (Gemini 3 flash costs
     # ~14s without it, ~4s with "low"). Leave empty for a provider that rejects the field.
     reasoning-effort: ${LLM_REASONING_EFFORT:low}
-    # Stored model verdicts are kept in job_match_scores until they age out. The purge runs
-    # at 09:30 Amsterdam by default, half an hour after the pipeline's 09:00 publish.
-    score-retention-days: ${LLM_SCORE_RETENTION_DAYS:7}
-    score-purge-cron: ${LLM_SCORE_PURGE_CRON:0 30 9 * * *}
+    # Model verdicts live in job_match_scores for score-retention-days and no longer. The read
+    # filters on that window, so nothing older is ever served; the purge only reclaims the space,
+    # hourly, because a once-daily pass cannot delete on a 24h boundary.
+    score-retention-days: ${LLM_SCORE_RETENTION_DAYS:1}
+    score-purge-cron: ${LLM_SCORE_PURGE_CRON:0 0 * * * *}
 
 # API Docs
 springdoc:

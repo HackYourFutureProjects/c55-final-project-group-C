@@ -2160,6 +2160,12 @@ a {
   color: #80747b;
 }
 
+.match-summary-reason {
+  padding-top: 12px;
+  border-top: 1px solid #e0d5dc;
+  font-size: 0.92rem;
+}
+
 @media (max-width: 900px) {
   .job-details-hero {
     flex-direction: column;
