@@ -1,7 +1,6 @@
 package nl.hackyourfuture.project.backend.matching;
 
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -12,7 +11,6 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -40,18 +38,13 @@ public class JobMatchController {
     @ApiResponse(responseCode = "401", description = "Not logged in")
     @ApiResponse(responseCode = "422", description = "No profile, or fewer than 5 skills on it")
     public ResponseEntity<List<JobMatchResponse>> getTopMatches(
-            @AuthenticationPrincipal Object principal,
-            @Parameter(description = "Answer without waiting for the model, so a page can "
-                    + "paint immediately and fetch the fully scored list separately. Scores "
-                    + "already stored from an earlier request are still used, being both "
-                    + "better and just as fast.")
-            @RequestParam(required = false, defaultValue = "false") boolean instant
+            @AuthenticationPrincipal Object principal
     ) {
         Optional<String> email = resolveEmail(principal);
         if (email.isEmpty()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
-        return ResponseEntity.ok(jobMatchService.getTopMatches(email.get(), instant));
+        return ResponseEntity.ok(jobMatchService.getTopMatches(email.get()));
     }
 
     private static Optional<String> resolveEmail(Object principal) {
