@@ -68,7 +68,7 @@ public class MatchScorer {
         }
     }
 
-    public boolean isEnabled() {
+    private boolean isEnabled() {
         return apiKey != null && !apiKey.isBlank();
     }
 
