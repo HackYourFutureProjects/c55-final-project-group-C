@@ -17,9 +17,13 @@
   --radius-input: 14px;
   --radius-card: 18px;
   --radius-pill: 999px;
+  --space-xs: 8px;
   --space-sm: 12px;
+  --space-control-gap: 10px;
+  --space-md: 16px;
   --space-lg: 20px;
   --space-xl: 28px;
+  --space-2xl: 48px;
   --font-size-xs: 0.75rem;
   --font-size-sm: 0.9rem;
   --background: var(--color-surface-page);
@@ -476,7 +480,7 @@ a {
 .tracker-stat-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  gap: var(--space-sm);
 }
 
 .tracker-stat-grid div {
@@ -1123,7 +1127,7 @@ a {
 
 .auth-terms {
   display: grid;
-  gap: 8px;
+  gap: var(--space-xs);
 }
 
 .auth-terms-label {
@@ -1262,7 +1266,7 @@ a {
 
 .team-member-list {
   display: grid;
-  gap: 16px;
+  gap: var(--space-md);
 }
 
 .team-member-card,
@@ -1923,7 +1927,7 @@ a {
   margin-top: 18px;
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: var(--space-control-gap);
 }
 
 @media (max-width: 760px) {
@@ -1961,7 +1965,7 @@ a {
 .profile-selected-skills {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: var(--space-control-gap);
 }
 
 .profile-skill-count {
@@ -2012,7 +2016,7 @@ a {
 
 .profile-skill-category {
   display: grid;
-  gap: 8px;
+  gap: var(--space-xs);
 }
 
 .profile-skill-category label {
@@ -2176,7 +2180,7 @@ a {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: var(--space-sm);
 }
 
 .match-summary-header strong {
@@ -2206,7 +2210,7 @@ a {
   padding: 0;
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: var(--space-xs);
   list-style: none;
 }
 
@@ -2335,7 +2339,7 @@ a {
 
 .job-details-state-actions {
   display: flex;
-  gap: 16px;
+  gap: var(--space-md);
   align-items: center;
   margin-top: 32px;
 }
@@ -2481,9 +2485,9 @@ a {
   list-style: none;
   display: grid;
   grid-template-columns: 1fr;
-  gap: 8px;
+  gap: var(--space-xs);
   border-top: 1px solid var(--color-border-subtle);
-  padding-top: 16px;
+  padding-top: var(--space-md);
 }
 
 .job-status-grid li {
@@ -2584,7 +2588,7 @@ a {
 
 .saved-job-topline {
   display: flex;
-  gap: 12px;
+  gap: var(--space-sm);
   align-items: center;
 }
 
@@ -2644,7 +2648,7 @@ a {
   margin-top: 14px;
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: var(--space-xs);
 }
 
 .saved-job-skills span {
@@ -2784,7 +2788,7 @@ a {
 
 .save-job-control {
   display: grid;
-  gap: 8px;
+  gap: var(--space-xs);
 }
 
 .save-job-button {
@@ -2793,7 +2797,7 @@ a {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: var(--space-xs);
   border: 1px solid #bfaeba;
   border-radius: var(--radius-pill);
   background: transparent;
@@ -2867,7 +2871,7 @@ a {
   min-height: 46px;
   padding: 0 18px;
   display: inline-flex;
-  gap: 8px;
+  gap: var(--space-xs);
   align-items: center;
   justify-content: center;
   background: transparent;
@@ -3040,7 +3044,7 @@ a {
   margin-top: 24px;
   padding: 8px;
   display: flex;
-  gap: 8px;
+  gap: var(--space-xs);
   border: 1px solid var(--color-border-control);
   border-radius: var(--radius-pill);
   background: var(--color-surface);
@@ -3353,7 +3357,7 @@ a {
 .job-result-action-row {
   grid-area: actions;
   display: flex;
-  gap: 10px;
+  gap: var(--space-control-gap);
   align-items: center;
   justify-content: flex-end;
 }
@@ -3376,7 +3380,7 @@ a {
   margin-top: 14px;
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: var(--space-xs);
 }
 
 .job-result-skills span {
@@ -3450,7 +3454,7 @@ a {
 .job-filter-group {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--space-xs);
 }
 
 .job-filter-group label {
