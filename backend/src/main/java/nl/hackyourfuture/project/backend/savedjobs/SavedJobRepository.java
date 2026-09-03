@@ -51,7 +51,7 @@ public class SavedJobRepository {
 
     // Fetch the list of saved jobs with posting details for a user
     public PageResponse<SavedJobResponse> getSavedJobsWithDetails(UUID userId, int page, int size) {
-        int offset = page * size;
+        long offset = (long) page * size;
         long totalElements = countSavedJobs(userId);
         String sql = """
                 SELECT
