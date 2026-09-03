@@ -9,7 +9,7 @@ type JobDetailsErrorProps = {
 export default function JobDetailsError({ reset }: JobDetailsErrorProps) {
   return (
     <main className="job-details-page">
-      <div className="job-details-container job-details-state">
+      <div className="job-details-container job-details-state" role="alert">
         <p className="job-details-state-eyebrow">SOMETHING WENT WRONG</p>
 
         <h1 className="job-details-state-title">We could not load this job</h1>
