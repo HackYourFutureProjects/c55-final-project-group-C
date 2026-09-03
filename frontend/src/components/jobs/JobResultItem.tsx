@@ -35,19 +35,18 @@ export default function JobResultItem({
       <div className="job-result-main">
         <div className="job-result-heading">
           <div>
-            <p className="job-result-company">{job.companyName}</p>
-
             <h3>
               <Link href={`/jobs/${encodeURIComponent(job.id)}`}>
                 {job.title}
               </Link>
             </h3>
+
+            <p className="job-result-byline">
+              <span>{job.companyName}</span>
+              <span>{job.location ?? "Location not specified"}</span>
+            </p>
           </div>
         </div>
-
-        <p className="job-result-location">
-          {job.location ?? "Location not specified"}
-        </p>
 
         <div className="job-result-meta">
           {job.workMode && <span>{job.workMode}</span>}
