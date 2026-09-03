@@ -2,11 +2,11 @@ package nl.hackyourfuture.project.backend.savedjobs;
 
 import nl.hackyourfuture.project.backend.savedjobs.dto.SavedJobResponse;
 import nl.hackyourfuture.project.backend.user.UserRepository;
+import nl.hackyourfuture.project.backend.jobs.dto.PageResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -39,10 +39,10 @@ public class SavedJobService {
         savedJobRepository.saveJob(userId, postingId);
     }
 
-    // Get all saved jobs with details for a user
-        public List<SavedJobResponse> getSavedJobsByEmail(String email) {
+    // Get paginated saved jobs with details for a user
+        public PageResponse<SavedJobResponse> getSavedJobsByEmail(String email, int page, int size) {
             UUID userId = getUserIdByEmail(email);
-            return savedJobRepository.getSavedJobsWithDetails(userId);
+            return savedJobRepository.getSavedJobsWithDetails(userId, page, size);
         }
 
     // Update the state of a saved job
