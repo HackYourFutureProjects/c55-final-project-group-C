@@ -26,6 +26,13 @@
   --space-2xl: 48px;
   --font-size-xs: 0.75rem;
   --font-size-sm: 0.9rem;
+  --control-height: 46px;
+  --control-height-field: 50px;
+  --control-height-compact: 44px;
+  --control-padding-x: 18px;
+  --control-padding-x-compact: 16px;
+  --control-focus-shadow: 0 0 0 3px rgba(75, 23, 63, 0.09);
+  --control-focus-shadow-soft: 0 0 0 3px rgba(75, 23, 63, 0.08);
   --background: var(--color-surface-page);
   --foreground: var(--color-text);
 }
@@ -328,7 +335,8 @@ a {
 .hero-search input {
   min-width: 0;
   flex: 1;
-  padding: 12px 16px;
+  min-height: var(--control-height);
+  padding: 0 16px;
   border: 0;
   outline: none;
   background: transparent;
@@ -343,12 +351,30 @@ a {
 .hero-search button {
   border: 0;
   border-radius: var(--radius-pill);
-  padding: 12px 20px;
+  min-height: var(--control-height);
+  padding: 0 var(--control-padding-x);
   background: var(--color-brand);
   color: var(--color-surface);
   font: inherit;
   font-weight: 600;
   cursor: pointer;
+  transition:
+    background 160ms ease,
+    opacity 160ms ease;
+}
+
+.hero-search input:focus,
+.hero-search input:focus-visible {
+  outline: none;
+}
+
+.hero-search button:hover:not(:disabled) {
+  background: var(--color-brand-hover);
+}
+
+.hero-search button:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 3px;
 }
 
 .hero-actions {
@@ -759,9 +785,9 @@ a {
 
 .auth-field input {
   width: 100%;
-  height: 50px;
+  min-height: var(--control-height-field);
   padding: 0 16px;
-  border: 1px solid #d5c8cf;
+  border: 1px solid var(--color-border-control);
   border-radius: var(--radius-input);
   outline: none;
   background: var(--color-surface);
@@ -776,9 +802,10 @@ a {
   color: #a1939b;
 }
 
-.auth-field input:focus {
+.auth-field input:focus,
+.auth-field input:focus-visible {
   border-color: #6b345d;
-  box-shadow: 0 0 0 3px rgba(75, 23, 63, 0.09);
+  box-shadow: var(--control-focus-shadow);
 }
 
 .auth-password-input {
@@ -810,18 +837,24 @@ a {
 }
 
 .auth-password-input button:focus-visible {
-  outline: 3px solid rgba(75, 23, 63, 0.18);
+  outline: 3px solid var(--color-focus);
   outline-offset: 2px;
 }
 
 .auth-primary-button,
 .auth-google-button {
   width: 100%;
-  min-height: 50px;
+  min-height: var(--control-height);
+  padding: 0 var(--control-padding-x);
   border-radius: var(--radius-pill);
   font: inherit;
   font-weight: 600;
   cursor: pointer;
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease,
+    opacity 160ms ease;
 }
 
 .auth-primary-button {
@@ -831,13 +864,20 @@ a {
   color: var(--color-surface);
 }
 
-.auth-primary-button:hover {
+.auth-primary-button:hover:not(:disabled) {
   background: #3f1335;
 }
 
-.auth-primary-button:disabled {
-  cursor: wait;
+.auth-primary-button:disabled,
+.auth-google-button:disabled {
+  cursor: not-allowed;
   opacity: 0.65;
+}
+
+.auth-primary-button:focus-visible,
+.auth-google-button:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 3px;
 }
 
 .auth-divider {
@@ -868,7 +908,7 @@ a {
   color: #2d2429;
 }
 
-.auth-google-button:hover {
+.auth-google-button:hover:not(:disabled) {
   background: rgba(255, 255, 255, 0.45);
 }
 
@@ -1062,29 +1102,40 @@ a {
 
 .danger-button,
 .secondary-button {
-  min-height: 44px;
-  padding: 11px 18px;
+  min-height: var(--control-height);
+  padding: 0 var(--control-padding-x);
   border-radius: var(--radius-pill);
   font: inherit;
   font-weight: 600;
   cursor: pointer;
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease,
+    opacity 160ms ease;
 }
 
 .danger-button {
   flex-shrink: 0;
-  border: 1px solid #9d4f4f;
-  background: transparent;
-  color: #8a3434;
+  border: 1px solid var(--color-danger-strong);
+  background: var(--color-danger-strong);
+  color: var(--color-surface);
 }
 
 .danger-button:hover:not(:disabled) {
-  background: #f4e8e8;
+  background: #843232;
 }
 
 .danger-button:disabled,
 .secondary-button:disabled {
   cursor: not-allowed;
-  opacity: 0.6;
+  opacity: 0.65;
+}
+
+.danger-button:focus-visible,
+.secondary-button:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 3px;
 }
 
 .delete-confirmation {
@@ -1116,13 +1167,13 @@ a {
 }
 
 .secondary-button {
-  border: 1px solid #d4c8ce;
+  border: 1px solid #cfc2c9;
   background: transparent;
-  color: #4d4148;
+  color: #3c3137;
 }
 
 .secondary-button:hover:not(:disabled) {
-  background: #f1ebee;
+  background: var(--color-surface-muted);
 }
 
 .auth-terms {
@@ -1581,13 +1632,16 @@ a {
   display: inline-flex;
   justify-content: center;
   align-items: center;
-  min-height: 46px;
-  padding: 0 20px;
+  min-height: var(--control-height);
+  padding: 0 var(--control-padding-x);
   border-radius: var(--radius-pill);
   background: var(--color-brand);
   color: var(--color-surface);
   font-weight: 700;
   text-decoration: none;
+  transition:
+    background 160ms ease,
+    color 160ms ease;
 }
 
 .job-details-apply:hover {
@@ -1597,6 +1651,13 @@ a {
 .job-details-apply.is-disabled {
   cursor: not-allowed;
   background: #8f8288;
+}
+
+.job-details-apply:focus-visible,
+.job-details-back:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 3px;
+  border-radius: var(--radius-sm);
 }
 
 .job-details-meta {
@@ -1726,9 +1787,9 @@ a {
 .profile-field input,
 .profile-field select {
   width: 100%;
-  min-height: 50px;
+  min-height: var(--control-height-field);
   padding: 0 16px;
-  border: 1px solid #d5c8cf;
+  border: 1px solid var(--color-border-control);
   border-radius: var(--radius-input);
   outline: none;
   background: var(--color-surface);
@@ -1744,9 +1805,19 @@ a {
 }
 
 .profile-field input:focus,
-.profile-field select:focus {
+.profile-field input:focus-visible,
+.profile-field select:focus,
+.profile-field select:focus-visible {
   border-color: #6b345d;
-  box-shadow: 0 0 0 3px rgba(75, 23, 63, 0.09);
+  box-shadow: var(--control-focus-shadow);
+}
+
+.profile-field input:disabled,
+.profile-field select:disabled,
+.profile-skill-category select:disabled,
+.profile-skill-picker input:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
 }
 
 .profile-skills-placeholder {
@@ -1794,8 +1865,8 @@ a {
 }
 
 .profile-save-button {
-  min-height: 46px;
-  padding: 0 20px;
+  min-height: var(--control-height);
+  padding: 0 var(--control-padding-x);
   border: 1px solid var(--color-brand);
   border-radius: var(--radius-pill);
   background: var(--color-brand);
@@ -1803,10 +1874,25 @@ a {
   font: inherit;
   font-weight: 700;
   cursor: pointer;
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease,
+    opacity 160ms ease;
 }
 
-.profile-save-button:hover {
+.profile-save-button:hover:not(:disabled) {
   background: #3f1335;
+}
+
+.profile-save-button:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 3px;
+}
+
+.profile-save-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
 }
 
 .data-export-panel {
@@ -1868,38 +1954,6 @@ a {
   margin-top: 10px;
   color: #785f5f;
   line-height: 1.6;
-}
-
-.danger-button,
-.secondary-button {
-  min-height: 44px;
-  padding: 0 16px;
-  border-radius: var(--radius-pill);
-  font: inherit;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.danger-button {
-  border: 1px solid var(--color-danger-strong);
-  background: var(--color-danger-strong);
-  color: var(--color-surface);
-}
-
-.danger-button:hover {
-  background: #843232;
-}
-
-.danger-button:disabled,
-.secondary-button:disabled {
-  cursor: wait;
-  opacity: 0.65;
-}
-
-.secondary-button {
-  border: 1px solid #cfc2c9;
-  background: transparent;
-  color: #3c3137;
 }
 
 .delete-confirmation {
@@ -2004,6 +2058,11 @@ a {
   background: rgba(75, 23, 63, 0.16);
 }
 
+.profile-skill-tag button:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
 .profile-skill-picker {
   position: relative;
 }
@@ -2028,9 +2087,9 @@ a {
 .profile-skill-category select,
 .profile-skill-picker input {
   width: 100%;
-  min-height: 50px;
+  min-height: var(--control-height-field);
   padding: 0 16px;
-  border: 1px solid #d5c8cf;
+  border: 1px solid var(--color-border-control);
   border-radius: var(--radius-input);
   outline: none;
   background: var(--color-surface);
@@ -2039,9 +2098,11 @@ a {
 }
 
 .profile-skill-category select:focus,
-.profile-skill-picker input:focus {
+.profile-skill-category select:focus-visible,
+.profile-skill-picker input:focus,
+.profile-skill-picker input:focus-visible {
   border-color: #6b345d;
-  box-shadow: 0 0 0 3px rgba(75, 23, 63, 0.09);
+  box-shadow: var(--control-focus-shadow);
 }
 
 .profile-skill-options {
@@ -2075,9 +2136,13 @@ a {
 .profile-skill-options button:hover,
 .profile-skill-options button:focus-visible,
 .profile-skill-options button[aria-selected="true"] {
-  outline: none;
   background: #f7f1f4;
   color: var(--color-brand);
+}
+
+.profile-skill-options button:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: -2px;
 }
 
 .profile-skill-options small {
@@ -2675,19 +2740,20 @@ a {
 
 .saved-job-actions select {
   width: 100%;
-  min-height: 44px;
+  min-height: var(--control-height-compact);
   padding: 0 12px;
-  border: 1px solid #d5c8cf;
-  border-radius: 12px;
+  border: 1px solid var(--color-border-control);
+  border-radius: var(--radius-input);
   outline: none;
   background: var(--color-surface);
   color: var(--color-text);
   font: inherit;
 }
 
-.saved-job-actions select:focus {
+.saved-job-actions select:focus,
+.saved-job-actions select:focus-visible {
   border-color: #6b345d;
-  box-shadow: 0 0 0 3px rgba(75, 23, 63, 0.08);
+  box-shadow: var(--control-focus-shadow-soft);
 }
 
 .saved-job-actions select:disabled,
@@ -2697,7 +2763,8 @@ a {
 }
 
 .saved-remove-button {
-  min-height: 44px;
+  min-height: var(--control-height-compact);
+  padding: 0 var(--control-padding-x-compact);
   border: 1px solid var(--color-border-subtle);
   border-radius: var(--radius-pill);
   background: transparent;
@@ -2705,11 +2772,21 @@ a {
   font: inherit;
   font-weight: 600;
   cursor: pointer;
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease,
+    opacity 160ms ease;
 }
 
 .saved-remove-button:hover:not(:disabled) {
   border-color: #a98e9e;
   background: #f7f1f4;
+}
+
+.saved-remove-button:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 3px;
 }
 
 .saved-state,
@@ -2726,8 +2803,8 @@ a {
 
 .saved-state button {
   margin-top: 16px;
-  min-height: 42px;
-  padding: 0 18px;
+  min-height: var(--control-height);
+  padding: 0 var(--control-padding-x);
   border: 1px solid var(--color-brand);
   border-radius: var(--radius-pill);
   background: var(--color-brand);
@@ -2735,6 +2812,20 @@ a {
   font: inherit;
   font-weight: 600;
   cursor: pointer;
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease,
+    opacity 160ms ease;
+}
+
+.saved-state button:hover:not(:disabled) {
+  background: var(--color-brand-hover);
+}
+
+.saved-state button:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 3px;
 }
 
 .saved-state-error {
@@ -2792,8 +2883,8 @@ a {
 }
 
 .save-job-button {
-  min-height: 44px;
-  padding: 0 18px;
+  min-height: var(--control-height-compact);
+  padding: 0 var(--control-padding-x);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -2825,6 +2916,11 @@ a {
 .save-job-button:disabled {
   cursor: default;
   opacity: 0.8;
+}
+
+.save-job-button:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 3px;
 }
 
 .save-job-error {
@@ -2863,13 +2959,13 @@ a {
 }
 
 .saved-bookmark-button.is-icon {
-  width: 42px;
-  height: 42px;
+  width: var(--control-height-compact);
+  height: var(--control-height-compact);
 }
 
 .saved-bookmark-button.is-cta {
-  min-height: 46px;
-  padding: 0 18px;
+  min-height: var(--control-height);
+  padding: 0 var(--control-padding-x);
   display: inline-flex;
   gap: var(--space-xs);
   align-items: center;
@@ -3053,7 +3149,8 @@ a {
 .jobs-search input {
   min-width: 0;
   flex: 1;
-  padding: 12px 16px;
+  min-height: var(--control-height);
+  padding: 0 16px;
   border: 0;
   outline: none;
   background: transparent;
@@ -3066,7 +3163,8 @@ a {
 }
 
 .jobs-search button {
-  padding: 12px 22px;
+  min-height: var(--control-height);
+  padding: 0 22px;
   border: 0;
   border-radius: var(--radius-pill);
   background: var(--color-brand);
@@ -3074,6 +3172,18 @@ a {
   font: inherit;
   font-weight: 600;
   cursor: pointer;
+  transition:
+    background 160ms ease,
+    opacity 160ms ease;
+}
+
+.jobs-search button:hover:not(:disabled) {
+  background: var(--color-brand-hover);
+}
+
+.jobs-search button:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 3px;
 }
 
 .jobs-layout {
@@ -3466,9 +3576,10 @@ a {
 .job-filter-group input,
 .job-filter-group select {
   width: 100%;
-  padding: 10px 12px;
+  min-height: var(--control-height-compact);
+  padding: 0 12px;
   border: 1px solid var(--color-border-control);
-  border-radius: 10px;
+  border-radius: var(--radius-input);
   background: var(--color-surface);
   color: #4e444a;
   font: inherit;
@@ -3479,9 +3590,11 @@ a {
 }
 
 .job-filter-group input:focus,
-.job-filter-group select:focus {
+.job-filter-group input:focus-visible,
+.job-filter-group select:focus,
+.job-filter-group select:focus-visible {
   border-color: #6b345d;
-  box-shadow: 0 0 0 3px rgba(75, 23, 63, 0.08);
+  box-shadow: var(--control-focus-shadow-soft);
   outline: none;
 }
 
@@ -3603,14 +3716,28 @@ a {
 
 .jobs-error button {
   margin-top: 28px;
-  padding: 13px 20px;
-  border: 0;
+  min-height: var(--control-height);
+  padding: 0 var(--control-padding-x);
+  border: 1px solid var(--color-brand);
   border-radius: var(--radius-pill);
   background: var(--color-brand);
   color: var(--color-surface);
   font: inherit;
   font-weight: 600;
   cursor: pointer;
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease;
+}
+
+.jobs-error button:hover {
+  background: var(--color-brand-hover);
+}
+
+.jobs-error button:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 3px;
 }
 
 .job-pagination {
@@ -3644,16 +3771,25 @@ a {
   }
 }
 .job-filters-submit {
-  padding: 10px 16px;
-  border: 0;
+  min-height: var(--control-height);
+  padding: 0 var(--control-padding-x-compact);
+  border: 1px solid var(--color-brand);
   border-radius: var(--radius-pill);
   background: var(--color-brand);
   color: var(--color-surface);
   font: inherit;
   font-weight: 600;
   cursor: pointer;
+  transition:
+    background 160ms ease,
+    opacity 160ms ease;
 }
 
 .job-filters-submit:hover {
-  opacity: 0.92;
+  background: var(--color-brand-hover);
+}
+
+.job-filters-submit:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 3px;
 }
