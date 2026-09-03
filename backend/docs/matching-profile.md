@@ -33,7 +33,7 @@ One row per user in `user_profiles`, or none at all until the first save.
 | Field | Column | Used by matching? |
 | --- | --- | --- |
 | `skills` | `skills text[]` | **Yes** — the whole ranking rests on it |
-| `preferredCity` | `preferred_city` | **Yes** — narrows the shortlist; remote roles bypass it |
+| `preferredCity` | `preferred_city` | **Yes** — the shortlist is restricted to postings in that city |
 | `discipline` | `discipline` | No |
 | `workMode` | `work_mode` | No |
 | `experienceLevel` | `experience_level` | No |
@@ -44,7 +44,11 @@ One row per user in `user_profiles`, or none at all until the first save.
 `findTopMatches(profile.getPreferredCity(), skills, 40)` and passes nothing else; the model is sent
 skills and job titles, never a preference. The other five are collected, stored, returned, and
 included in the data export — but a user who sets `workMode: remote` will still see on-site jobs in
-their matches.
+their matches. The city filter used to soften that by letting any `is_remote` posting through
+regardless of where it was; it no longer does. Work mode is a work-mode preference and belongs to
+`workMode`, not to the city filter, and blending the two made "Amsterdam" return a list that read as
+unfiltered. Until `workMode` is honoured, a remote-preferring user with a preferred city set sees
+only postings in that city.
 
 That is worth stating plainly because the profile form does not say it, and it is the first thing to
 fix if matching is ever tightened. The columns are there, populated, and indexed by nothing — the
@@ -152,7 +156,7 @@ flowchart TD
 
     subgraph step1["Step 1 — SQL narrows (JobMatchRepository)"]
         SQL["open postings with a valid JSON skills array"]
-        CITY["in the preferred city, or remote"]
+        CITY["in the preferred city"]
         OVER["count verbatim skill overlap"]
         DEDUP["one row per (lower title, lower company)"]
         SQL --> CITY --> OVER --> DEDUP
@@ -180,7 +184,7 @@ model's job, and encoding them here is how this query grows unreadable.
 | --- | --- |
 | Only open postings | `status = 'open' AND closed_at IS NULL`. Note `/api/jobs` search does **not** filter this way, so a job you can find can be one that can never be matched |
 | Only parseable skills | `pg_input_is_valid(skills, 'jsonb')`. The casts below it would throw on a malformed row and take the whole endpoint down with it; this treats that posting as one that simply does not match |
-| City, or remote | Matched against `fct_postings_cities` — the same resolved city the filter dropdown offers — never the raw location text, where `%Ede%` also matches every "Nederland" posting. `is_remote` postings count wherever the user lives. A blank `preferredCity` means no location filter at all |
+| City | Matched against `fct_postings_cities` — the same resolved city the filter dropdown offers — never the raw location text, where `%Ede%` also matches every "Nederland" posting. Equality on the resolved city and nothing else: a remote posting elsewhere does **not** qualify, which is the same rule `/api/jobs?location=` applies. A blank `preferredCity` means no location filter at all |
 | Reposts collapsed | `row_number() OVER (PARTITION BY lower(title), lower(coalesce(company_name,'')))`, keeping the best-overlapping, then freshest, then lowest id. A job posted three times cannot eat three shortlist places |
 | No minimum overlap | There is deliberately no `matched_count > 0` filter: a job asking for `postgresql` would never reach a profile saying `postgres`, and rescuing exactly that is what step 2 is for |
 | Cut | `ORDER BY cardinality(matched_skills) DESC, posted_date DESC NULLS LAST, posting_id LIMIT 40` |
@@ -318,6 +322,10 @@ strong-match threshold 60%.
   and the model may then rank it highly on synonyms. Correct behaviour, but it means the shortlist is
   not always "the 40 most relevant" — it is "the 40 best by literal overlap", which is a weaker
   claim.
+- **Remote roles are unreachable for a user with a preferred city.** The city filter is strict, and
+  nothing reads `workMode`, so a remote posting outside the preferred city cannot appear in matches
+  at all. Honouring `workMode` in `findTopMatches` is the fix; until then, clearing the preferred
+  city is the only way to see them.
 - **One request per shortlist, no batching across users.** Fine at this scale; the cache is what
   keeps it fine.
 - **No rate limit on the endpoint**, so nothing bounds how often a user can force a rescore by
