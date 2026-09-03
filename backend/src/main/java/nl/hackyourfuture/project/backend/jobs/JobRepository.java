@@ -256,9 +256,14 @@ public class JobRepository {
                 FROM (VALUES (1)) AS t
                 """;
 
+        // Read the cities first, outside the mapper below. Called from inside it, the second
+        // query borrowed a connection while the first one still held its own, so every request
+        // needed two at once and enough concurrent ones deadlocked the pool against itself.
+        List<String> cities = getCityOptions();
+
         return jdbcClient.sql(sql)
                 .query((rs, rowNum) -> new JobFiltersResponse(
-                        getCityOptions(),
+                        cities,
                         parseStringArray(rs.getObject("disciplines")),
                         parseStringArray(rs.getObject("work_modes")),
                         parseStringArray(rs.getObject("experience_levels")),
