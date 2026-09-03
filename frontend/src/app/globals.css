@@ -75,6 +75,7 @@ a {
   display: flex;
   align-items: center;
   gap: 32px;
+  min-width: 0;
 }
 
 .brand {
@@ -96,8 +97,10 @@ a {
 .nav-links {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 24px;
   flex: 1;
+  min-width: 0;
 }
 
 .nav-links a,
@@ -111,6 +114,7 @@ a {
   display: flex;
   align-items: center;
   gap: 20px;
+  min-width: 0;
 }
 
 .nav-user {
@@ -248,8 +252,9 @@ a {
   .nav-links {
     order: 3;
     width: 100%;
-    overflow-x: auto;
+    overflow-x: visible;
     gap: 20px;
+    row-gap: 10px;
   }
 
   .auth-links {
@@ -276,6 +281,30 @@ a {
     gap: 22px;
   }
 }
+
+@media (max-width: 420px) {
+  .navbar {
+    gap: 12px;
+  }
+
+  .brand-logo {
+    width: 128px;
+  }
+
+  .auth-links {
+    width: 100%;
+    margin-left: 0;
+    justify-content: space-between;
+  }
+
+  .nav-user {
+    max-width: 58vw;
+  }
+
+  .nav-links {
+    gap: 14px;
+  }
+}
 .hero-section {
   width: min(1200px, calc(100% - 48px));
   margin: 0 auto;
@@ -288,6 +317,7 @@ a {
 
 .hero-content {
   max-width: 720px;
+  min-width: 0;
 }
 
 .hero-eyebrow {
@@ -304,6 +334,7 @@ a {
   line-height: 0.92;
   letter-spacing: -0.065em;
   font-weight: 700;
+  overflow-wrap: anywhere;
 }
 
 .hero-description {
@@ -354,6 +385,7 @@ a {
 .hero-actions {
   margin-top: 22px;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--space-lg);
 }
@@ -394,6 +426,7 @@ a {
 
 .hero-panel {
   padding: 30px;
+  min-width: 0;
   border-radius: 24px;
   background: var(--color-surface-muted);
 }
@@ -435,6 +468,7 @@ a {
 .preview-row {
   display: flex;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: 20px;
   padding: 8px 0;
   color: #665b62;
@@ -626,6 +660,21 @@ a {
   .hero-panel {
     padding: 24px;
   }
+
+  .tracker-stat-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 360px) {
+  .hero-section,
+  .value-section {
+    width: min(100% - 24px, 1200px);
+  }
+
+  .hero-panel {
+    padding: 20px;
+  }
 }
 /* Auth — Mock V3 */
 
@@ -638,11 +687,13 @@ a {
   gap: 72px;
   padding: 72px 0 80px;
   align-items: start;
+  min-width: 0;
 }
 
 .auth-intro {
   max-width: 680px;
   padding-top: 18px;
+  min-width: 0;
 }
 
 .auth-eyebrow,
@@ -660,6 +711,7 @@ a {
   line-height: 0.94;
   letter-spacing: -0.065em;
   font-weight: 700;
+  overflow-wrap: anywhere;
 }
 
 .auth-intro-copy {
@@ -700,6 +752,7 @@ a {
   max-width: 500px;
   justify-self: end;
   padding: 34px;
+  min-width: 0;
   border-radius: 24px;
   background: var(--color-surface-muted);
 }
@@ -726,6 +779,7 @@ a {
   border-radius: var(--radius-input);
   font-size: 0.92rem;
   line-height: 1.5;
+  overflow-wrap: anywhere;
 }
 
 .auth-message-success {
@@ -860,6 +914,7 @@ a {
 
 .auth-google-button {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: center;
   gap: 11px;
@@ -940,6 +995,16 @@ a {
   .auth-form-column {
     padding: 28px 22px;
     border-radius: 22px;
+  }
+}
+
+@media (max-width: 360px) {
+  .auth-page {
+    width: min(100% - 24px, 1200px);
+  }
+
+  .auth-form-column {
+    padding: 24px 18px;
   }
 }
 .auth-name-grid {
@@ -1033,6 +1098,7 @@ a {
   margin-top: 28px;
   padding: 24px 0;
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: flex-start;
   gap: 40px;
@@ -1457,6 +1523,7 @@ a {
 .profile-header {
   max-width: 760px;
   margin-bottom: 44px;
+  min-width: 0;
 }
 
 .profile-eyebrow,
@@ -1473,6 +1540,7 @@ a {
   font-size: clamp(2.8rem, 5vw, 4.6rem);
   line-height: 0.95;
   letter-spacing: -0.055em;
+  overflow-wrap: anywhere;
 }
 
 .profile-header > p:last-child {
@@ -1491,6 +1559,7 @@ a {
 .profile-section-heading {
   max-width: 720px;
   margin-bottom: 28px;
+  min-width: 0;
 }
 
 .profile-section-heading h2 {
@@ -1522,6 +1591,7 @@ a {
 .job-details-container {
   width: min(1180px, 100%);
   margin: 0 auto;
+  min-width: 0;
 }
 
 .job-details-back {
@@ -1546,6 +1616,10 @@ a {
   border-bottom: 1px solid #ded5d9;
 }
 
+.job-details-hero > div:first-child {
+  min-width: 0;
+}
+
 .job-details-eyebrow,
 .job-details-section-label {
   margin: 0 0 10px;
@@ -1562,6 +1636,7 @@ a {
   font-size: clamp(2.3rem, 5vw, 4.4rem);
   line-height: 0.98;
   letter-spacing: -0.04em;
+  overflow-wrap: anywhere;
 }
 
 .job-details-location {
@@ -1572,6 +1647,7 @@ a {
 
 .job-details-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--space-sm);
   align-items: center;
   flex-shrink: 0;
@@ -1627,6 +1703,7 @@ a {
 
 .job-details-meta strong {
   font-size: 0.98rem;
+  overflow-wrap: anywhere;
 }
 
 .job-details-layout {
@@ -1640,6 +1717,7 @@ a {
   display: flex;
   flex-direction: column;
   gap: 44px;
+  min-width: 0;
 }
 
 .job-details-main section {
@@ -1660,6 +1738,7 @@ a {
   color: #4e454a;
   font-size: 1.05rem;
   line-height: 1.8;
+  overflow-wrap: anywhere;
 }
 
 .job-details-skills {
@@ -1696,6 +1775,7 @@ a {
   display: grid;
   align-content: start;
   gap: 9px;
+  min-width: 0;
 }
 
 .profile-field-full {
@@ -1773,6 +1853,7 @@ a {
   color: var(--color-brand);
   font-size: 0.88rem;
   font-weight: 600;
+  overflow-wrap: anywhere;
 }
 
 .profile-message {
@@ -1839,6 +1920,7 @@ a {
 .danger-zone {
   padding: 22px;
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   gap: 32px;
   align-items: flex-start;
@@ -1984,6 +2066,7 @@ a {
   color: var(--color-brand);
   font-size: 0.88rem;
   font-weight: 600;
+  overflow-wrap: anywhere;
 }
 
 .profile-skill-tag button {
@@ -2129,12 +2212,14 @@ a {
   margin: 0;
   color: #2e272b;
   font-weight: 600;
+  overflow-wrap: anywhere;
 }
 
 .job-details-sidebar {
   display: flex;
   flex-direction: column;
   gap: 22px;
+  min-width: 0;
 }
 
 .job-details-sidebar > section {
@@ -2178,6 +2263,7 @@ a {
 
 .match-summary-header {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-sm);
@@ -2221,6 +2307,7 @@ a {
   color: #4d3d46;
   font-size: 0.8rem;
   font-weight: 600;
+  overflow-wrap: anywhere;
 }
 
 .match-summary-empty {
@@ -2306,6 +2393,11 @@ a {
   .job-details-actions .saved-bookmark-button {
     width: 100%;
   }
+
+  .match-summary-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
 }
 
 .job-details-state {
@@ -2378,6 +2470,7 @@ a {
 
 .saved-header {
   max-width: 760px;
+  min-width: 0;
 }
 
 .saved-eyebrow {
@@ -2393,6 +2486,7 @@ a {
   font-size: clamp(2.8rem, 6vw, 4.8rem);
   line-height: 0.95;
   letter-spacing: -0.06em;
+  overflow-wrap: anywhere;
 }
 
 .saved-intro {
@@ -2414,6 +2508,7 @@ a {
 
 .saved-list-section {
   grid-area: list;
+  min-width: 0;
 }
 
 .saved-overview-section {
@@ -2424,6 +2519,7 @@ a {
 
 .job-status-summary {
   padding: 24px;
+  min-width: 0;
   border: 1px solid #dfd5da;
   border-radius: 24px;
   background: var(--color-surface-muted);
@@ -2528,6 +2624,7 @@ a {
   color: #7a6d75;
   font-size: 0.82rem;
   line-height: 1.4;
+  overflow-wrap: anywhere;
 }
 
 .job-status-grid strong {
@@ -2555,6 +2652,7 @@ a {
 
 .saved-list-heading {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   gap: 40px;
   padding-bottom: 20px;
@@ -2586,8 +2684,13 @@ a {
   border-bottom: 1px solid #dfd5da;
 }
 
+.saved-job-main {
+  min-width: 0;
+}
+
 .saved-job-topline {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--space-sm);
   align-items: center;
 }
@@ -2605,6 +2708,7 @@ a {
   color: var(--color-text);
   font-size: 1.4rem;
   letter-spacing: -0.035em;
+  overflow-wrap: anywhere;
 }
 
 .saved-job-card h3 a {
@@ -2627,6 +2731,7 @@ a {
 .saved-job-company {
   margin-top: 8px;
   color: #665b62;
+  overflow-wrap: anywhere;
 }
 
 .saved-job-meta {
@@ -2642,6 +2747,7 @@ a {
   border-radius: var(--radius-pill);
   color: #655961;
   font-size: 0.82rem;
+  overflow-wrap: anywhere;
 }
 
 .saved-job-skills {
@@ -2665,6 +2771,7 @@ a {
   flex-direction: column;
   align-items: stretch;
   gap: 10px;
+  min-width: 0;
 }
 
 .saved-job-actions label {
@@ -2845,6 +2952,7 @@ a {
   display: grid;
   gap: 6px;
   justify-items: end;
+  min-width: 0;
 }
 
 .saved-bookmark-button {
@@ -2995,6 +3103,11 @@ a {
   .saved-job-card {
     padding: 24px 0;
   }
+
+  .saved-job-actions,
+  .saved-remove-button {
+    width: 100%;
+  }
 }
 
 .jobs-page {
@@ -3005,6 +3118,7 @@ a {
 .jobs-container {
   width: min(1200px, calc(100% - 48px));
   margin: 0 auto;
+  min-width: 0;
 }
 
 .jobs-header {
@@ -3029,6 +3143,7 @@ a {
   font-size: clamp(2.5rem, 5vw, 4.4rem);
   line-height: 0.96;
   letter-spacing: -0.055em;
+  overflow-wrap: anywhere;
 }
 
 .jobs-heading-row p {
@@ -3085,6 +3200,7 @@ a {
 
 .jobs-filters {
   align-self: start;
+  min-width: 0;
 }
 
 .jobs-filters-header h2,
@@ -3111,6 +3227,7 @@ a {
 .top-matches-panel {
   margin-bottom: 28px;
   padding: 22px;
+  min-width: 0;
   border: 1px solid #e0d5dc;
   border-radius: var(--radius-card);
   background: var(--color-surface-warm);
@@ -3165,11 +3282,16 @@ a {
   border-top: 1px solid #e4dbe0;
 }
 
+.top-match-card > div {
+  min-width: 0;
+}
+
 .top-match-company,
 .top-match-category {
   margin: 0;
   color: #786b73;
   font-size: 0.9rem;
+  overflow-wrap: anywhere;
 }
 
 .top-match-card h3 {
@@ -3177,6 +3299,7 @@ a {
   color: var(--color-text);
   font-size: 1.18rem;
   letter-spacing: -0.015em;
+  overflow-wrap: anywhere;
 }
 
 .top-match-card h3 a {
@@ -3196,6 +3319,7 @@ a {
 .matches-container {
   width: min(960px, calc(100% - 48px));
   margin: 0 auto;
+  min-width: 0;
 }
 
 .matches-header {
@@ -3209,6 +3333,7 @@ a {
   font-size: clamp(2.3rem, 5vw, 4rem);
   line-height: 0.98;
   letter-spacing: -0.045em;
+  overflow-wrap: anywhere;
 }
 
 .matches-header > p:last-child {
@@ -3272,6 +3397,10 @@ a {
     width: 100%;
   }
 
+  .jobs-search input {
+    width: 100%;
+  }
+
   .jobs-layout {
     grid-template-columns: 1fr;
     gap: 30px;
@@ -3281,10 +3410,20 @@ a {
     padding-bottom: 28px;
     border-bottom: 1px solid #ded4da;
   }
+
+  .top-matches-link-secondary {
+    margin-left: 0;
+  }
+
+  .matches-panel .top-matches-link {
+    width: fit-content;
+    display: flex;
+  }
 }
 
 .jobs-results-header {
   display: flex;
+  flex-wrap: wrap;
   align-items: end;
   justify-content: space-between;
   gap: 24px;
@@ -3333,12 +3472,14 @@ a {
   margin-bottom: 7px;
   color: #786b73;
   font-size: 0.9rem;
+  overflow-wrap: anywhere;
 }
 
 .job-result-heading h3 {
   color: var(--color-text);
   font-size: 1.25rem;
   letter-spacing: -0.025em;
+  overflow-wrap: anywhere;
 }
 
 .job-result-heading h3 a:hover {
@@ -3352,11 +3493,13 @@ a {
   color: #5d4354;
   font-size: 0.78rem;
   font-weight: 600;
+  overflow-wrap: anywhere;
 }
 
 .job-result-action-row {
   grid-area: actions;
   display: flex;
+  flex-wrap: wrap;
   gap: var(--space-control-gap);
   align-items: center;
   justify-content: flex-end;
@@ -3365,6 +3508,7 @@ a {
 .job-result-location {
   margin-top: 9px;
   color: #695e65;
+  overflow-wrap: anywhere;
 }
 
 .job-result-meta {
@@ -3374,6 +3518,7 @@ a {
   gap: 8px 18px;
   color: #7d7178;
   font-size: 0.86rem;
+  overflow-wrap: anywhere;
 }
 
 .job-result-skills {
@@ -3438,6 +3583,10 @@ a {
 
   .job-result-action-row {
     justify-content: flex-start;
+  }
+
+  .job-result-action-row .saved-bookmark-control {
+    justify-items: start;
   }
 
   .job-result-link {
@@ -3656,4 +3805,21 @@ a {
 
 .job-filters-submit:hover {
   opacity: 0.92;
+}
+
+@media (max-width: 360px) {
+  .jobs-container,
+  .matches-container,
+  .saved-container,
+  .profile-page {
+    width: min(100% - 24px, 1200px);
+  }
+
+  .top-matches-panel,
+  .matches-panel,
+  .saved-state,
+  .saved-empty,
+  .job-status-summary {
+    padding: 20px;
+  }
 }
