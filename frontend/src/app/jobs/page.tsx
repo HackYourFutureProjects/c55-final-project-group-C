@@ -1,5 +1,6 @@
 import Link from "next/link";
 import JobFilters from "@/components/jobs/JobFilters";
+import JobPagination from "@/components/jobs/JobPagination";
 import JobResultsWithBookmarks from "@/components/jobs/JobResultsWithBookmarks";
 import TopMatchesSection from "@/components/jobs/TopMatchesSection";
 import { mapJobSearchResponse, sortJobsByFreshness } from "@/lib/jobs";
@@ -13,11 +14,28 @@ type JobsPageProps = {
     discipline?: SearchParamValue;
     workMode?: SearchParamValue;
     location?: SearchParamValue;
+    page?: SearchParamValue;
   }>;
 };
 
 function getSingleSearchParam(value: SearchParamValue): string | undefined {
   return Array.isArray(value) ? value[0] : value;
+}
+
+function parsePageParam(value: SearchParamValue): number {
+  const pageValue = getSingleSearchParam(value);
+
+  if (!pageValue) {
+    return 0;
+  }
+
+  const parsedPage = Number(pageValue);
+
+  if (!Number.isInteger(parsedPage) || parsedPage < 0) {
+    return 0;
+  }
+
+  return parsedPage;
 }
 
 export default async function JobsPage({ searchParams }: JobsPageProps) {
@@ -26,6 +44,7 @@ export default async function JobsPage({ searchParams }: JobsPageProps) {
   const discipline = getSingleSearchParam(params.discipline);
   const workMode = getSingleSearchParam(params.workMode);
   const location = getSingleSearchParam(params.location);
+  const page = parsePageParam(params.page);
 
   const searchQuery = q?.trim() ?? "";
 
@@ -36,12 +55,22 @@ export default async function JobsPage({ searchParams }: JobsPageProps) {
       discipline,
       workMode,
       location,
+      page,
+      size: 20,
     }),
   ]);
 
-  let jobs = jobResponse.map(mapJobSearchResponse);
+  let jobs = jobResponse.content.map(mapJobSearchResponse);
 
   jobs = sortJobsByFreshness(jobs);
+
+  const safeTotalPages = Math.max(jobResponse.totalPages, 0);
+  const isPageInRange =
+    safeTotalPages > 0 &&
+    jobResponse.page >= 0 &&
+    jobResponse.page < safeTotalPages;
+  const currentPage = isPageInRange ? jobResponse.page : 0;
+  const totalJobs = jobResponse.totalElements;
 
   return (
     <main className="jobs-page">
@@ -122,7 +151,7 @@ export default async function JobsPage({ searchParams }: JobsPageProps) {
               </div>
 
               <p className="jobs-results-count">
-                {jobs.length} {jobs.length === 1 ? "job" : "jobs"}
+                {totalJobs} {totalJobs === 1 ? "job" : "jobs"}
               </p>
             </div>
 
@@ -141,6 +170,19 @@ export default async function JobsPage({ searchParams }: JobsPageProps) {
                   Clear search and filters
                 </Link>
               </div>
+            )}
+
+            {isPageInRange && (
+              <JobPagination
+                currentPage={currentPage}
+                totalPages={safeTotalPages}
+                searchParams={{
+                  q: searchQuery,
+                  discipline,
+                  workMode,
+                  location,
+                }}
+              />
             )}
           </section>
         </section>
