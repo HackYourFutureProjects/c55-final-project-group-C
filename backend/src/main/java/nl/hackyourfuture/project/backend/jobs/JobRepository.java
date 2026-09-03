@@ -50,7 +50,7 @@ public class JobRepository {
     public PageResponse<JobSearchResponse>
     searchJobs(String discipline, String workMode, String location, String q, int page, int size) {
         int offset = page * size; // Calculate row offset for database
-        long totalElements = countJobs(discipline, workMode, location, q); //Fetch totl count
+        long totalElements = countJobs(discipline, workMode, location, q); //Fetch total count
         StringBuilder sql = new StringBuilder("""
                 SELECT
                     f.posting_id,
