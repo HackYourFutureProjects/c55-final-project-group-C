@@ -11,7 +11,7 @@ export default function MatchResultsList({ matches }: MatchResultsListProps) {
     <div className="top-matches-list">
       {matches.map((match) => (
         <article className="top-match-card" key={match.postingId}>
-          <div>
+          <div className="top-match-main">
             <p className="top-match-company">{match.company}</p>
             <h3>
               <Link href={`/jobs/${encodeURIComponent(match.postingId)}`}>

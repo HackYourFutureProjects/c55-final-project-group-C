@@ -29,7 +29,7 @@ export default function MatchSummary({ match }: MatchSummaryProps) {
         {match.label ? <span>{match.label}</span> : null}
       </div>
 
-      <p>
+      <p className="match-summary-context">
         {match.matchedCount} of your {match.ofSkills} profile skills match this
         job
       </p>
