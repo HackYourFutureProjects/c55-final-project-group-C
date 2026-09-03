@@ -53,6 +53,14 @@ export type ProfileResponse = {
   salaryPreference: number | null;
 };
 
+export type PageResponse<T> = {
+  content: T[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+};
+
 export type UpdateProfileRequest = {
   skills: string[];
   discipline: string | null;
@@ -266,8 +274,12 @@ export function getSavedJobsStats(): Promise<SavedJobsStatsResponse> {
   return request<SavedJobsStatsResponse>("/api/saved-jobs/stats");
 }
 
-export function getSavedJobs(): Promise<SavedJobResponse[]> {
-  return request<SavedJobResponse[]>("/api/saved-jobs");
+export async function getSavedJobs(): Promise<SavedJobResponse[]> {
+  const response = await request<PageResponse<SavedJobResponse>>(
+    "/api/saved-jobs?size=100",
+  );
+
+  return response.content;
 }
 
 export type JobSearchResponse = {
@@ -328,6 +340,8 @@ export type JobSearchParams = {
   discipline?: string;
   workMode?: string;
   location?: string;
+  page?: number;
+  size?: number;
 };
 
 export function getJobFilters(): Promise<JobFiltersResponse> {

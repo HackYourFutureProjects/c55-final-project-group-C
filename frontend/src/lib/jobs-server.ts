@@ -5,6 +5,7 @@ import type {
   JobFiltersResponse,
   JobSearchParams,
   JobSearchResponse,
+  PageResponse,
 } from "@/lib/api";
 import { BACKEND_API_URL } from "@/lib/config";
 
@@ -32,10 +33,23 @@ async function serverRequest<T>(path: string): Promise<T> {
 
 export function getJobsServer(
   params: JobSearchParams = {},
-): Promise<JobSearchResponse[]> {
+): Promise<PageResponse<JobSearchResponse>> {
   const searchParams = new URLSearchParams();
 
   const query = params.q?.trim();
+  const page =
+    typeof params.page === "number" &&
+    Number.isInteger(params.page) &&
+    params.page >= 0
+      ? params.page
+      : 0;
+  const size =
+    typeof params.size === "number" &&
+    Number.isInteger(params.size) &&
+    params.size >= 1 &&
+    params.size <= 100
+      ? params.size
+      : 20;
 
   if (query) {
     searchParams.set("q", query);
@@ -53,10 +67,13 @@ export function getJobsServer(
     searchParams.set("location", params.location);
   }
 
+  searchParams.set("page", String(page));
+  searchParams.set("size", String(size));
+
   const requestQuery = searchParams.toString();
   const path = requestQuery ? `/api/jobs?${requestQuery}` : "/api/jobs";
 
-  return serverRequest<JobSearchResponse[]>(path);
+  return serverRequest<PageResponse<JobSearchResponse>>(path);
 }
 
 export function getJobFiltersServer(): Promise<JobFiltersResponse> {
