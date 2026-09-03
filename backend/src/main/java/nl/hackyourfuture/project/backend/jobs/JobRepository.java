@@ -68,7 +68,10 @@ public class JobRepository {
                     f.source,
                     f.discipline,
                     f.freshness_class,
-                    f.age_days
+                    f.age_days,
+                    (SELECT COUNT(DISTINCT user_id)
+                    FROM saved_jobs
+                    WHERE posting_id = f.posting_id) AS saved_count
                 FROM analytics.fct_postings f
                 WHERE 1=1
                 """);
@@ -149,7 +152,8 @@ public class JobRepository {
                     rs.getString("source"),
                     rs.getString("discipline"),
                     rs.getString("freshness_class"),
-                    rs.getObject("age_days") != null ? rs.getInt("age_days") : null
+                    rs.getObject("age_days") != null ? rs.getInt("age_days") : null,
+                    rs.getInt("saved_count")
             );
         }).list();
     }
@@ -187,7 +191,10 @@ public class JobRepository {
                           AND lower(sub_c.city) NOT IN (:excluded)), '') AS location,
                     COALESCE((SELECT json_agg(DISTINCT s.skill ORDER BY s.skill)::text
                     FROM analytics.fct_postings_skills s
-                    WHERE s.posting_id = f.posting_id), '[]') AS skills
+                    WHERE s.posting_id = f.posting_id), '[]') AS skills,
+                    (SELECT COUNT(DISTINCT user_id)
+                    FROM saved_jobs
+                    WHERE posting_id = f.posting_id) AS saved_count
                 FROM analytics.fct_postings f
                 WHERE f.posting_id = :postingId
                 """;
@@ -219,7 +226,8 @@ public class JobRepository {
                             rs.getString("salary_currency"),
                             rs.getString("salary_period"),
                             rs.getString("source_url"),
-                            rs.getString("status")
+                            rs.getString("status"),
+                            rs.getInt("saved_count")
                     );
                 })
                 .optional();

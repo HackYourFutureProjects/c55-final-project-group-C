@@ -28,5 +28,6 @@ public record JobDetailResponse(
         String salaryCurrency,
         String salaryPeriod,
         String sourceUrl,
-        String status
+        String status,
+        int savedCount
 ) {}
