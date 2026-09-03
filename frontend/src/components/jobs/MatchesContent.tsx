@@ -78,10 +78,11 @@ export default function MatchesContent() {
     return (
       <section className="matches-panel">
         <p className="top-matches-copy">
-          Add at least 5 skills to your profile to see job matches.
+          Matching is unavailable until your profile has the required skills.
+          Complete your profile so JobMatch can compare jobs with your skills.
         </p>
         <Link className="top-matches-link" href="/profile">
-          Update profile
+          Complete profile
         </Link>
       </section>
     );

@@ -626,6 +626,14 @@ export default function ProfilePage() {
             <div className="profile-field profile-field-full">
               <label htmlFor="skill-search">Skills</label>
 
+              {skillsNeeded > 0 ? (
+                <p className="profile-onboarding-note">
+                  Complete your profile to unlock job matches. Add{" "}
+                  {skillsNeeded} more {skillsNeeded === 1 ? "skill" : "skills"},
+                  then save your preferences.
+                </p>
+              ) : null}
+
               <p className="profile-field-help">
                 Choose 5 to 20 supported skills that best describe your
                 experience. Search or browse by category.

@@ -79,8 +79,9 @@ export default function JobDetailsMatchSection({
 
       {matchState.status === "profile-incomplete" ? (
         <p>
-          Add at least 5 skills to your <Link href="/profile">profile</Link> to
-          see job matches.
+          Matching is unavailable until your profile has the required skills.{" "}
+          <Link href="/profile">Complete your profile</Link> to compare this job
+          with your skills.
         </p>
       ) : null}
 
