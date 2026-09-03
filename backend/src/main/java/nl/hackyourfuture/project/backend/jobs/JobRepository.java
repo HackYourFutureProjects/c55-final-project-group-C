@@ -49,7 +49,8 @@ public class JobRepository {
     // Searches job postings with optional filters for discipline, work mode, and location
     public PageResponse<JobSearchResponse>
     searchJobs(String discipline, String workMode, String location, String q, int page, int size) {
-        int offset = page * size; // Calculate row offset for database
+        size = Math.min(size, MAX_SEARCH_RESULTS); // Enforce repository-level cap
+        long offset = (long) page * size; // Calculate row offset without int overflow
         long totalElements = countJobs(discipline, workMode, location, q); //Fetch total count
         StringBuilder sql = new StringBuilder("""
                 SELECT
