@@ -35,6 +35,12 @@ export function getJobsServer(
 ): Promise<JobSearchResponse[]> {
   const searchParams = new URLSearchParams();
 
+  const query = params.q?.trim();
+
+  if (query) {
+    searchParams.set("q", query);
+  }
+
   if (params.discipline) {
     searchParams.set("discipline", params.discipline);
   }
@@ -47,8 +53,8 @@ export function getJobsServer(
     searchParams.set("location", params.location);
   }
 
-  const query = searchParams.toString();
-  const path = query ? `/api/jobs?${query}` : "/api/jobs";
+  const requestQuery = searchParams.toString();
+  const path = requestQuery ? `/api/jobs?${requestQuery}` : "/api/jobs";
 
   return serverRequest<JobSearchResponse[]>(path);
 }
