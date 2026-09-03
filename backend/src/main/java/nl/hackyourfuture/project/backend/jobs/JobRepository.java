@@ -51,8 +51,7 @@ public class JobRepository {
                     f.posting_id,
                     f.title,
                     f.company_name,
-                    COALESCE(NULLIF(f.location, ''),
-                        (SELECT string_agg(sub_c.city, ', ' ORDER BY sub_c.city)
+                    COALESCE((SELECT string_agg(DISTINCT initcap(sub_c.city), ', ' ORDER BY initcap(sub_c.city))
                         FROM analytics.fct_postings_cities sub_c
                         WHERE sub_c.posting_id = f.posting_id), '') AS location,
                     f.work_mode,
@@ -77,16 +76,13 @@ public class JobRepository {
             sql.append(" AND f.work_mode = :workMode");
         }
         if (location != null && !location.isBlank()) {
-            // Both sources, because neither is complete: the city table catches postings whose
-            // raw location never names the city ("Noord-Holland", "NL - Hybrid"), the raw column
-            // catches what the resolver missed. Amsterdam: 1958 city table, 1449 raw, 1968 together.
+            // Only the normalised city table: the raw location column is free text
+            // ("Amsterdam, Netherlands", "Noord-Holland", "NL - Hybrid") and matching it as
+            // well pulled in provinces and countries under a city's name.
             sql.append("""
-                     AND (
-                         f.location ILIKE :location
-                         OR EXISTS (
-                             SELECT 1 FROM analytics.fct_postings_cities sub_c
-                             WHERE sub_c.posting_id = f.posting_id AND sub_c.city ILIKE :location
-                         )
+                     AND EXISTS (
+                         SELECT 1 FROM analytics.fct_postings_cities sub_c
+                         WHERE sub_c.posting_id = f.posting_id AND sub_c.city ILIKE :location
                      )
                     """);
         }
@@ -95,7 +91,6 @@ public class JobRepository {
                      AND (
                          f.title ILIKE :q
                          OR f.company_name ILIKE :q
-                         OR f.location ILIKE :q
                          OR EXISTS (
                             SELECT 1 FROM analytics.fct_postings_cities sub_c
                             WHERE sub_c.posting_id = f.posting_id AND sub_c.city ILIKE :q
@@ -170,8 +165,7 @@ public class JobRepository {
                     f.salary_period,
                     f.source_url,
                     f.status,
-                    COALESCE(NULLIF(f.location, ''),
-                        (SELECT string_agg(sub_c.city, ', ' ORDER BY sub_c.city)
+                    COALESCE((SELECT string_agg(DISTINCT initcap(sub_c.city), ', ' ORDER BY initcap(sub_c.city))
                         FROM analytics.fct_postings_cities sub_c
                         WHERE sub_c.posting_id = f.posting_id), '') AS location,
                     COALESCE((SELECT json_agg(DISTINCT s.skill ORDER BY s.skill)::text
