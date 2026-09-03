@@ -227,12 +227,25 @@ export default function SavedJobsContent({
             </div>
 
             {loadingJobs ? (
-              <div className="saved-state">
-                <p>Loading saved jobs...</p>
+              <div className="saved-state" aria-busy="true">
+                {/* biome-ignore lint/a11y/useSemanticElements: Loading copy should remain a normal text element with status semantics. */}
+                <p role="status">Loading saved jobs...</p>
+                <div className="state-skeleton-list" aria-hidden="true">
+                  <div className="state-skeleton-card">
+                    <div className="jobs-loading-line jobs-loading-line-short" />
+                    <div className="jobs-loading-line jobs-loading-line-long" />
+                    <div className="jobs-loading-line jobs-loading-line-medium" />
+                  </div>
+                  <div className="state-skeleton-card">
+                    <div className="jobs-loading-line jobs-loading-line-short" />
+                    <div className="jobs-loading-line jobs-loading-line-long" />
+                    <div className="jobs-loading-line jobs-loading-line-medium" />
+                  </div>
+                </div>
               </div>
             ) : jobsError ? (
               <div className="saved-state saved-state-error">
-                <p>{jobsError}</p>
+                <p role="alert">{jobsError}</p>
                 <button type="button" onClick={() => void loadJobs()}>
                   Try again
                 </button>
@@ -242,11 +255,18 @@ export default function SavedJobsContent({
                 <p className="saved-eyebrow">NO SAVED JOBS</p>
                 <h3>Your list is empty for now.</h3>
                 <p>Save jobs you want to revisit and they will appear here.</p>
+                <Link className="state-action-link" href="/jobs">
+                  Explore jobs
+                </Link>
               </div>
             ) : filteredJobs.length === 0 ? (
               <div className="saved-empty">
                 <p className="saved-eyebrow">NO JOBS</p>
                 <h3>No jobs in this status yet.</h3>
+                <p>
+                  Choose another status in Job Overview or update a saved job
+                  when your application moves forward.
+                </p>
               </div>
             ) : (
               <ul className="saved-job-list">
@@ -343,12 +363,18 @@ export default function SavedJobsContent({
 
           <section className="saved-overview-section">
             {loadingStats ? (
-              <div className="saved-state">
-                <p>Loading job overview...</p>
+              <div className="saved-state" aria-busy="true">
+                {/* biome-ignore lint/a11y/useSemanticElements: Loading copy should remain a normal text element with status semantics. */}
+                <p role="status">Loading job overview...</p>
+                <div className="state-skeleton-list" aria-hidden="true">
+                  <div className="jobs-loading-line jobs-loading-line-medium" />
+                  <div className="jobs-loading-line jobs-loading-line-long" />
+                  <div className="jobs-loading-line jobs-loading-line-long" />
+                </div>
               </div>
             ) : statsError ? (
               <div className="saved-state saved-state-error">
-                <p>{statsError}</p>
+                <p role="alert">{statsError}</p>
                 <button type="button" onClick={() => void loadStats()}>
                   Try again
                 </button>

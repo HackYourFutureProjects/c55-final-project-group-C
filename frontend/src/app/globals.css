@@ -2741,6 +2741,36 @@ a {
   color: var(--color-text-muted);
 }
 
+.state-action-link {
+  display: inline-flex;
+  margin-top: 18px;
+  color: var(--color-brand);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.state-action-link:hover {
+  color: var(--color-brand-hover);
+}
+
+.state-action-link:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 4px;
+  border-radius: var(--radius-sm);
+}
+
+.state-skeleton-list {
+  margin-top: 18px;
+  display: grid;
+  gap: 14px;
+}
+
+.state-skeleton-card {
+  padding-top: 14px;
+  border-top: 1px solid #e4dbe0;
+}
+
 /* Save Job button */
 
 .save-job-control {
@@ -3091,6 +3121,10 @@ a {
   margin-top: 16px;
   color: var(--color-brand);
   font-weight: 700;
+}
+
+.top-matches-link-secondary {
+  margin-left: 18px;
 }
 
 .top-matches-link:hover {
@@ -3522,6 +3556,15 @@ a {
 .jobs-loading-block {
   height: 44px;
   margin-top: 18px;
+}
+
+.job-details-loading-preview {
+  max-width: 620px;
+  margin-top: 34px;
+  padding: 24px;
+  border: 1px solid #ded5d9;
+  border-radius: var(--radius-card);
+  background: var(--color-surface-warm);
 }
 
 .jobs-error {

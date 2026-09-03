@@ -58,7 +58,22 @@ export default function TopMatchesSection() {
       <section className="top-matches-panel" aria-busy="true">
         <p className="jobs-section-label">MATCHES</p>
         <h2>Your top matches</h2>
-        <p className="top-matches-copy">Loading your job matches...</p>
+        {/* biome-ignore lint/a11y/useSemanticElements: Loading copy should remain a normal text element with status semantics. */}
+        <p className="top-matches-copy" role="status">
+          Loading your job matches...
+        </p>
+        <div className="state-skeleton-list" aria-hidden="true">
+          <div className="state-skeleton-card">
+            <div className="jobs-loading-line jobs-loading-line-short" />
+            <div className="jobs-loading-line jobs-loading-line-long" />
+            <div className="jobs-loading-line jobs-loading-line-medium" />
+          </div>
+          <div className="state-skeleton-card">
+            <div className="jobs-loading-line jobs-loading-line-short" />
+            <div className="jobs-loading-line jobs-loading-line-long" />
+            <div className="jobs-loading-line jobs-loading-line-medium" />
+          </div>
+        </div>
       </section>
     );
   }
@@ -95,11 +110,12 @@ export default function TopMatchesSection() {
 
   if (matchState.status === "error") {
     return (
-      <section className="top-matches-panel">
+      <section className="top-matches-panel" role="alert">
         <p className="jobs-section-label">MATCHES</p>
         <h2>Your top matches</h2>
         <p className="top-matches-copy">
-          We could not load your matches right now.
+          We could not load your matches right now. You can still browse jobs
+          below.
         </p>
       </section>
     );
@@ -111,8 +127,12 @@ export default function TopMatchesSection() {
         <p className="jobs-section-label">MATCHES</p>
         <h2>Your top matches</h2>
         <p className="top-matches-copy">
-          No matching jobs were found for your current profile.
+          No matching jobs were found for your current profile. Update your
+          skills or preferences to improve your matches.
         </p>
+        <Link className="top-matches-link" href="/profile">
+          Update profile
+        </Link>
       </section>
     );
   }

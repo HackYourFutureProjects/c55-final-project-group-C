@@ -8,7 +8,7 @@ export default function JobsError({ reset }: JobsErrorProps) {
   return (
     <main className="jobs-page">
       <div className="jobs-container">
-        <section className="jobs-error">
+        <section className="jobs-error" role="alert">
           <p className="jobs-section-label">SOMETHING WENT WRONG</p>
 
           <h1>We couldn&apos;t load the jobs.</h1>

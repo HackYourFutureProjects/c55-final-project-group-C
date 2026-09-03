@@ -620,7 +620,12 @@ export default function ProfilePage() {
         </div>
 
         {isLoadingProfile ? (
-          <p className="profile-loading">Loading your preferences...</p>
+          <>
+            {/* biome-ignore lint/a11y/useSemanticElements: Loading copy should remain a normal text element with status semantics. */}
+            <p className="profile-loading" role="status">
+              Loading your preferences...
+            </p>
+          </>
         ) : (
           <form className="profile-form" onSubmit={handleProfileSubmit}>
             <div className="profile-field profile-field-full">
@@ -766,7 +771,12 @@ export default function ProfilePage() {
             </div>
 
             {isLoadingFilterOptions ? (
-              <p className="profile-loading">Loading profile options...</p>
+              <>
+                {/* biome-ignore lint/a11y/useSemanticElements: Loading copy should remain a normal text element with status semantics. */}
+                <p className="profile-loading" role="status">
+                  Loading profile options...
+                </p>
+              </>
             ) : null}
 
             {filterOptionsError ? (

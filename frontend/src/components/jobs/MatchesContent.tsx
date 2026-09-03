@@ -56,7 +56,27 @@ export default function MatchesContent() {
   if (matchState.status === "loading") {
     return (
       <section className="matches-panel" aria-busy="true">
-        <p className="top-matches-copy">Loading your job matches...</p>
+        {/* biome-ignore lint/a11y/useSemanticElements: Loading copy should remain a normal text element with status semantics. */}
+        <p className="top-matches-copy" role="status">
+          Loading your job matches...
+        </p>
+        <div className="state-skeleton-list" aria-hidden="true">
+          <div className="state-skeleton-card">
+            <div className="jobs-loading-line jobs-loading-line-short" />
+            <div className="jobs-loading-line jobs-loading-line-long" />
+            <div className="jobs-loading-line jobs-loading-line-medium" />
+          </div>
+          <div className="state-skeleton-card">
+            <div className="jobs-loading-line jobs-loading-line-short" />
+            <div className="jobs-loading-line jobs-loading-line-long" />
+            <div className="jobs-loading-line jobs-loading-line-medium" />
+          </div>
+          <div className="state-skeleton-card">
+            <div className="jobs-loading-line jobs-loading-line-short" />
+            <div className="jobs-loading-line jobs-loading-line-long" />
+            <div className="jobs-loading-line jobs-loading-line-medium" />
+          </div>
+        </div>
       </section>
     );
   }
@@ -89,9 +109,10 @@ export default function MatchesContent() {
 
   if (matchState.status === "error") {
     return (
-      <section className="matches-panel">
+      <section className="matches-panel" role="alert">
         <p className="top-matches-copy">
-          We could not load your matches right now.
+          We could not load your matches right now. Please try again in a
+          moment.
         </p>
       </section>
     );
@@ -101,8 +122,18 @@ export default function MatchesContent() {
     return (
       <section className="matches-panel">
         <p className="top-matches-copy">
-          No matching jobs were found for your current profile.
+          No matching jobs were found for your current profile. Update your
+          skills or browse all jobs while new matches are calculated.
         </p>
+        <Link className="top-matches-link" href="/profile">
+          Update profile
+        </Link>
+        <Link
+          className="top-matches-link top-matches-link-secondary"
+          href="/jobs"
+        >
+          Browse jobs
+        </Link>
       </section>
     );
   }

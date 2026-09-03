@@ -1,3 +1,4 @@
+import Link from "next/link";
 import JobFilters from "@/components/jobs/JobFilters";
 import JobResultsWithBookmarks from "@/components/jobs/JobResultsWithBookmarks";
 import TopMatchesSection from "@/components/jobs/TopMatchesSection";
@@ -135,6 +136,10 @@ export default async function JobsPage({ searchParams }: JobsPageProps) {
                   Try a different job title, keyword, or skill to broaden your
                   search.
                 </p>
+
+                <Link className="state-action-link" href="/jobs">
+                  Clear search and filters
+                </Link>
               </div>
             )}
           </section>
