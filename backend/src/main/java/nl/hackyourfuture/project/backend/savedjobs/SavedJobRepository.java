@@ -40,7 +40,7 @@ public class SavedJobRepository {
     }
 
     // Helper method to count total saved jobs for a specific user
-    public long countSavedJobs(UUID userId) {
+    private long countSavedJobs(UUID userId) {
         String sql = "SELECT COUNT(*) FROM saved_jobs WHERE user_id = ?";
         Long count = jdbcClient.sql(sql)
                 .param(userId)
