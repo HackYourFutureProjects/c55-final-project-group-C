@@ -203,6 +203,20 @@ what is missing. Each ends with a list of known gaps.
 | Running the pipeline day to day | [`data/docs/dev_flow.md`](data/docs/dev_flow.md) |
 | Live API reference (Scalar) | https://c55c.hyf.dev/api/docs (locally: http://localhost:8080/api/docs) |
 
+**Data marts** — published by dbt under [`data/dbt/models/marts/`](data/dbt/models/marts/), each with a
+`.yml` file naming its columns. `fct_postings_enriched` is the one the backend reads; the rest back
+specific filters and stats.
+
+| Mart | Grain | What it's for |
+| --- | --- | --- |
+| `fct_postings` | One row per posting | Base fact table: the deduplicated, cleaned postings |
+| `fct_postings_enriched` | One row per posting, plus discipline | The mart the backend reads |
+| `fct_postings_cities` | One row per posting × city | Filtering postings by city |
+| `fct_postings_skills` | One row per posting × skill | Filtering postings by skill |
+| `fct_postings_requirements` | One row per posting × requirement | Filtering postings by requirement, split into required vs preferred |
+| `fct_skill_popularity` | One row per skill | How many postings mention each skill, and when it was first/last seen |
+| `fct_title_discipline` *(optional, disabled by default)* | One row per distinct title | LLM-classified discipline, as an alternative to the rule-based one |
+
 ## CI/CD
 
 Four GitHub Actions workflows run automatically:
