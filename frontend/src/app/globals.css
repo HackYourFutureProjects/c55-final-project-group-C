@@ -13,6 +13,16 @@
   --color-danger: #7d3030;
   --color-danger-strong: #9b3c3c;
   --color-danger-surface: #fbefef;
+  --color-danger-border: #e4c4c4;
+  --color-success: #315f46;
+  --color-success-surface: #edf6f0;
+  --color-success-border: #bdd7c6;
+  --color-info: #4f5e74;
+  --color-info-surface: #eef2f6;
+  --color-info-border: #cbd4df;
+  --color-status-saved: #5d4354;
+  --color-status-saved-surface: #f2e9ee;
+  --color-status-saved-border: #d8cbd2;
   --radius-sm: 4px;
   --radius-input: 14px;
   --radius-card: 18px;
@@ -809,13 +819,13 @@ a {
 }
 
 .auth-message-success {
-  border: 1px solid #b8d8c5;
-  background: #edf7f0;
-  color: #25603d;
+  border: 1px solid var(--color-success-border);
+  background: var(--color-success-surface);
+  color: var(--color-success);
 }
 
 .auth-message-error {
-  border: 1px solid #e4c4c4;
+  border: 1px solid var(--color-danger-border);
   background: var(--color-danger-surface);
   color: var(--color-danger);
 }
@@ -2010,7 +2020,7 @@ a {
   justify-content: space-between;
   gap: 32px;
   align-items: flex-start;
-  border: 1px solid #e4c4c4;
+  border: 1px solid var(--color-danger-border);
   border-radius: var(--radius-card);
   background: #fff9f9;
 }
@@ -2248,7 +2258,7 @@ a {
 .profile-error {
   grid-column: 1 / -1;
   padding: 12px 14px;
-  border: 1px solid #e4c4c4;
+  border: 1px solid var(--color-danger-border);
   border-radius: var(--radius-input);
   background: var(--color-danger-surface);
   color: var(--color-danger);
@@ -2342,6 +2352,10 @@ a {
   line-height: 1;
 }
 
+.match-summary.is-match-high .match-summary-header strong {
+  color: var(--color-success);
+}
+
 .match-summary-header span {
   padding: 4px 8px;
   border: 1px solid #d4c5cf;
@@ -2351,6 +2365,12 @@ a {
   font-size: 0.7rem;
   font-weight: 700;
   text-transform: uppercase;
+}
+
+.match-summary.is-match-high .match-summary-header span {
+  border-color: var(--color-success-border);
+  background: var(--color-success-surface);
+  color: var(--color-success);
 }
 
 .match-summary p {
@@ -2692,6 +2712,27 @@ a {
   box-shadow: inset 4px 0 0 var(--color-brand);
 }
 
+.job-status-grid a.is-status-saved[aria-current="page"] {
+  border-color: var(--color-status-saved-border);
+  box-shadow: inset 4px 0 0 var(--color-status-saved);
+}
+
+.job-status-grid a.is-status-applied[aria-current="page"] {
+  border-color: var(--color-info-border);
+  box-shadow: inset 4px 0 0 var(--color-info);
+}
+
+.job-status-grid a.is-status-accepted[aria-current="page"] {
+  border-color: var(--color-success-border);
+  box-shadow: inset 4px 0 0 var(--color-success);
+}
+
+.job-status-grid a.is-status-rejected[aria-current="page"],
+.job-status-grid a.is-status-declined[aria-current="page"] {
+  border-color: var(--color-danger-border);
+  box-shadow: inset 4px 0 0 var(--color-danger);
+}
+
 .job-status-grid span {
   color: #7a6d75;
   font-size: 0.82rem;
@@ -2716,7 +2757,7 @@ a {
 .saved-action-error {
   margin-top: 24px;
   padding: 14px 16px;
-  border: 1px solid #e4c4c4;
+  border: 1px solid var(--color-danger-border);
   border-radius: var(--radius-input);
   background: var(--color-danger-surface);
   color: var(--color-danger);
@@ -2754,6 +2795,23 @@ a {
   gap: 40px;
   padding: 28px 0;
   border-bottom: 1px solid #dfd5da;
+}
+
+.saved-job-card.is-status-saved {
+  box-shadow: inset 3px 0 0 var(--color-status-saved-border);
+}
+
+.saved-job-card.is-status-applied {
+  box-shadow: inset 3px 0 0 var(--color-info-border);
+}
+
+.saved-job-card.is-status-accepted {
+  box-shadow: inset 3px 0 0 var(--color-success-border);
+}
+
+.saved-job-card.is-status-rejected,
+.saved-job-card.is-status-declined {
+  box-shadow: inset 3px 0 0 var(--color-danger-border);
 }
 
 .saved-job-main {
@@ -2864,6 +2922,27 @@ a {
   font: inherit;
 }
 
+.saved-job-actions select.is-status-saved {
+  border-color: var(--color-status-saved-border);
+  background: var(--color-status-saved-surface);
+}
+
+.saved-job-actions select.is-status-applied {
+  border-color: var(--color-info-border);
+  background: var(--color-info-surface);
+}
+
+.saved-job-actions select.is-status-accepted {
+  border-color: var(--color-success-border);
+  background: var(--color-success-surface);
+}
+
+.saved-job-actions select.is-status-rejected,
+.saved-job-actions select.is-status-declined {
+  border-color: var(--color-danger-border);
+  background: var(--color-danger-surface);
+}
+
 .saved-job-actions select:focus,
 .saved-job-actions select:focus-visible {
   border-color: #6b345d;
@@ -2943,7 +3022,7 @@ a {
 }
 
 .saved-state-error {
-  border-color: #e4c4c4;
+  border-color: var(--color-danger-border);
   background: var(--color-danger-surface);
   color: var(--color-danger);
 }
@@ -3022,9 +3101,9 @@ a {
 }
 
 .save-job-button.is-saved {
-  border-color: #c9b8c3;
-  background: var(--color-surface-muted);
-  color: #6e5264;
+  border-color: var(--color-status-saved-border);
+  background: var(--color-status-saved-surface);
+  color: var(--color-status-saved);
 }
 
 .save-job-button:disabled {
@@ -3102,14 +3181,14 @@ a {
 }
 
 .saved-bookmark-button.is-saved {
-  border-color: var(--color-brand);
-  background: var(--color-brand);
+  border-color: var(--color-status-saved);
+  background: var(--color-status-saved);
   color: var(--color-surface);
 }
 
 .saved-bookmark-button.is-cta.is-saved {
-  background: var(--color-surface-muted);
-  color: var(--color-brand);
+  background: var(--color-status-saved-surface);
+  color: var(--color-status-saved);
 }
 
 .saved-bookmark-button.is-saved path {
@@ -3128,7 +3207,7 @@ a {
 
 .saved-bookmark-button.is-cta.is-saved:hover:not(:disabled) {
   background: #e8dbe3;
-  color: var(--color-brand);
+  color: var(--color-status-saved);
 }
 
 .saved-bookmark-button:focus-visible {

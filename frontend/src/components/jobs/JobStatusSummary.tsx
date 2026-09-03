@@ -53,6 +53,7 @@ export default function JobStatusSummary({
                 aria-current={
                   activeStatus === option.value ? "page" : undefined
                 }
+                className={`is-status-${option.value.toLowerCase()}`}
                 href={`/saved/status/${encodeURIComponent(option.value)}`}
               >
                 <span>{option.label}</span>
