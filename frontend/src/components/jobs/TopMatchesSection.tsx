@@ -20,12 +20,29 @@ export default function TopMatchesSection() {
   useEffect(() => {
     let isActive = true;
 
-    async function loadMatches() {
-      try {
-        const matches = await getTopMatches();
+    function handleMatchError(error: unknown) {
+      if (error instanceof ApiError && error.status === 401) {
+        setMatchState({ status: "unauthenticated" });
+        return;
+      }
 
-        if (isActive) {
-          setMatchState({ status: "ready", matches });
+      if (error instanceof ApiError && error.status === 422) {
+        setMatchState({ status: "profile-incomplete" });
+        return;
+      }
+
+      setMatchState({ status: "error" });
+    }
+
+    async function loadMatches() {
+      let hasUsableInstantMatches = false;
+
+      try {
+        const instantMatches = await getTopMatches(true);
+
+        if (isActive && instantMatches.length > 0) {
+          hasUsableInstantMatches = true;
+          setMatchState({ status: "ready", matches: instantMatches });
         }
       } catch (error) {
         if (!isActive) {
@@ -41,8 +58,22 @@ export default function TopMatchesSection() {
           setMatchState({ status: "profile-incomplete" });
           return;
         }
+      }
 
-        setMatchState({ status: "error" });
+      try {
+        const matches = await getTopMatches();
+
+        if (isActive) {
+          setMatchState({ status: "ready", matches });
+        }
+      } catch (error) {
+        if (!isActive) {
+          return;
+        }
+
+        if (!hasUsableInstantMatches) {
+          handleMatchError(error);
+        }
       }
     }
 

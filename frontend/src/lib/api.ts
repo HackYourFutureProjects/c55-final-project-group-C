@@ -333,6 +333,10 @@ export function getJobFilters(): Promise<JobFiltersResponse> {
   return request<JobFiltersResponse>("/api/jobs/filters");
 }
 
-export function getTopMatches(): Promise<JobMatchResponse[]> {
-  return request<JobMatchResponse[]>("/api/jobs/top-matches");
+export function getTopMatches(instant?: boolean): Promise<JobMatchResponse[]> {
+  const path = instant
+    ? "/api/jobs/top-matches?instant=true"
+    : "/api/jobs/top-matches";
+
+  return request<JobMatchResponse[]>(path);
 }
