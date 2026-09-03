@@ -1796,6 +1796,33 @@ a {
   background: #3f1335;
 }
 
+.data-export-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 18px;
+  align-items: center;
+  padding: 24px;
+  margin-bottom: 24px;
+  border: 1px solid #dfd5da;
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+}
+
+.data-export-panel h3 {
+  color: #2c2228;
+  font-size: 1.2rem;
+}
+
+.data-export-panel p {
+  margin-top: 8px;
+  color: var(--color-text-muted);
+  line-height: 1.6;
+}
+
+.data-export-panel .profile-error {
+  grid-column: 1 / -1;
+}
+
 .danger-zone {
   padding: 24px;
   display: flex;
@@ -1912,6 +1939,10 @@ a {
 
   .profile-save-button {
     width: 100%;
+  }
+
+  .data-export-panel {
+    grid-template-columns: 1fr;
   }
 
   .danger-zone {

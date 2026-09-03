@@ -16,8 +16,10 @@ import { useAuth } from "@/context/AuthContext";
 import {
   ApiError,
   deleteCurrentUser,
+  getCurrentUser,
   getJobFilters,
   getProfile,
+  getSavedJobs,
   type JobFiltersResponse,
   updateCurrentUser,
   updateProfile,
@@ -105,6 +107,8 @@ export default function ProfilePage() {
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
+  const [isExportingData, setIsExportingData] = useState(false);
+  const [dataExportError, setDataExportError] = useState("");
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -464,6 +468,54 @@ export default function ProfilePage() {
 
       setDeleteError("We could not delete your account. Please try again.");
       setIsDeleting(false);
+    }
+  }
+
+  async function handleDataExport() {
+    setDataExportError("");
+    setIsExportingData(true);
+
+    try {
+      const [currentUser, profile, savedJobs] = await Promise.all([
+        getCurrentUser(),
+        getProfile(),
+        getSavedJobs(),
+      ]);
+
+      if (!currentUser) {
+        clearUser();
+        router.replace("/login");
+        return;
+      }
+
+      const exportData = {
+        exportedAt: new Date().toISOString(),
+        user: currentUser,
+        profile,
+        savedJobs,
+      };
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], {
+        type: "application/json",
+      });
+      const objectUrl = URL.createObjectURL(blob);
+      const downloadLink = document.createElement("a");
+
+      downloadLink.href = objectUrl;
+      downloadLink.download = "jobmatch-my-data.json";
+      downloadLink.click();
+      URL.revokeObjectURL(objectUrl);
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 401) {
+        clearUser();
+        router.replace("/login");
+        return;
+      }
+
+      setDataExportError(
+        "We could not prepare your data export. Please try again.",
+      );
+    } finally {
+      setIsExportingData(false);
     }
   }
 
@@ -869,6 +921,32 @@ export default function ProfilePage() {
         <div className="profile-section-heading">
           <p>ACCOUNT</p>
           <h2>Account settings</h2>
+        </div>
+
+        <div className="data-export-panel">
+          <div>
+            <h3>Your data export</h3>
+
+            <p>
+              Download a JSON file with your account, profile, and saved jobs
+              data.
+            </p>
+          </div>
+
+          <button
+            className="secondary-button"
+            type="button"
+            onClick={handleDataExport}
+            disabled={isExportingData}
+          >
+            {isExportingData ? "Preparing..." : "Download all my data"}
+          </button>
+
+          {dataExportError ? (
+            <p className="profile-error" role="alert">
+              {dataExportError}
+            </p>
+          ) : null}
         </div>
 
         <div className="danger-zone">
