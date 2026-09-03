@@ -116,7 +116,7 @@ public class SavedJobController {
             int cappedSize = Math.min(size, 100);
             String email = getCurrentUserEmail(principal)
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Not logged in"));
-            PageResponse<SavedJobResponse> savedJobs = savedJobService.getSavedJobsByEmail(email, page, size);
+            PageResponse<SavedJobResponse> savedJobs = savedJobService.getSavedJobsByEmail(email, page, cappedSize);
             return ResponseEntity.ok(savedJobs);
         }
 
