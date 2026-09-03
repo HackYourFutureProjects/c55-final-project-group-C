@@ -170,7 +170,7 @@ public class JobRepository {
 
      // COUNT(*) query using active search filters to calculate total matching records.
     // Helper method to get true total count from database
-    public long countJobs(String discipline, String workMode, String location, String q) {
+    private long countJobs(String discipline, String workMode, String location, String q) {
         StringBuilder sql = new StringBuilder("""
                 SELECT COUNT(*)
                 FROM analytics.fct_postings f
