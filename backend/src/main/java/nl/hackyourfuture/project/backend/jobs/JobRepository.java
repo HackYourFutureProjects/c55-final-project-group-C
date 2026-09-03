@@ -21,7 +21,8 @@ public class JobRepository {
     private static final int MAX_SEARCH_RESULTS = 200;
 
     // fct_postings_cities mixes cities with countries and provinces, so these values are kept
-    // out of the city dropdown. Provinces that double as city names (Utrecht, Groningen) and
+    // out of every city-derived query: the dropdown, the location filter, and the city list
+    // shown on a posting. Provinces that double as city names (Utrecht, Groningen) and
     // city-states (Singapore) stay in. Derived from the data; re-derive when new ones appear.
     // The proper fix is upstream, in the city column itself.
     private static final List<String> NON_CITY_LOCATIONS = List.of(
@@ -51,10 +52,12 @@ public class JobRepository {
                     f.posting_id,
                     f.title,
                     f.company_name,
-                    COALESCE(NULLIF(f.location, ''),
-                        (SELECT string_agg(sub_c.city, ', ' ORDER BY sub_c.city)
+                    COALESCE((SELECT string_agg(DISTINCT initcap(sub_c.city), ', ' ORDER BY initcap(sub_c.city))
                         FROM analytics.fct_postings_cities sub_c
-                        WHERE sub_c.posting_id = f.posting_id), '') AS location,
+                        WHERE sub_c.posting_id = f.posting_id
+                          AND sub_c.city IS NOT NULL
+                          AND sub_c.city <> ''
+                          AND lower(sub_c.city) NOT IN (:excluded)), '') AS location,
                     f.work_mode,
                     f.is_remote,
                     COALESCE((SELECT json_agg(DISTINCT s.skill ORDER BY s.skill)::text
@@ -77,16 +80,21 @@ public class JobRepository {
             sql.append(" AND f.work_mode = :workMode");
         }
         if (location != null && !location.isBlank()) {
-            // Both sources, because neither is complete: the city table catches postings whose
-            // raw location never names the city ("Noord-Holland", "NL - Hybrid"), the raw column
-            // catches what the resolver missed. Amsterdam: 1958 city table, 1449 raw, 1968 together.
+            // Only the normalised city table: the raw location column is free text
+            // ("Amsterdam, Netherlands", "Noord-Holland", "NL - Hybrid") and matching it as
+            // well pulled in provinces and countries under a city's name.
+            //
+            // Equality, not a substring: the value comes from the getCityOptions() dropdown,
+            // so it is already a whole city name. Matching '%Ede%' instead also returned
+            // Enschede, Medemblik, Nederweert and Sweden. NON_CITY_LOCATIONS still applies
+            // because the city table carries countries and provinces of its own, and the
+            // filter is a city filter however the query string was put together.
             sql.append("""
-                     AND (
-                         f.location ILIKE :location
-                         OR EXISTS (
-                             SELECT 1 FROM analytics.fct_postings_cities sub_c
-                             WHERE sub_c.posting_id = f.posting_id AND sub_c.city ILIKE :location
-                         )
+                     AND EXISTS (
+                         SELECT 1 FROM analytics.fct_postings_cities sub_c
+                         WHERE sub_c.posting_id = f.posting_id
+                           AND lower(sub_c.city) = lower(:location)
+                           AND lower(sub_c.city) NOT IN (:excluded)
                      )
                     """);
         }
@@ -95,7 +103,6 @@ public class JobRepository {
                      AND (
                          f.title ILIKE :q
                          OR f.company_name ILIKE :q
-                         OR f.location ILIKE :q
                          OR EXISTS (
                             SELECT 1 FROM analytics.fct_postings_cities sub_c
                             WHERE sub_c.posting_id = f.posting_id AND sub_c.city ILIKE :q
@@ -110,7 +117,9 @@ public class JobRepository {
 
         sql.append(" ORDER BY f.posted_date DESC NULLS LAST, f.posting_id LIMIT :limit");
 
-        var statement = jdbcClient.sql(sql.toString()).param("limit", MAX_SEARCH_RESULTS);
+        var statement = jdbcClient.sql(sql.toString())
+                .param("limit", MAX_SEARCH_RESULTS)
+                .param("excluded", NON_CITY_LOCATIONS);
 
         if (discipline != null && !discipline.isBlank()) {
             statement.param("discipline", discipline);
@@ -119,7 +128,7 @@ public class JobRepository {
             statement.param("workMode", workMode);
         }
         if (location != null && !location.isBlank()) {
-            statement.param("location", "%" + location + "%");
+            statement.param("location", location);
         }
         if (q != null && !q.isBlank()) {
             statement.param("q", "%" + q + "%");
@@ -170,19 +179,22 @@ public class JobRepository {
                     f.salary_period,
                     f.source_url,
                     f.status,
-                    COALESCE(NULLIF(f.location, ''),
-                        (SELECT string_agg(sub_c.city, ', ' ORDER BY sub_c.city)
+                    COALESCE((SELECT string_agg(DISTINCT initcap(sub_c.city), ', ' ORDER BY initcap(sub_c.city))
                         FROM analytics.fct_postings_cities sub_c
-                        WHERE sub_c.posting_id = f.posting_id), '') AS location,
+                        WHERE sub_c.posting_id = f.posting_id
+                          AND sub_c.city IS NOT NULL
+                          AND sub_c.city <> ''
+                          AND lower(sub_c.city) NOT IN (:excluded)), '') AS location,
                     COALESCE((SELECT json_agg(DISTINCT s.skill ORDER BY s.skill)::text
                     FROM analytics.fct_postings_skills s
                     WHERE s.posting_id = f.posting_id), '[]') AS skills
                 FROM analytics.fct_postings f
-                WHERE f.posting_id = ?
+                WHERE f.posting_id = :postingId
                 """;
 
         return jdbcClient.sql(sql)
-                .param(postingId)
+                .param("postingId", postingId)
+                .param("excluded", NON_CITY_LOCATIONS)
                 .query((rs, rowNum) -> {
                     List<String> skillsList = MartSkills.parse(rs.getString("skills"));
                     return new JobDetailResponse(
