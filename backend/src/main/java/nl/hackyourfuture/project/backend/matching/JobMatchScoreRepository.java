@@ -65,6 +65,11 @@ public class JobMatchScoreRepository {
                 .query((rs, _) -> Map.entry(
                         rs.getString("posting_id"),
                         new MatchScorer.Score(rs.getInt("score"), rs.getString("reason"))))
+                // list(), not stream(): a JdbcClient stream keeps the connection checked out
+                // until the stream itself is closed, and collecting one without a
+                // try-with-resources leaked a connection per call until the pool was empty.
+                // The shortlist caps this at SHORTLIST_SIZE rows, so materialising costs nothing.
+                .list()
                 .stream()
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
