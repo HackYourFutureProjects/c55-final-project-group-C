@@ -2592,9 +2592,9 @@ a {
 .saved-layout {
   margin-top: 44px;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(280px, 320px);
+  grid-template-columns: minmax(0, 1fr) minmax(240px, 280px);
   grid-template-areas: "list overview";
-  gap: 40px;
+  gap: 32px;
   align-items: start;
 }
 
@@ -2791,8 +2791,8 @@ a {
 
 .saved-job-card {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 250px;
-  gap: 40px;
+  grid-template-columns: minmax(0, 1fr) minmax(188px, 210px);
+  gap: 28px;
   padding: 28px 0;
   border-bottom: 1px solid #dfd5da;
 }
@@ -2837,6 +2837,7 @@ a {
   margin-top: 12px;
   color: var(--color-text);
   font-size: 1.4rem;
+  line-height: 1.2;
   letter-spacing: -0.035em;
   overflow-wrap: anywhere;
 }
@@ -2861,6 +2862,7 @@ a {
 .saved-job-company {
   margin-top: 8px;
   color: #665b62;
+  line-height: 1.5;
   overflow-wrap: anywhere;
 }
 
@@ -2912,6 +2914,7 @@ a {
 
 .saved-job-actions select {
   width: 100%;
+  min-width: 0;
   min-height: var(--control-height-compact);
   padding: 0 12px;
   border: 1px solid var(--color-border-control);
@@ -2956,6 +2959,7 @@ a {
 }
 
 .saved-remove-button {
+  width: 100%;
   min-height: var(--control-height-compact);
   padding: 0 var(--control-padding-x-compact);
   border: 1px solid var(--color-border-subtle);
@@ -3228,6 +3232,17 @@ a {
   text-align: right;
 }
 
+@media (max-width: 1100px) {
+  .saved-job-card {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+
+  .saved-job-actions {
+    max-width: 260px;
+  }
+}
+
 @media (max-width: 900px) {
   .saved-layout {
     grid-template-columns: 1fr;
@@ -3289,6 +3304,10 @@ a {
   .saved-job-actions,
   .saved-remove-button {
     width: 100%;
+  }
+
+  .saved-job-actions {
+    max-width: none;
   }
 }
 
