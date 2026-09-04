@@ -4172,6 +4172,7 @@ a {
 }
 
 .job-pagination a,
+.job-pagination button,
 .job-pagination-current,
 .job-pagination-disabled,
 .job-pagination-ellipsis {
@@ -4184,18 +4185,24 @@ a {
   font-size: 0.9rem;
 }
 
-.job-pagination a {
+.job-pagination a,
+.job-pagination button {
   border: 1px solid transparent;
+  background: transparent;
   color: var(--color-brand);
+  font: inherit;
   font-weight: 700;
+  cursor: pointer;
 }
 
-.job-pagination a:hover {
+.job-pagination a:hover,
+.job-pagination button:hover {
   border-color: #d5c7d0;
   background: var(--color-surface-muted);
 }
 
-.job-pagination a:focus-visible {
+.job-pagination a:focus-visible,
+.job-pagination button:focus-visible {
   outline: 3px solid var(--color-focus);
   outline-offset: 3px;
 }

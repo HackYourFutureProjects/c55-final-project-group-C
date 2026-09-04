@@ -28,6 +28,8 @@ const EMPTY_STATS: SavedJobsStatsResponse = {
   DECLINED: 0,
 };
 
+const SAVED_JOBS_PAGE_SIZE = 20;
+
 type SavedJobsContentProps = {
   status?: JobState | null;
 };
@@ -48,6 +50,7 @@ export default function SavedJobsContent({
   const [actionError, setActionError] = useState<string | null>(null);
 
   const [busyPostingId, setBusyPostingId] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(0);
 
   const selectedStatusLabel = status
     ? getSavedJobStatusLabel(status)
@@ -56,6 +59,22 @@ export default function SavedJobsContent({
   const filteredJobs = useMemo(
     () => (status ? jobs.filter((job) => job.jobState === status) : jobs),
     [jobs, status],
+  );
+  const totalPages = Math.ceil(filteredJobs.length / SAVED_JOBS_PAGE_SIZE);
+  const safeCurrentPage =
+    totalPages > 0 ? Math.min(currentPage, totalPages - 1) : 0;
+  const paginatedJobs = useMemo(() => {
+    const startIndex = safeCurrentPage * SAVED_JOBS_PAGE_SIZE;
+
+    return filteredJobs.slice(startIndex, startIndex + SAVED_JOBS_PAGE_SIZE);
+  }, [filteredJobs, safeCurrentPage]);
+  const pageItems = useMemo(
+    () =>
+      Array.from({ length: totalPages }, (_, pageNumber) => ({
+        key: `saved-jobs-page-${pageNumber}`,
+        page: pageNumber,
+      })),
+    [totalPages],
   );
 
   const handleExpiredSession = useCallback(() => {
@@ -124,6 +143,17 @@ export default function SavedJobsContent({
     void loadStats();
     void loadJobs();
   }, [loadJobs, loadStats, user]);
+
+  useEffect(() => {
+    if (totalPages === 0 && currentPage !== 0) {
+      setCurrentPage(0);
+      return;
+    }
+
+    if (totalPages > 0 && currentPage >= totalPages) {
+      setCurrentPage(totalPages - 1);
+    }
+  }, [currentPage, totalPages]);
 
   async function handleStatusChange(postingId: string, newState: JobState) {
     if (!user) {
@@ -269,98 +299,169 @@ export default function SavedJobsContent({
                 </p>
               </div>
             ) : (
-              <ul className="saved-job-list">
-                {filteredJobs.map((job) => {
-                  const isBusy = busyPostingId === job.postingId;
+              <>
+                <ul className="saved-job-list">
+                  {paginatedJobs.map((job) => {
+                    const isBusy = busyPostingId === job.postingId;
 
-                  return (
-                    <li key={job.postingId}>
-                      <article
-                        className={`saved-job-card is-status-${job.jobState.toLowerCase()}`}
-                      >
-                        <div className="saved-job-main">
-                          <div className="saved-job-topline">
-                            <span>{job.discipline ?? "Job opportunity"}</span>
+                    return (
+                      <li key={job.postingId}>
+                        <article
+                          className={`saved-job-card is-status-${job.jobState.toLowerCase()}`}
+                        >
+                          <div className="saved-job-main">
+                            <div className="saved-job-topline">
+                              <span>{job.discipline ?? "Job opportunity"}</span>
 
-                            {job.freshnessClass && (
-                              <span>{job.freshnessClass}</span>
-                            )}
-                          </div>
-
-                          <h3>
-                            <Link
-                              href={`/jobs/${encodeURIComponent(
-                                job.postingId,
-                              )}`}
-                            >
-                              {job.title ?? "Job title unavailable"}
-                            </Link>
-                          </h3>
-
-                          <p className="saved-job-company">
-                            {job.companyName ?? "Company unavailable"}
-                            {job.location ? ` · ${job.location}` : ""}
-                          </p>
-
-                          <div className="saved-job-meta">
-                            {job.workMode && <span>{job.workMode}</span>}
-                            {job.employmentType && (
-                              <span>{job.employmentType}</span>
-                            )}
-                            {job.postedDate && (
-                              <span>Posted {job.postedDate}</span>
-                            )}
-                          </div>
-
-                          {job.skills.length > 0 && (
-                            <div className="saved-job-skills">
-                              {job.skills.slice(0, 5).map((skill) => (
-                                <span key={`${job.postingId}-${skill}`}>
-                                  {skill}
-                                </span>
-                              ))}
+                              {job.freshnessClass && (
+                                <span>{job.freshnessClass}</span>
+                              )}
                             </div>
+
+                            <h3>
+                              <Link
+                                href={`/jobs/${encodeURIComponent(
+                                  job.postingId,
+                                )}`}
+                              >
+                                {job.title ?? "Job title unavailable"}
+                              </Link>
+                            </h3>
+
+                            <p className="saved-job-company">
+                              {job.companyName ?? "Company unavailable"}
+                              {job.location ? ` · ${job.location}` : ""}
+                            </p>
+
+                            <div className="saved-job-meta">
+                              {job.workMode && <span>{job.workMode}</span>}
+                              {job.employmentType && (
+                                <span>{job.employmentType}</span>
+                              )}
+                              {job.postedDate && (
+                                <span>Posted {job.postedDate}</span>
+                              )}
+                            </div>
+
+                            {job.skills.length > 0 && (
+                              <div className="saved-job-skills">
+                                {job.skills.slice(0, 5).map((skill) => (
+                                  <span key={`${job.postingId}-${skill}`}>
+                                    {skill}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="saved-job-actions">
+                            <label htmlFor={`status-${job.postingId}`}>
+                              Application status
+                            </label>
+
+                            <select
+                              id={`status-${job.postingId}`}
+                              className={`is-status-${job.jobState.toLowerCase()}`}
+                              value={job.jobState}
+                              disabled={isBusy}
+                              onChange={(event) =>
+                                void handleStatusChange(
+                                  job.postingId,
+                                  event.target.value as JobState,
+                                )
+                              }
+                            >
+                              {SAVED_JOB_STATUS_OPTIONS.map((option) => (
+                                <option key={option.value} value={option.value}>
+                                  {option.label}
+                                </option>
+                              ))}
+                            </select>
+
+                            <button
+                              type="button"
+                              className="saved-remove-button"
+                              disabled={isBusy}
+                              onClick={() => void handleRemove(job.postingId)}
+                            >
+                              {isBusy ? "Working..." : "Remove"}
+                            </button>
+                          </div>
+                        </article>
+                      </li>
+                    );
+                  })}
+                </ul>
+
+                {totalPages > 1 ? (
+                  <nav className="job-pagination" aria-label="Saved jobs pages">
+                    <div className="job-pagination-edge">
+                      {safeCurrentPage > 0 ? (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setCurrentPage((page) => Math.max(page - 1, 0))
+                          }
+                        >
+                          Previous
+                        </button>
+                      ) : (
+                        <span
+                          className="job-pagination-disabled"
+                          aria-disabled="true"
+                        >
+                          Previous
+                        </span>
+                      )}
+                    </div>
+
+                    <ol className="job-pagination-pages">
+                      {pageItems.map(({ key, page }) => (
+                        <li key={key}>
+                          {page === safeCurrentPage ? (
+                            <span
+                              className="job-pagination-current"
+                              aria-current="page"
+                            >
+                              {page + 1}
+                            </span>
+                          ) : (
+                            <button
+                              type="button"
+                              aria-label={`Go to page ${page + 1}`}
+                              onClick={() => setCurrentPage(page)}
+                            >
+                              {page + 1}
+                            </button>
                           )}
-                        </div>
+                        </li>
+                      ))}
+                    </ol>
 
-                        <div className="saved-job-actions">
-                          <label htmlFor={`status-${job.postingId}`}>
-                            Application status
-                          </label>
-
-                          <select
-                            id={`status-${job.postingId}`}
-                            className={`is-status-${job.jobState.toLowerCase()}`}
-                            value={job.jobState}
-                            disabled={isBusy}
-                            onChange={(event) =>
-                              void handleStatusChange(
-                                job.postingId,
-                                event.target.value as JobState,
-                              )
-                            }
-                          >
-                            {SAVED_JOB_STATUS_OPTIONS.map((option) => (
-                              <option key={option.value} value={option.value}>
-                                {option.label}
-                              </option>
-                            ))}
-                          </select>
-
-                          <button
-                            type="button"
-                            className="saved-remove-button"
-                            disabled={isBusy}
-                            onClick={() => void handleRemove(job.postingId)}
-                          >
-                            {isBusy ? "Working..." : "Remove"}
-                          </button>
-                        </div>
-                      </article>
-                    </li>
-                  );
-                })}
-              </ul>
+                    <div className="job-pagination-edge">
+                      {safeCurrentPage < totalPages - 1 ? (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setCurrentPage((page) =>
+                              Math.min(page + 1, totalPages - 1),
+                            )
+                          }
+                        >
+                          Next
+                        </button>
+                      ) : (
+                        <span
+                          className="job-pagination-disabled"
+                          aria-disabled="true"
+                        >
+                          Next
+                        </span>
+                      )}
+                    </div>
+                  </nav>
+                ) : null}
+              </>
             )}
           </section>
 
