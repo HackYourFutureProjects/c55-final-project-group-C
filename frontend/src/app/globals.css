@@ -3541,6 +3541,22 @@ a {
   min-width: 0;
 }
 
+.top-match-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  align-items: flex-start;
+  min-width: 0;
+}
+
+.top-match-heading > div:first-child {
+  min-width: 0;
+}
+
+.top-match-heading .saved-bookmark-control {
+  flex-shrink: 0;
+}
+
 .top-match-company {
   margin: 0;
   color: #6d6068;
