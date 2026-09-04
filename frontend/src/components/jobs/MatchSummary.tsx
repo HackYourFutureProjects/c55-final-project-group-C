@@ -26,14 +26,14 @@ export default function MatchSummary({ match }: MatchSummaryProps) {
   return (
     <div className={`match-summary${matchToneClass}`}>
       <div className="match-summary-header">
-        <strong>{match.matchPercent}% match</strong>
+        <strong>Match {match.score}%</strong>
 
         {match.label ? <span>{match.label}</span> : null}
       </div>
 
       <p className="match-summary-context">
-        {match.matchedCount} of your {match.ofSkills} profile skills match this
-        job
+        Skills matched: {match.matchedCount} of your {match.ofSkills} (
+        {match.matchPercent}%)
       </p>
 
       {matchedSkills.length > 0 ? (
