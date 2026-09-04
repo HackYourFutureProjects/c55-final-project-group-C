@@ -1613,13 +1613,13 @@ a {
 }
 
 .profile-section {
-  padding: 40px 0;
+  padding: 36px 0;
   border-top: 1px solid #dfd5da;
 }
 
 .profile-section-heading {
   max-width: 720px;
-  margin-bottom: 28px;
+  margin-bottom: 24px;
   min-width: 0;
 }
 
@@ -1639,7 +1639,7 @@ a {
 .profile-form {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-lg);
+  gap: var(--space-md);
 }
 
 .job-details-page {
@@ -1845,12 +1845,35 @@ a {
 .profile-field {
   display: grid;
   align-content: start;
-  gap: 9px;
+  gap: var(--space-xs);
   min-width: 0;
 }
 
 .profile-field-full {
   grid-column: 1 / -1;
+}
+
+.profile-fieldset {
+  grid-column: 1 / -1;
+  min-width: 0;
+  padding: 20px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-md);
+  border: 1px solid #e2d8dd;
+  border-radius: var(--radius-card);
+  background: rgba(255, 255, 255, 0.36);
+}
+
+.profile-fieldset legend {
+  padding: 0 var(--space-xs);
+  color: #5f535a;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.profile-fieldset-compact {
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .profile-field label {
@@ -1863,6 +1886,7 @@ a {
   color: #82747c;
   font-size: 0.88rem;
   line-height: 1.55;
+  overflow-wrap: anywhere;
 }
 
 .profile-onboarding-note {
@@ -2086,6 +2110,11 @@ a {
     grid-template-columns: 1fr;
   }
 
+  .profile-fieldset {
+    grid-template-columns: 1fr;
+    padding: 18px 16px;
+  }
+
   .profile-field-full,
   .profile-message,
   .profile-form-actions {
@@ -2109,9 +2138,14 @@ a {
   }
 }
 .profile-selected-skills {
+  min-width: 0;
+  padding: 12px;
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-control-gap);
+  border: 1px solid #e2d8dd;
+  border-radius: var(--radius-input);
+  background: rgba(255, 255, 255, 0.42);
 }
 
 .profile-skill-count {
@@ -2124,6 +2158,8 @@ a {
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  max-width: 100%;
+  min-width: 0;
   padding: 8px 10px 8px 13px;
   border-radius: var(--radius-pill);
   background: var(--color-surface-muted);
@@ -2134,6 +2170,7 @@ a {
 }
 
 .profile-skill-tag button {
+  flex: 0 0 auto;
   width: 22px;
   height: 22px;
   display: grid;
