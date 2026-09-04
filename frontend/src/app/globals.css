@@ -2836,25 +2836,8 @@ a {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(188px, 210px);
   gap: 28px;
-  padding: 28px 0;
+  padding: 28px 20px;
   border-bottom: 1px solid #dfd5da;
-}
-
-.saved-job-card.is-status-saved {
-  box-shadow: inset 3px 0 0 var(--color-status-saved-border);
-}
-
-.saved-job-card.is-status-applied {
-  box-shadow: inset 3px 0 0 var(--color-info-border);
-}
-
-.saved-job-card.is-status-accepted {
-  box-shadow: inset 3px 0 0 var(--color-success-border);
-}
-
-.saved-job-card.is-status-rejected,
-.saved-job-card.is-status-declined {
-  box-shadow: inset 3px 0 0 var(--color-danger-border);
 }
 
 .saved-job-main {
@@ -3341,7 +3324,7 @@ a {
   }
 
   .saved-job-card {
-    padding: 24px 0;
+    padding: 24px 14px;
   }
 
   .saved-job-actions,
