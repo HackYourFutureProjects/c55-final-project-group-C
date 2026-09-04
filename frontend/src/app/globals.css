@@ -2327,6 +2327,12 @@ a {
   overflow-wrap: anywhere;
 }
 
+.job-details-listing-info .job-details-popularity {
+  color: var(--color-text-muted);
+  font-size: 0.92rem;
+  font-weight: 500;
+}
+
 .job-details-sidebar {
   display: flex;
   flex-direction: column;
@@ -3880,6 +3886,10 @@ a {
   color: #897d84;
   font-size: 0.8rem;
   overflow-wrap: anywhere;
+}
+
+.job-result-popularity {
+  color: var(--color-text-muted);
 }
 
 .job-result-skills {

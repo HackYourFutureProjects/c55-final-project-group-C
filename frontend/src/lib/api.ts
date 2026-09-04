@@ -296,6 +296,7 @@ export type JobSearchResponse = {
   discipline: string | null;
   freshnessClass: string | null;
   ageDays: number | null;
+  savedCount?: number;
 };
 
 export type JobFiltersResponse = {
