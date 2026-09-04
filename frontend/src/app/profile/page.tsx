@@ -801,116 +801,128 @@ export default function ProfilePage() {
               </div>
             ) : null}
 
-            <div className="profile-field">
-              <label htmlFor="discipline">Target role / discipline</label>
+            <fieldset className="profile-fieldset">
+              <legend>Role and experience</legend>
 
-              <select
-                id="discipline"
-                value={discipline}
-                disabled={areFilterOptionsUnavailable}
-                onChange={(event) => setDiscipline(event.target.value)}
-              >
-                <option value="">No preference</option>
+              <div className="profile-field">
+                <label htmlFor="discipline">Target role / discipline</label>
 
-                {disciplineOptions.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </select>
-            </div>
+                <select
+                  id="discipline"
+                  value={discipline}
+                  disabled={areFilterOptionsUnavailable}
+                  onChange={(event) => setDiscipline(event.target.value)}
+                >
+                  <option value="">No preference</option>
 
-            <div className="profile-field">
-              <label htmlFor="preferred-city">Preferred city</label>
+                  {disciplineOptions.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-              <select
-                id="preferred-city"
-                value={preferredCity}
-                disabled={areFilterOptionsUnavailable}
-                onChange={(event) => setPreferredCity(event.target.value)}
-              >
-                <option value="">No preference</option>
+              <div className="profile-field">
+                <label htmlFor="experience-level">Experience</label>
 
-                {preferredCityOptions.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </select>
-            </div>
+                <select
+                  id="experience-level"
+                  value={experienceLevel}
+                  disabled={areFilterOptionsUnavailable}
+                  onChange={(event) => setExperienceLevel(event.target.value)}
+                >
+                  <option value="">No preference</option>
 
-            <div className="profile-field">
-              <label htmlFor="work-mode">Work mode</label>
+                  {experienceOptions.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </fieldset>
 
-              <select
-                id="work-mode"
-                value={workMode}
-                disabled={areFilterOptionsUnavailable}
-                onChange={(event) => setWorkMode(event.target.value)}
-              >
-                <option value="">No preference</option>
+            <fieldset className="profile-fieldset">
+              <legend>Location and work style</legend>
 
-                {workModeOptions.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </select>
-            </div>
+              <div className="profile-field">
+                <label htmlFor="preferred-city">Preferred city</label>
 
-            <div className="profile-field">
-              <label htmlFor="experience-level">Experience</label>
+                <select
+                  id="preferred-city"
+                  value={preferredCity}
+                  disabled={areFilterOptionsUnavailable}
+                  onChange={(event) => setPreferredCity(event.target.value)}
+                >
+                  <option value="">No preference</option>
 
-              <select
-                id="experience-level"
-                value={experienceLevel}
-                disabled={areFilterOptionsUnavailable}
-                onChange={(event) => setExperienceLevel(event.target.value)}
-              >
-                <option value="">No preference</option>
+                  {preferredCityOptions.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-                {experienceOptions.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </select>
-            </div>
+              <div className="profile-field">
+                <label htmlFor="work-mode">Work mode</label>
 
-            <div className="profile-field">
-              <label htmlFor="employment-type">Employment type</label>
+                <select
+                  id="work-mode"
+                  value={workMode}
+                  disabled={areFilterOptionsUnavailable}
+                  onChange={(event) => setWorkMode(event.target.value)}
+                >
+                  <option value="">No preference</option>
 
-              <select
-                id="employment-type"
-                value={employmentType}
-                disabled={areFilterOptionsUnavailable}
-                onChange={(event) => setEmploymentType(event.target.value)}
-              >
-                <option value="">No preference</option>
+                  {workModeOptions.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-                {employmentTypeOptions.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </select>
-            </div>
+              <div className="profile-field">
+                <label htmlFor="employment-type">Employment type</label>
 
-            <div className="profile-field">
-              <label htmlFor="salary-preference">
-                Yearly gross salary preference in euros
-              </label>
+                <select
+                  id="employment-type"
+                  value={employmentType}
+                  disabled={areFilterOptionsUnavailable}
+                  onChange={(event) => setEmploymentType(event.target.value)}
+                >
+                  <option value="">No preference</option>
 
-              <input
-                id="salary-preference"
-                type="number"
-                min="0"
-                step="0.01"
-                value={salaryPreference}
-                onChange={(event) => setSalaryPreference(event.target.value)}
-                placeholder="e.g. 45000"
-              />
-            </div>
+                  {employmentTypeOptions.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </fieldset>
+
+            <fieldset className="profile-fieldset profile-fieldset-compact">
+              <legend>Additional preferences</legend>
+
+              <div className="profile-field">
+                <label htmlFor="salary-preference">
+                  Yearly gross salary preference in euros
+                </label>
+
+                <input
+                  id="salary-preference"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={salaryPreference}
+                  onChange={(event) => setSalaryPreference(event.target.value)}
+                  placeholder="e.g. 45000"
+                />
+              </div>
+            </fieldset>
 
             {profileMessage ? (
               <output className="profile-message">{profileMessage}</output>
