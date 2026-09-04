@@ -32,8 +32,8 @@ export default function MatchSummary({ match }: MatchSummaryProps) {
       </div>
 
       <p className="match-summary-context">
-        Skills matched: {match.matchedCount} of your {match.ofSkills} (
-        {match.matchPercent}%)
+        Skills matched: {match.matchedCount} of the {match.jobSkillCount} this
+        job asks for ({match.matchPercent}%)
       </p>
 
       {matchedSkills.length > 0 ? (
