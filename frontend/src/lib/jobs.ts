@@ -12,6 +12,7 @@ export type JobSearchResult = {
   ageDays: number | null;
   source: string | null;
   freshness: string | null;
+  savedCount?: number;
 };
 
 function formatReadableDate(value: string): string {
@@ -64,6 +65,7 @@ export function mapJobSearchResponse(job: JobSearchResponse): JobSearchResult {
     ageDays: job.ageDays,
     source: job.source,
     freshness: job.freshnessClass,
+    savedCount: job.savedCount,
   };
 }
 

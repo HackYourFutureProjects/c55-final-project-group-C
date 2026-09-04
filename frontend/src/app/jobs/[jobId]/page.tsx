@@ -4,6 +4,7 @@ import JobDetailsMatchSection from "@/components/jobs/JobDetailsMatchSection";
 import SavedJobBookmarkButton from "@/components/jobs/SavedJobBookmarkButton";
 import type { JobDetailsResponse } from "@/lib/api";
 import { formatEnumLabel, formatPostedDate } from "@/lib/formatters";
+import { formatSavedCount } from "@/lib/job-popularity";
 import { BackendRequestError, getJobDetailsServer } from "@/lib/jobs-server";
 
 type JobDetailsPageProps = {
@@ -90,6 +91,7 @@ export default async function JobDetailsPage({ params }: JobDetailsPageProps) {
   const { jobId } = await params;
   const job = await loadJobDetails(jobId);
   const applicationUrl = getSafeApplicationUrl(job.sourceUrl);
+  const savedCountLabel = formatSavedCount(job.savedCount);
 
   const skillOccurrences = new Map<string, number>();
 
@@ -239,6 +241,15 @@ export default async function JobDetailsPage({ params }: JobDetailsPageProps) {
                   <dt>Source</dt>
                   <dd>{job.source ?? "Not specified"}</dd>
                 </div>
+
+                {savedCountLabel ? (
+                  <div>
+                    <dt>Popularity</dt>
+                    <dd className="job-details-popularity">
+                      {savedCountLabel}
+                    </dd>
+                  </div>
+                ) : null}
               </dl>
             </section>
 

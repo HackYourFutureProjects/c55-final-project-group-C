@@ -1,6 +1,7 @@
 import Link from "next/link";
 import SavedJobBookmarkButton from "@/components/jobs/SavedJobBookmarkButton";
 import type { JobState } from "@/lib/api";
+import { formatSavedCount } from "@/lib/job-popularity";
 import type { JobSearchResult } from "@/lib/jobs";
 
 type JobResultItemProps = {
@@ -29,6 +30,7 @@ export default function JobResultItem({
       skill,
     };
   });
+  const savedCountLabel = formatSavedCount(job.savedCount);
 
   return (
     <article className="job-result-item">
@@ -56,6 +58,10 @@ export default function JobResultItem({
           {job.postedDate && <span>{job.postedDate}</span>}
 
           {job.source && <span>{job.source}</span>}
+
+          {savedCountLabel && (
+            <span className="job-result-popularity">{savedCountLabel}</span>
+          )}
         </div>
 
         {visibleSkills.length > 0 && (
