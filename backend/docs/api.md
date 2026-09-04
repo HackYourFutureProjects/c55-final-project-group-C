@@ -422,8 +422,10 @@ provider rejecting `reasoning_effort`, a reply with no JSON array in it. `MatchS
 throws.
 
 **Reading the numbers.** `matchScore`, `matchPercent` and `label` are plain skill overlap over the
-user's own skill count, so they always agree with `matchedCount` and `ofSkills` wherever those are
-shown together. They do **not** drive the order: `score` does, and it can see synonyms and seniority
+**job's** skill count — the share of what the posting asks for that the user already has — so they
+pair with `matchedCount` and `jobSkillCount`, not with `ofSkills`. The denominator has a floor of 5,
+so a posting listing one or two skills cannot read 100% off a single overlap. They do **not** drive
+the order: `score` does, and it can see synonyms and seniority
 that exact overlap cannot, so a 100% row can sit below an 80% one. `label` is `"strong match"` at 60%
 or above and null otherwise — a badge, never a filter. `matchedSkills` is exact string overlap only,
 so a job matched on `postgresql` will not list the user's `postgres` there even though the score

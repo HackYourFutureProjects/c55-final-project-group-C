@@ -230,20 +230,31 @@ Two sets of numbers sit side by side, and confusing them is the easiest mistake 
 | Field | Comes from | Means |
 | --- | --- | --- |
 | `matchedSkills` | SQL | The user's skills this job lists **verbatim**. A job matched on `postgresql` will not list the user's `postgres` here, even though the score reflects it |
-| `matchedCount` / `ofSkills` | SQL | Size of `matchedSkills`, and how many skills the profile has |
-| `jobSkillCount` | SQL | How many skills the job asks for. For "3 of the job's 8 required skills" — do not build a percentage from it |
-| `matchScore` | SQL | `matchedCount / ofSkills`, a 0–1 double. Display only |
-| `matchPercent` | SQL | The same, rounded. Denominator is the **user's** skill count, so it always agrees with `matchedCount` and `ofSkills` shown beside it |
+| `matchedCount` / `ofSkills` | SQL | Size of `matchedSkills`, and how many skills the profile has. `ofSkills` is context for the reader, **not** a denominator |
+| `jobSkillCount` | SQL | How many skills the job asks for, and the denominator behind the two below |
+| `matchScore` | SQL | `matchedCount / max(jobSkillCount, 5)`, a 0–1 double. Display only |
+| `matchPercent` | SQL | The same, rounded. Pair it with `matchedCount` and `jobSkillCount` — "7 of the 8 skills this job asks for" |
 | `label` | SQL | `"strong match"` at 60% or above, otherwise null. A badge, never a filter |
 | `score` | model, or fallback | 0–100, **and the field the list is ordered by** |
 | `reason` | model | One line on why it matches. Null when `aiScored` is false |
 | `aiScored` | — | False means this row fell back to the skill-overlap ranking |
 
+**The denominator is the job's skill count, not the user's.** It used to be `ofSkills`, and that
+punished the users who filled their profile in best: a posting lists a handful of skills, so a
+20-skill profile against an 8-skill job was capped at 40% however perfect the fit, and everything
+read as a weak match. Coverage of the job asks the question the candidate actually has — *how much
+of what this job wants do I already have?* — and adding a skill can now only ever raise a match.
+
+`max(jobSkillCount, 5)` is the one wrinkle: without a floor, a posting listing a single skill you
+happen to have reads 100%, and with no `LLM_API_KEY` that trivial row would sort above a ten-skill
+job you cover eight of. Thin postings are common in the mart, so the floor is the ordinary case.
+`JobMatchService.MIN_PERCENT_DENOMINATOR` holds it.
+
 **`matchPercent` does not track the order.** The list is sorted by `score`, which sees synonyms and
 seniority that exact overlap cannot, so a 100% row can legitimately sit below an 80% one. That is
 not a bug to fix in the UI by re-sorting; it is the whole reason the model is there.
 
-The frontend renders `matchPercent` and `matchedCount` in [`MatchSummary`](../../frontend/src/components/jobs/MatchSummary.tsx),
+The frontend renders `matchPercent`, `matchedCount` and `jobSkillCount` in [`MatchSummary`](../../frontend/src/components/jobs/MatchSummary.tsx),
 and shows `reason` only when `aiScored` is true.
 
 ---
@@ -342,5 +353,6 @@ strong-match threshold 60%.
 | Make a preference actually filter | `findTopMatches` — add the parameter, and pass it from `JobMatchService.getTopMatches` |
 | What the model is asked | `MatchScorer.buildPrompt` — **and bump `PROMPT_VERSION`**, or old verdicts scored under the previous prompt will be served alongside new ones |
 | The 60% "strong match" line | `JobMatchService.STRONG_MATCH_PERCENT` |
+| What `matchPercent` is a percentage *of* | `JobMatchService.jobCoverage`, and `MIN_PERCENT_DENOMINATOR` for the floor under thin postings |
 | The five-skill floor | `UpdateProfileRequest.MIN_SKILLS`, which every other place reads |
 | The skill vocabulary | `frontend/src/lib/profile-skills.ts`, ideally by re-deriving it from the mart |
