@@ -72,7 +72,7 @@ export default function JobFilters({
     const query = locationInput.trim().toLowerCase();
 
     if (!query) {
-      return locationSuggestions.slice(0, 8);
+      return [];
     }
 
     const startsWithMatches: string[] = [];
@@ -104,6 +104,10 @@ export default function JobFilters({
   function handleLocationKeyDown(event: KeyboardEvent<HTMLInputElement>) {
     if (event.key === "ArrowDown") {
       event.preventDefault();
+      if (visibleLocationSuggestions.length === 0) {
+        return;
+      }
+
       setIsLocationListOpen(true);
       setActiveLocationIndex((currentIndex) =>
         Math.min(currentIndex + 1, visibleLocationSuggestions.length - 1),
@@ -215,11 +219,15 @@ export default function JobFilters({
                 value={locationInput}
                 onBlur={() => setIsLocationListOpen(false)}
                 onChange={(event) => {
-                  setLocationInput(event.target.value);
-                  setIsLocationListOpen(true);
+                  const nextLocationInput = event.target.value;
+
+                  setLocationInput(nextLocationInput);
+                  setIsLocationListOpen(Boolean(nextLocationInput.trim()));
                   setActiveLocationIndex(-1);
                 }}
-                onFocus={() => setIsLocationListOpen(true)}
+                onFocus={() =>
+                  setIsLocationListOpen(Boolean(locationInput.trim()))
+                }
                 onKeyDown={handleLocationKeyDown}
                 placeholder="Any location"
               />
