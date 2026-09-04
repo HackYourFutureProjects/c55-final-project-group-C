@@ -614,8 +614,8 @@ export default function ProfilePage() {
           <h2>What are you looking for?</h2>
 
           <p>
-            Skills are the most important part of your profile. Other
-            preferences can be left empty.
+            Skills and preferred city are currently used for job matching. Other
+            preferences are optional and may be used in future improvements.
           </p>
         </div>
 
@@ -629,7 +629,12 @@ export default function ProfilePage() {
         ) : (
           <form className="profile-form" onSubmit={handleProfileSubmit}>
             <div className="profile-field profile-field-full">
-              <label htmlFor="skill-search">Skills</label>
+              <label htmlFor="skill-search">
+                Skills
+                <span className="profile-field-note">
+                  Required for matching
+                </span>
+              </label>
 
               {skillsNeeded > 0 ? (
                 <p className="profile-onboarding-note">
@@ -805,7 +810,10 @@ export default function ProfilePage() {
               <legend>Role and experience</legend>
 
               <div className="profile-field">
-                <label htmlFor="discipline">Target role / discipline</label>
+                <label htmlFor="discipline">
+                  Target role / discipline
+                  <span className="profile-field-note">Optional</span>
+                </label>
 
                 <select
                   id="discipline"
@@ -824,7 +832,10 @@ export default function ProfilePage() {
               </div>
 
               <div className="profile-field">
-                <label htmlFor="experience-level">Experience</label>
+                <label htmlFor="experience-level">
+                  Experience
+                  <span className="profile-field-note">Optional</span>
+                </label>
 
                 <select
                   id="experience-level"
@@ -847,7 +858,12 @@ export default function ProfilePage() {
               <legend>Location and work style</legend>
 
               <div className="profile-field">
-                <label htmlFor="preferred-city">Preferred city</label>
+                <label htmlFor="preferred-city">
+                  Preferred city
+                  <span className="profile-field-note">
+                    Required for matching
+                  </span>
+                </label>
 
                 <select
                   id="preferred-city"
@@ -866,7 +882,10 @@ export default function ProfilePage() {
               </div>
 
               <div className="profile-field">
-                <label htmlFor="work-mode">Work mode</label>
+                <label htmlFor="work-mode">
+                  Work mode
+                  <span className="profile-field-note">Optional</span>
+                </label>
 
                 <select
                   id="work-mode"
@@ -885,7 +904,10 @@ export default function ProfilePage() {
               </div>
 
               <div className="profile-field">
-                <label htmlFor="employment-type">Employment type</label>
+                <label htmlFor="employment-type">
+                  Employment type
+                  <span className="profile-field-note">Optional</span>
+                </label>
 
                 <select
                   id="employment-type"
@@ -910,6 +932,7 @@ export default function ProfilePage() {
               <div className="profile-field">
                 <label htmlFor="salary-preference">
                   Yearly gross salary preference in euros
+                  <span className="profile-field-note">Optional</span>
                 </label>
 
                 <input
