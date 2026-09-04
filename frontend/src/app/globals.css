@@ -3472,6 +3472,12 @@ a {
   line-height: 1.6;
 }
 
+.job-filter-panel-toggle,
+.job-filter-active-summary,
+.job-filters-clear {
+  display: none;
+}
+
 .jobs-results {
   min-width: 0;
 }
@@ -3673,8 +3679,92 @@ a {
   }
 
   .jobs-filters {
-    padding-bottom: 28px;
+    padding: 16px;
     border-bottom: 1px solid #ded4da;
+    border-radius: var(--radius-card);
+    background: var(--color-surface-warm);
+  }
+
+  .jobs-filters-header {
+    display: none;
+  }
+
+  .job-filter-panel-toggle {
+    width: 100%;
+    min-height: var(--control-height);
+    padding: 0 var(--space-md);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-sm);
+    border: 1px solid var(--color-border-control);
+    border-radius: var(--radius-input);
+    background: var(--color-surface);
+    color: var(--color-text);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .job-filter-panel-toggle span:last-child {
+    flex-shrink: 0;
+    color: var(--color-text-muted);
+    font-size: 0.82rem;
+    font-weight: 600;
+  }
+
+  .job-filter-panel-toggle:focus-visible {
+    outline: 3px solid var(--color-focus);
+    outline-offset: 3px;
+  }
+
+  .job-filter-active-summary {
+    margin-top: var(--space-sm);
+    display: block;
+    color: var(--color-text-muted);
+    font-size: 0.86rem;
+    line-height: 1.45;
+    overflow-wrap: anywhere;
+  }
+
+  .job-filter-panel-body {
+    display: none;
+  }
+
+  .job-filter-panel.is-open .job-filter-panel-body {
+    display: block;
+  }
+
+  .job-filters-form {
+    margin-top: var(--space-md);
+    gap: var(--space-md);
+  }
+
+  .job-filter-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .job-filters-clear {
+    min-height: var(--control-height);
+    padding: 0 var(--control-padding-x-compact);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--color-border-control);
+    border-radius: var(--radius-pill);
+    background: transparent;
+    color: var(--color-brand);
+    font-weight: 700;
+  }
+
+  .job-filters-clear:hover {
+    border-color: #bfaeba;
+    background: var(--color-surface-muted);
+  }
+
+  .job-filters-clear:focus-visible {
+    outline: 3px solid var(--color-focus);
+    outline-offset: 3px;
   }
 
   .top-matches-link-secondary {
@@ -3963,6 +4053,11 @@ a {
   color: #7c7077;
   font-size: 0.82rem;
   line-height: 1.6;
+}
+
+.job-filter-actions {
+  display: grid;
+  gap: var(--space-sm);
 }
 
 .jobs-loading-result {
