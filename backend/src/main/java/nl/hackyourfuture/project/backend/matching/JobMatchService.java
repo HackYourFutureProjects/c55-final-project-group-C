@@ -37,6 +37,11 @@ public class JobMatchService {
     static final int RESULT_LIMIT = 25;
     // Where "strong match" starts, per the label's documented contract.
     static final int STRONG_MATCH_PERCENT = 60;
+    // Floor under the matchPercent denominator. A posting listing one or two skills would
+    // otherwise read 100% off a single overlap and, whenever the model is unavailable, sort
+    // above a job asking for ten things the candidate has eight of. Thin postings are common
+    // in the mart, so this is the ordinary case, not a corner one.
+    static final int MIN_PERCENT_DENOMINATOR = 5;
 
     private final JobMatchRepository jobMatchRepository;
     private final JobMatchScoreRepository jobMatchScoreRepository;
@@ -134,7 +139,8 @@ public class JobMatchService {
 
     private static JobMatchResponse toResponse(JobMatchRepository.JobMatchRow row, int ofSkills,
                                                MatchScorer.Score score) {
-        int percent = skillOverlapPercent(row, ofSkills);
+        double coverage = jobCoverage(row);
+        int percent = Math.round((float) coverage * 100);
         return new JobMatchResponse(
                 row.postingId(),
                 row.title(),
@@ -146,7 +152,7 @@ public class JobMatchService {
                 row.matchedCount(),
                 ofSkills,
                 row.jobSkillCount(),
-                ofSkills == 0 ? 0d : (double) row.matchedCount() / ofSkills,
+                coverage,
                 percent,
                 percent >= STRONG_MATCH_PERCENT ? "strong match" : null,
                 score != null ? score.value() : percent,
@@ -155,12 +161,18 @@ public class JobMatchService {
         );
     }
 
-    // Share of the user's skills the job asks for. Reported as matchPercent, and stands in
-    // for score on rows the model did not rank, so a partly scored list still sorts.
-    private static int skillOverlapPercent(JobMatchRepository.JobMatchRow row, int ofSkills) {
-        if (ofSkills == 0) {
-            return 0;
-        }
-        return Math.round((float) row.matchedCount() / ofSkills * 100);
+    // Share of what the job asks for that the candidate already has. Reported as matchScore
+    // and matchPercent, and stands in for score on rows the model did not rank, so a partly
+    // scored list still sorts.
+    //
+    // The candidate's own skill count is deliberately NOT the denominator. A posting lists a
+    // handful of skills, so a long profile can never overlap all of them: a 20-skill profile
+    // against an 8-skill job was capped at 40% however perfect the fit, and every match read
+    // as weak precisely because the user had filled their profile in properly. Coverage of
+    // the job asks the question the candidate has - how much of this do I already have?
+    private static double jobCoverage(JobMatchRepository.JobMatchRow row) {
+        // matchedSkills is drawn from the job's own skills array, so it can never exceed
+        // jobSkillCount and the result needs no clamping.
+        return (double) row.matchedCount() / Math.max(row.jobSkillCount(), MIN_PERCENT_DENOMINATOR);
     }
 }

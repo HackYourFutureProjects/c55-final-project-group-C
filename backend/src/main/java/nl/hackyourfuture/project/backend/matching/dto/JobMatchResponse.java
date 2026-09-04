@@ -7,8 +7,9 @@ import java.util.List;
 
 // One ranked posting.
 // The original record described an overlap-only ranking, docs/matching.md described the model
-// rescoring. Both are kept: matchScore / matchPercent / label stay plain skill overlap, and
-// the model's layer - score, reason, aiScored - sits alongside them. score is the ranking.
+// rescoring. Both are kept: matchScore / matchPercent / label stay plain skill overlap - the
+// share of the job's own skills the user has - and the model's layer - score, reason,
+// aiScored - sits alongside them. score is the ranking.
 @Schema(description = "A job posting ranked against the logged-in user's profile")
 public record JobMatchResponse(
         String postingId,
@@ -31,28 +32,30 @@ public record JobMatchResponse(
         @Schema(description = "Size of matchedSkills", example = "3")
         int matchedCount,
 
-        @Schema(description = "How many skills the user has on their profile", example = "5")
+        @Schema(description = "How many skills the user has on their profile. Context for the "
+                + "reader, not the denominator of matchPercent - see matchScore.", example = "20")
         int ofSkills,
 
-        @Schema(description = "How many skills this job asks for in total. Only for showing "
-                + "\"3 of the job's 8 required skills\" - do not build a percentage out of it, "
-                + "see matchPercent.", example = "8")
+        @Schema(description = "How many skills this job asks for in total, and the denominator "
+                + "behind matchScore and matchPercent.", example = "8")
         int jobSkillCount,
 
-        @Schema(description = "matchedCount / ofSkills. Display only - it cannot change the order.",
-                example = "0.6")
+        @Schema(description = "matchedCount / jobSkillCount, a 0-1 double: the share of what the "
+                + "job asks for that the user already has. The denominator has a floor of 5, so a "
+                + "posting listing one or two skills cannot read 100% off a single overlap. "
+                + "Display only - it cannot change the order.", example = "0.88")
         double matchScore,
 
-        @Schema(description = "matchScore as a rounded percentage, ready to render. Uses the "
-                + "user's skill count as the denominator, so it always agrees with matchedCount "
-                + "and ofSkills wherever they are shown together. It does NOT track the ordering: "
-                + "the list is sorted by score, which accounts for synonyms and seniority that "
-                + "exact overlap cannot see, so a 100% row can sit below an 80% one.",
-                example = "60")
+        @Schema(description = "matchScore as a rounded percentage, ready to render. Pair it with "
+                + "matchedCount and jobSkillCount - \"7 of the 8 skills this job asks for\" - not "
+                + "with ofSkills, which is the user's own count and no longer the denominator. It "
+                + "does NOT track the ordering: the list is sorted by score, which accounts for "
+                + "synonyms and seniority that exact overlap cannot see, so a 100% row can sit "
+                + "below an 80% one.", example = "88")
         int matchPercent,
 
-        @Schema(description = "\"strong match\" at 60% or above, otherwise null. A label, never a "
-                + "filter. Kept short on purpose - it renders as a badge.",
+        @Schema(description = "\"strong match\" when matchPercent is 60 or above, otherwise null. "
+                + "A label, never a filter. Kept short on purpose - it renders as a badge.",
                 example = "strong match")
         String label,
 
