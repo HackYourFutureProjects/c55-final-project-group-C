@@ -82,7 +82,9 @@ Top matches are loaded from `GET /api/jobs/top-matches`.
 
 `matchPercent`:
 
-- exact skill-overlap percentage
+- exact skill-overlap percentage, over the **job's** skill count: how much of what the posting asks for the user already has
+- pairs with `matchedCount` and `jobSkillCount`, not with `ofSkills` (the user's own count, shown for context only)
+- the denominator has a floor of 5, so a posting listing one or two skills cannot read 100% off a single overlap
 
 The backend also returns matched skills, matched counts, an optional label, an optional reason, and `aiScored`. The frontend displays backend-provided match data and does not calculate ranking.
 
