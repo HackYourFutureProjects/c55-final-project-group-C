@@ -130,6 +130,7 @@ a {
 .auth-links {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 16px;
   min-width: 0;
 }
@@ -1704,6 +1705,7 @@ a {
   margin: 18px 0 0;
   color: #655b61;
   font-size: 1.05rem;
+  overflow-wrap: anywhere;
 }
 
 .job-details-actions {
@@ -1712,12 +1714,14 @@ a {
   gap: var(--space-sm);
   align-items: center;
   flex-shrink: 0;
+  max-width: 100%;
 }
 
 .job-details-apply {
   display: inline-flex;
   justify-content: center;
   align-items: center;
+  max-width: 100%;
   min-height: var(--control-height);
   padding: 0 var(--control-padding-x);
   border-radius: var(--radius-pill);
@@ -1725,6 +1729,8 @@ a {
   color: var(--color-surface);
   font-weight: 700;
   text-decoration: none;
+  text-align: center;
+  white-space: normal;
   transition:
     background 160ms ease,
     color 160ms ease;
@@ -1748,11 +1754,12 @@ a {
 
 .job-details-meta {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   border-bottom: 1px solid #ded5d9;
 }
 
 .job-details-meta > div {
+  min-width: 0;
   padding: 22px 20px;
   border-right: 1px solid #ded5d9;
 }
@@ -1821,6 +1828,7 @@ a {
 .job-details-skills span {
   display: inline-flex;
   align-items: center;
+  max-width: 100%;
   min-height: 36px;
   padding: 0 14px;
   border: 1px solid #d8ccd2;
@@ -1829,6 +1837,7 @@ a {
   color: var(--color-brand);
   font-size: 0.9rem;
   font-weight: 600;
+  overflow-wrap: anywhere;
 }
 
 .job-details-requirements,
@@ -1857,12 +1866,14 @@ a {
   color: #362b31;
   font-size: 0.9rem;
   font-weight: 700;
+  overflow-wrap: anywhere;
 }
 
 .profile-field-help {
   color: #82747c;
   font-size: 0.88rem;
   line-height: 1.55;
+  overflow-wrap: anywhere;
 }
 
 .profile-onboarding-note {
@@ -1872,6 +1883,7 @@ a {
   background: var(--color-surface-warm);
   color: #655b61;
   line-height: 1.55;
+  overflow-wrap: anywhere;
 }
 
 .profile-field input,
@@ -1951,6 +1963,7 @@ a {
 .profile-form-actions {
   grid-column: 1 / -1;
   display: flex;
+  flex-wrap: wrap;
   justify-content: flex-end;
   padding-top: 8px;
 }
@@ -1998,6 +2011,20 @@ a {
   background: var(--color-surface);
 }
 
+.data-export-panel > div,
+.danger-zone-copy,
+.delete-confirmation {
+  min-width: 0;
+}
+
+.data-export-panel .secondary-button,
+.danger-zone .danger-button,
+.delete-confirmation-actions .danger-button,
+.delete-confirmation-actions .secondary-button {
+  max-width: 100%;
+  white-space: normal;
+}
+
 .data-export-panel h3 {
   color: #2c2228;
   font-size: 1.2rem;
@@ -2027,6 +2054,7 @@ a {
 
 .danger-zone-copy {
   max-width: 680px;
+  overflow-wrap: anywhere;
 }
 
 .danger-zone-label {
@@ -2050,6 +2078,7 @@ a {
 
 .delete-confirmation {
   max-width: 430px;
+  overflow-wrap: anywhere;
 }
 
 .delete-confirmation-title {
@@ -2112,6 +2141,7 @@ a {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-control-gap);
+  min-width: 0;
 }
 
 .profile-skill-count {
@@ -2124,6 +2154,7 @@ a {
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  max-width: 100%;
   padding: 8px 10px 8px 13px;
   border-radius: var(--radius-pill);
   background: var(--color-surface-muted);
@@ -2136,6 +2167,7 @@ a {
 .profile-skill-tag button {
   width: 22px;
   height: 22px;
+  flex: 0 0 auto;
   display: grid;
   place-items: center;
   border: 0;
@@ -2158,12 +2190,14 @@ a {
 
 .profile-skill-picker {
   position: relative;
+  min-width: 0;
 }
 
 .profile-skill-picker-group {
   display: grid;
   gap: 8px;
   border: 0;
+  min-width: 0;
 }
 
 .profile-skill-category {
@@ -2214,6 +2248,7 @@ a {
 
 .profile-skill-options button {
   width: 100%;
+  min-width: 0;
   padding: 10px 12px;
   display: grid;
   gap: 3px;
@@ -2223,6 +2258,7 @@ a {
   color: #362b31;
   font: inherit;
   text-align: left;
+  overflow-wrap: anywhere;
   cursor: pointer;
 }
 
@@ -2242,6 +2278,7 @@ a {
   color: #82747c;
   font-size: 0.78rem;
   font-weight: 600;
+  overflow-wrap: anywhere;
 }
 
 .profile-skill-empty {
@@ -2334,6 +2371,7 @@ a {
 .match-summary {
   display: grid;
   gap: 10px;
+  min-width: 0;
   padding: 14px 0 14px 18px;
   border-left: 1px solid #d8cbd2;
 }
@@ -2347,9 +2385,11 @@ a {
 }
 
 .match-summary-header strong {
+  min-width: 0;
   color: var(--color-brand);
   font-size: 1.28rem;
   line-height: 1;
+  overflow-wrap: anywhere;
 }
 
 .match-summary.is-match-high .match-summary-header strong {
@@ -2357,6 +2397,7 @@ a {
 }
 
 .match-summary-header span {
+  max-width: 100%;
   padding: 4px 8px;
   border: 1px solid #d4c5cf;
   border-radius: var(--radius-pill);
@@ -2365,6 +2406,7 @@ a {
   font-size: 0.7rem;
   font-weight: 700;
   text-transform: uppercase;
+  overflow-wrap: anywhere;
 }
 
 .match-summary.is-match-high .match-summary-header span {
@@ -2377,6 +2419,7 @@ a {
   margin: 0;
   color: #655b61;
   line-height: 1.6;
+  overflow-wrap: anywhere;
 }
 
 .match-summary-context {
@@ -2393,6 +2436,7 @@ a {
 }
 
 .match-summary-skills li {
+  max-width: 100%;
   padding: 5px 9px;
   border-radius: var(--radius-pill);
   background: #eadfe6;
@@ -2619,9 +2663,14 @@ a {
 
 .job-status-summary-header {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   gap: 18px;
   align-items: flex-start;
+}
+
+.job-status-summary-header > div:first-child {
+  min-width: 0;
 }
 
 .job-status-summary-header h2 {
@@ -2635,6 +2684,7 @@ a {
   border-radius: 8px;
   color: var(--color-text);
   text-decoration: none;
+  overflow-wrap: anywhere;
 }
 
 .job-status-title-link:hover {
@@ -2684,6 +2734,7 @@ a {
 
 .job-status-grid a {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   gap: 14px;
   align-items: center;
@@ -2734,6 +2785,7 @@ a {
 }
 
 .job-status-grid span {
+  min-width: 0;
   color: #7a6d75;
   font-size: 0.82rem;
   line-height: 1.4;
@@ -2741,6 +2793,7 @@ a {
 }
 
 .job-status-grid strong {
+  flex-shrink: 0;
   color: var(--color-text);
   font-size: 1.25rem;
   font-weight: 700;
@@ -2772,6 +2825,10 @@ a {
   border-bottom: 1px solid #dfd5da;
 }
 
+.saved-list-heading > div {
+  min-width: 0;
+}
+
 .saved-list-heading h2 {
   margin-top: 10px;
   color: var(--color-text);
@@ -2781,8 +2838,10 @@ a {
 
 .saved-list-heading > p {
   max-width: 430px;
+  min-width: 0;
   color: var(--color-text-muted);
   line-height: 1.6;
+  overflow-wrap: anywhere;
 }
 
 .saved-job-list {
@@ -2826,11 +2885,13 @@ a {
 }
 
 .saved-job-topline span {
+  max-width: 100%;
   color: #866f7e;
   font-size: 0.74rem;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+  overflow-wrap: anywhere;
 }
 
 .saved-job-card h3 {
@@ -2872,6 +2933,7 @@ a {
 }
 
 .saved-job-meta span {
+  max-width: 100%;
   padding: 7px 11px;
   border: 1px solid #dfd5da;
   border-radius: var(--radius-pill);
@@ -2888,12 +2950,14 @@ a {
 }
 
 .saved-job-skills span {
+  max-width: 100%;
   padding: 7px 10px;
   border-radius: var(--radius-pill);
   background: var(--color-surface-muted);
   color: var(--color-brand);
   font-size: 0.8rem;
   font-weight: 600;
+  overflow-wrap: anywhere;
 }
 
 .saved-job-actions {
@@ -2908,10 +2972,12 @@ a {
   color: #665b62;
   font-size: 0.82rem;
   font-weight: 600;
+  overflow-wrap: anywhere;
 }
 
 .saved-job-actions select {
   width: 100%;
+  min-width: 0;
   min-height: var(--control-height-compact);
   padding: 0 12px;
   border: 1px solid var(--color-border-control);
@@ -2956,6 +3022,7 @@ a {
 }
 
 .saved-remove-button {
+  max-width: 100%;
   min-height: var(--control-height-compact);
   padding: 0 var(--control-padding-x-compact);
   border: 1px solid var(--color-border-subtle);
@@ -3073,9 +3140,11 @@ a {
 .save-job-control {
   display: grid;
   gap: var(--space-xs);
+  min-width: 0;
 }
 
 .save-job-button {
+  max-width: 100%;
   min-height: var(--control-height-compact);
   padding: 0 var(--control-padding-x);
   display: inline-flex;
@@ -3088,6 +3157,7 @@ a {
   color: var(--color-brand);
   font: inherit;
   font-weight: 700;
+  white-space: normal;
   cursor: pointer;
   transition:
     background 160ms ease,
@@ -3121,6 +3191,7 @@ a {
   color: var(--color-danger);
   font-size: 0.8rem;
   line-height: 1.4;
+  overflow-wrap: anywhere;
 }
 
 .save-job-note {
@@ -3128,6 +3199,7 @@ a {
   color: var(--color-text-muted);
   font-size: 0.8rem;
   line-height: 1.4;
+  overflow-wrap: anywhere;
 }
 
 .saved-bookmark-control {
@@ -3158,6 +3230,7 @@ a {
 }
 
 .saved-bookmark-button.is-cta {
+  max-width: 100%;
   min-height: var(--control-height);
   padding: 0 var(--control-padding-x);
   display: inline-flex;
@@ -3167,6 +3240,7 @@ a {
   background: transparent;
   font: inherit;
   font-weight: 700;
+  white-space: normal;
 }
 
 .saved-bookmark-button svg {
@@ -3226,6 +3300,7 @@ a {
   font-size: 0.78rem;
   line-height: 1.35;
   text-align: right;
+  overflow-wrap: anywhere;
 }
 
 @media (max-width: 900px) {
@@ -3478,6 +3553,10 @@ a {
   border-top: 1px solid #e4dbe0;
 }
 
+.top-match-card > .match-summary {
+  min-width: 0;
+}
+
 .top-match-main {
   min-width: 0;
 }
@@ -3550,6 +3629,7 @@ a {
 .matches-panel {
   margin-top: 24px;
   padding: 22px;
+  min-width: 0;
   border: 1px solid #e0d5dc;
   border-radius: var(--radius-card);
   background: var(--color-surface-warm);
@@ -3691,6 +3771,7 @@ a {
 }
 
 .job-result-freshness {
+  max-width: 100%;
   padding: 5px 9px;
   border: 1px solid #d9cdd4;
   border-radius: var(--radius-pill);
@@ -3707,6 +3788,8 @@ a {
   gap: var(--space-xs);
   align-items: center;
   justify-content: flex-end;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .job-result-byline {
@@ -3717,6 +3800,12 @@ a {
   color: #695e65;
   font-size: 0.9rem;
   line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.job-result-byline span {
+  min-width: 0;
+  max-width: 100%;
   overflow-wrap: anywhere;
 }
 
@@ -3736,6 +3825,12 @@ a {
   overflow-wrap: anywhere;
 }
 
+.job-result-meta span {
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
 .job-result-skills {
   margin-top: 12px;
   display: flex;
@@ -3744,11 +3839,13 @@ a {
 }
 
 .job-result-skills span {
+  max-width: 100%;
   padding: 5px 9px;
   border-radius: var(--radius-pill);
   background: #f0e9ed;
   color: #4d3d46;
   font-size: 0.76rem;
+  overflow-wrap: anywhere;
 }
 
 .job-result-link {
@@ -3882,11 +3979,13 @@ a {
 
 .job-location-suggestion {
   width: 100%;
+  min-width: 0;
   min-height: 40px;
   padding: 9px 12px;
   color: #2b2529;
   font: inherit;
   text-align: left;
+  overflow-wrap: anywhere;
   cursor: pointer;
 }
 
@@ -4086,6 +4185,7 @@ a {
   }
 }
 .job-filters-submit {
+  max-width: 100%;
   min-height: var(--control-height);
   padding: 0 var(--control-padding-x-compact);
   border: 1px solid var(--color-brand);
@@ -4094,6 +4194,7 @@ a {
   color: var(--color-surface);
   font: inherit;
   font-weight: 600;
+  white-space: normal;
   cursor: pointer;
   transition:
     background 160ms ease,
