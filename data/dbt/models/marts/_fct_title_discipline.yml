@@ -3,12 +3,13 @@ version: 2
 models:
   - name: fct_title_discipline
     description: >
-      One row per distinct job title, classified once by the LLM in
-      fct_title_discipline.py. Disabled by default; enable in dbt_project.yml
-      when your team opts in.
+      One row per distinct job title that requires LLM classification.
+      The model classifies titles whose source category is missing and stores the
+      result incrementally so previously classified titles are not sent to the
+      LLM again during normal builds.
     columns:
       - name: title
-        description: Distinct job title from fct_postings.
+        description: Distinct job title from int_postings where source_category is null.
         tests: [unique, not_null]
       - name: discipline
         description: >
