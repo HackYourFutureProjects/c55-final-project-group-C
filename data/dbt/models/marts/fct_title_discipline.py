@@ -1,6 +1,8 @@
-# OPTIONAL, and disabled. `enabled: false` in dbt_project.yml keeps it out of
-# every build until your team turns it on, because it calls an LLM and needs an
-# API key first. It does the same job as src/enrichment/enrich.py.
+# LLM enrichment model for job titles.
+# Enabled in this project and used as a fallback when the source category is missing.
+# It runs incrementally to avoid reclassifying titles unnecessarily.
+# The model calls an LLM and requires an API key.
+# It does the same job as src/enrichment/enrich.py.
 # See ../../../optional/python_model/README.md and optional/llm_classify/llm_classify_dev.ipynb.
 """Classify job titles with an LLM, as a dbt model rather than a container.
 
