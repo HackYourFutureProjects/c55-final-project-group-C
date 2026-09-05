@@ -29,7 +29,8 @@ public class JobMatchController {
     @Operation(summary = "Jobs ranked against the logged-in user's skills",
             description = "Self-service only: the profile comes from the session user, so a caller "
                     + "cannot rank against anyone else's. Postings are narrowed by preferred city "
-                    + "(remote roles always count) and exact skill overlap, one row per title and "
+                    + "(equality on the resolved city: a remote posting elsewhere does not qualify) "
+                    + "and exact skill overlap, one row per title and "
                     + "company so a reposted job is not returned twice, then that shortlist is "
                     + "scored 0-100 by a language model, which is what makes postgres match a job "
                     + "asking for postgresql. If the model is unavailable the skill-overlap order is "

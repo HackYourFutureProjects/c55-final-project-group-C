@@ -150,12 +150,13 @@ get wrong:
   crosses into the pipeline. Ranking a posting against a user's skills is application logic; it
   happens behind the API.
 
-Matching itself runs in two steps. SQL narrows the postings down to the user's preferred city (remote
-roles always count) and to real skill overlap, one row per title and company so a reposted job cannot
-appear twice. That shortlist is then scored 0–100 by a language model, which is what lets `postgres`
-match a job asking for `postgresql`. Verdicts are cached in `job_match_scores`, keyed on the skill set
-rather than on the user, and purged on a schedule. If no model is configured the skill-overlap order
-is returned as it is, and every row says so.
+Matching itself runs in two steps. SQL narrows the postings down to the user's preferred city —
+equality on the resolved city, so a remote posting elsewhere does not qualify — and to real skill
+overlap, one row per title and company so a reposted job cannot appear twice. That shortlist is then
+scored 0–100 by a language model, which is what lets `postgres` match a job asking for `postgresql`.
+Verdicts are cached in `job_match_scores`, keyed on the skill set rather than on the user, and
+purged on a schedule. If no model is configured the skill-overlap order is returned as it is, and
+every row says so.
 
 ## Project structure
 
