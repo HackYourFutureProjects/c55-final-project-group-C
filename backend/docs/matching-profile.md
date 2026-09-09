@@ -34,7 +34,7 @@ One row per user in `user_profiles`, or none at all until the first save.
 | --- | --- | --- |
 | `skills` | `skills text[]` | **Yes** — the whole ranking rests on it |
 | `preferredCity` | `preferred_city` | **Yes** — the shortlist is restricted to postings in that city |
-| `discipline` | `discipline` | No |
+| `category` | `category` | No |
 | `workMode` | `work_mode` | No |
 | `experienceLevel` | `experience_level` | No |
 | `employmentType` | `employment_type` | No |
@@ -103,7 +103,7 @@ are two different strings, and only the hyphenated one will ever match anything.
 downstream sees those labels.
 
 **The picker vocabulary is hard-coded, not derived from the mart.** The profile form gets its city,
-discipline, work mode, experience and employment options from `GET /api/jobs/filters` — live values
+category, work mode, experience and employment options from `GET /api/jobs/filters` — live values
 from the published data — but skills come from the static list in `profile-skills.ts`. That list was
 built from the mart, so it agrees with it today, and it will drift the day the pipeline starts
 publishing a skill that is not in it. A skill no posting has ever asked for can never match

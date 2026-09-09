@@ -69,7 +69,7 @@ erDiagram
     USER_PROFILES {
         uuid user_id PK "FK cascade"
         text_array skills "never null, empty array instead"
-        varchar discipline
+        varchar category
         varchar preferred_city
         varchar work_mode
         varchar experience_level
@@ -315,7 +315,7 @@ The profile is what matching runs on. `skills` is the field that matters; the re
 | --- | --- |
 | Method | GET |
 | Auth | session |
-| Response body | `{ "userId", "skills": ["string"], "discipline", "preferredCity", "workMode", "experienceLevel", "employmentType", "salaryPreference" }` |
+| Response body | `{ "userId", "skills": ["string"], "category", "preferredCity", "workMode", "experienceLevel", "employmentType", "salaryPreference" }` |
 | Behaviour | An account with no row in `user_profiles` gets every preference null and `skills: []` — **not a 404**. A new user has to be able to open the profile screen, and the data export must not fail on someone who never filled the form in. `skills` is never null, so the caller renders it without a check. Skills come back in the spelling they were saved in. |
 | Returns | 200 · 401 no session · 404 account gone |
 
@@ -325,7 +325,7 @@ The profile is what matching runs on. `skills` is the field that matters; the re
 | --- | --- |
 | Method | PUT |
 | Auth | session |
-| Request body | `{ "skills": ["string"], "discipline", "preferredCity", "workMode", "experienceLevel", "employmentType", "salaryPreference" }` |
+| Request body | `{ "skills": ["string"], "category", "preferredCity", "workMode", "experienceLevel", "employmentType", "salaryPreference" }` |
 | Response body | same as `GET /api/profile`, as stored |
 | Validations | 5–20 skills, each at most 100 characters. Text preferences at most 255 characters, matching their `varchar(255)` columns, so an over-long value is a 400 naming the field rather than a 500 from Postgres. `salaryPreference` must be non-negative with at most 8 digits and 2 decimals, matching `numeric(10,2)`. |
 | Behaviour | **A PUT replaces the whole profile**: an optional field left out is cleared, which is the only way a user can empty something they filled in before. Skills are the exception — they are required, so leaving them out is a 400. A blank or whitespace-only value is stored as null, so "cleared" and "never filled in" stay one state. Blank skills are dropped, and skills that canonicalise the same way collapse to one (`React`, `react`, ` REACT ` are one skill), but **the spelling that was sent is what is stored and shown back**. The floor is then re-checked on the normalised list, so five entries that collapse to two are a 400 rather than a 200 the matcher would refuse to rank. The first save creates the row; there is no separate POST. |
@@ -348,12 +348,12 @@ database the pipeline has never published into answers `[]` rather than failing.
 ### GET /api/jobs
 Search and filter job postings
 
-| Endpoint | `/api/jobs?q=&discipline=&workMode=&location=` |
+| Endpoint | `/api/jobs?q=&category=&workMode=&location=` |
 | --- | --- |
 | Method | GET |
 | Auth | none |
-| Query | All four optional; a blank value is treated as absent. `q` matches title, company, city or skill with `ILIKE %q%`. `discipline` and `workMode` are exact matches on the mart columns. `location` is an **exact city match** against `fct_postings_cities`, not a substring: the value comes from `/api/jobs/filters`, and matching `%Ede%` instead also returned Enschede, Medemblik, Nederweert and Sweden. |
-| Response body | An array of `{ postingId, title, companyName, location, workMode, isRemote, skills, employmentType, postedDate, source, discipline, freshnessClass, ageDays, savedCount }` |
+| Query | All four optional; a blank value is treated as absent. `q` matches title, company, city or skill with `ILIKE %q%`. `category` and `workMode` are exact matches on the mart columns. `location` is an **exact city match** against `fct_postings_cities`, not a substring: the value comes from `/api/jobs/filters`, and matching `%Ede%` instead also returned Enschede, Medemblik, Nederweert and Sweden. |
+| Response body | An array of `{ postingId, title, companyName, location, workMode, isRemote, skills, employmentType, postedDate, source, category, freshnessClass, ageDays, savedCount }` |
 | Ordering and cap | `posted_date DESC NULLS LAST, posting_id`, capped at **200 rows**. The tie-breaker is what makes the cut-off stable between calls. There is no paging — see [section 12](#12-not-in-the-api). |
 | Notes | `location` is the posting's cities, title-cased and joined with commas, not the raw location text. A hard-coded exclusion list keeps countries, provinces and "remote" out of every city-derived value, because the city column carries them too; provinces that double as city names (Utrecht, Groningen) and city-states (Singapore) stay in. The proper fix is upstream in the mart. `savedCount` counts distinct users who saved the posting — across all users, so it is a popularity signal, not "did I save this". `freshnessClass` and `ageDays` are the pipeline's verdict on how stale a listing is. Closed postings are **not** filtered out. |
 | Returns | 200 |
@@ -365,9 +365,9 @@ List the values available to filter on
 | --- | --- |
 | Method | GET |
 | Auth | none |
-| Response body | `{ "locations": [], "disciplines": [], "workModes": [], "experienceLevels": [], "employmentTypes": [] }` |
+| Response body | `{ "locations": [], "categories": [], "workModes": [], "experienceLevels": [], "employmentTypes": [] }` |
 | Behaviour | `locations` are distinct cities from `fct_postings_cities`, title-cased for display and compared case-insensitively when they come back as `?location=`; the exclusion list above applies. The other four are distinct non-null values from `fct_postings`. Empty lists on an empty mart, never an error. |
-| Used by | The job filters, and the profile form's discipline / city / work mode / experience / employment dropdowns — both screens offer exactly the values the data can match. |
+| Used by | The job filters, and the profile form's category / city / work mode / experience / employment dropdowns — both screens offer exactly the values the data can match. |
 | Returns | 200 |
 
 ### GET /api/jobs/{postingId}
@@ -473,7 +473,7 @@ saved state — are in [`saving-tracking.md`](saving-tracking.md).
 | --- | --- |
 | Method | GET |
 | Auth | session |
-| Response body | An array of `{ postingId, jobState, title, companyName, location, workMode, isRemote, skills, employmentType, postedDate, source, discipline, freshnessClass, ageDays }` |
+| Response body | An array of `{ postingId, jobState, title, companyName, location, workMode, isRemote, skills, employmentType, postedDate, source, category, freshnessClass, ageDays }` |
 | Behaviour | A `LEFT JOIN` onto the mart, on purpose. There is no foreign key across the schema boundary, so a posting the next publish drops leaves a row whose job fields are all null while `postingId` and `jobState` stand. Render or skip that case deliberately — an inner join would silently delete rows from the user's own list. `location` here is the mart's raw location text, not the resolved city list that `/api/jobs` builds. |
 | Returns | 200 · 401 no session |
 

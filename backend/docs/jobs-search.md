@@ -59,7 +59,7 @@ publishes as long as the source keeps the same job id.
 | Parameter | Matched as |
 | --- | --- |
 | `q` | `ILIKE '%q%'` against **title, company name, city, or skill** |
-| `discipline` | exact equality on `fct_postings.discipline` |
+| `category` | exact equality on `fct_postings.category` |
 | `workMode` | exact equality on `fct_postings.work_mode` |
 | `location` | exact city equality against `fct_postings_cities` — see [section 3](#3-the-location-problem) |
 
@@ -86,9 +86,9 @@ dropdowns can only offer values that can match something:
 | List | Source |
 | --- | --- |
 | `locations` | distinct cities from `fct_postings_cities`, title-cased |
-| `disciplines`, `workModes`, `experienceLevels`, `employmentTypes` | distinct non-null values from `fct_postings` |
+| `categories`, `workModes`, `experienceLevels`, `employmentTypes` | distinct non-null values from `fct_postings` |
 
-The job filter UI uses three of them — location, discipline, work mode. `experienceLevels` and
+The job filter UI uses three of them — location, category, work mode. `experienceLevels` and
 `employmentTypes` are consumed by the **profile form**, which fills its dropdowns from the same
 endpoint. One vocabulary, two screens.
 

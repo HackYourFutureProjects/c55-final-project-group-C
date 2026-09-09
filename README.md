@@ -64,11 +64,11 @@ right for you, it shows you what it based the score on.
 
 ## Features
 
-- Search jobs by title, keyword, or skill, and filter by discipline, work mode, and city
+- Search jobs by title, keyword, or skill, and filter by category, work mode, and city
 - See how fresh a listing is, so reposts and stale ads do not cost you time
 - Open a job's full details — description, skills, salary, employment type — and apply on the source site
 - Create an account with email and password, or sign in with Google
-- Build a profile: your skills, discipline, preferred city, work mode, experience level, and salary expectation
+- Build a profile: your skills, category, preferred city, work mode, experience level, and salary expectation
 - Get your top job matches ranked 0–100, each with a short explanation of why it matches
 - See your match score on any individual job page
 - Save jobs and track each one through *saved*, *applied*, *rejected*, *accepted*, and *declined*
@@ -200,6 +200,7 @@ what is missing. Each ends with a list of known gaps.
 | What | Where |
 | --- | --- |
 | Every environment variable, across all three services | [`backend/docs/configuration.md`](backend/docs/configuration.md) |
+| Both database schemas, their tables, and who owns which | [`backend/docs/schema.md`](backend/docs/schema.md) |
 | The mart the backend reads | [`data/docs/mart_contract.md`](data/docs/mart_contract.md) |
 | Running the pipeline day to day | [`data/docs/dev_flow.md`](data/docs/dev_flow.md) |
 | Live API reference (Scalar) | https://c55c.hyf.dev/api/docs (locally: http://localhost:8080/api/docs) |
