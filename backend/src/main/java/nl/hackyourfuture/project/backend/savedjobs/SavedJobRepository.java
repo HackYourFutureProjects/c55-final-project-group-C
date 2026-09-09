@@ -66,7 +66,7 @@ public class SavedJobRepository {
                     p.employment_type,
                     p.posted_date,
                     p.source,
-                    p.discipline,
+                    p.category,
                     p.freshness_class,
                     p.age_days
                 FROM saved_jobs sj
@@ -94,7 +94,7 @@ public class SavedJobRepository {
                             rs.getString("employment_type"),
                             rs.getObject("posted_date", LocalDate.class),
                             rs.getString("source"),
-                            rs.getString("discipline"),
+                            rs.getString("category"),
                             rs.getString("freshness_class"),
                             rs.getObject("age_days") != null ? rs.getInt("age_days") : null
                     );

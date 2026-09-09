@@ -17,7 +17,7 @@ public record JobSearchResponse(
         String employmentType,
         LocalDate postedDate,
         String source,
-        String discipline,
+        String category,
         String freshnessClass,
         Integer ageDays,
         int savedCount
