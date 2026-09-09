@@ -11,7 +11,7 @@ type SearchParamValue = string | string[] | undefined;
 type JobsPageProps = {
   searchParams: Promise<{
     q?: SearchParamValue;
-    discipline?: SearchParamValue;
+    category?: SearchParamValue;
     workMode?: SearchParamValue;
     location?: SearchParamValue;
     page?: SearchParamValue;
@@ -41,7 +41,7 @@ function parsePageParam(value: SearchParamValue): number {
 export default async function JobsPage({ searchParams }: JobsPageProps) {
   const params = await searchParams;
   const q = getSingleSearchParam(params.q);
-  const discipline = getSingleSearchParam(params.discipline);
+  const category = getSingleSearchParam(params.category);
   const workMode = getSingleSearchParam(params.workMode);
   const location = getSingleSearchParam(params.location);
   const page = parsePageParam(params.page);
@@ -52,7 +52,7 @@ export default async function JobsPage({ searchParams }: JobsPageProps) {
     getJobFiltersServer(),
     getJobsServer({
       q: searchQuery,
-      discipline,
+      category,
       workMode,
       location,
       page,
@@ -90,8 +90,8 @@ export default async function JobsPage({ searchParams }: JobsPageProps) {
           </div>
 
           <form className="jobs-search" action="/jobs">
-            {discipline && (
-              <input type="hidden" name="discipline" value={discipline} />
+            {category && (
+              <input type="hidden" name="category" value={category} />
             )}
 
             {workMode && (
@@ -127,11 +127,11 @@ export default async function JobsPage({ searchParams }: JobsPageProps) {
 
             <JobFilters
               locations={filters.locations}
-              disciplines={filters.disciplines}
+              categories={filters.categories}
               workModes={filters.workModes}
               searchQuery={searchQuery}
               selectedLocation={location}
-              selectedDiscipline={discipline}
+              selectedCategory={category}
               selectedWorkMode={workMode}
             />
           </aside>
@@ -178,7 +178,7 @@ export default async function JobsPage({ searchParams }: JobsPageProps) {
                 totalPages={safeTotalPages}
                 searchParams={{
                   q: searchQuery,
-                  discipline,
+                  category,
                   workMode,
                   location,
                 }}

@@ -15,6 +15,7 @@ import {
   type SavedJobsStatsResponse,
   updateSavedJobStatus,
 } from "@/lib/api";
+import { formatCategoryLabel } from "@/lib/category";
 import {
   getSavedJobStatusLabel,
   SAVED_JOB_STATUS_OPTIONS,
@@ -311,7 +312,11 @@ export default function SavedJobsContent({
                         >
                           <div className="saved-job-main">
                             <div className="saved-job-topline">
-                              <span>{job.discipline ?? "Job opportunity"}</span>
+                              <span>
+                                {job.category
+                                  ? formatCategoryLabel(job.category)
+                                  : "Job opportunity"}
+                              </span>
 
                               {job.freshnessClass && (
                                 <span>{job.freshnessClass}</span>

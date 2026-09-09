@@ -5,7 +5,7 @@ type JobPaginationProps = {
   totalPages: number;
   searchParams: {
     q?: string;
-    discipline?: string;
+    category?: string;
     workMode?: string;
     location?: string;
   };
@@ -59,8 +59,8 @@ function buildPageHref(
     params.set("q", searchParams.q);
   }
 
-  if (searchParams.discipline) {
-    params.set("discipline", searchParams.discipline);
+  if (searchParams.category) {
+    params.set("category", searchParams.category);
   }
 
   if (searchParams.workMode) {

@@ -55,8 +55,8 @@ export function getJobsServer(
     searchParams.set("q", query);
   }
 
-  if (params.discipline) {
-    searchParams.set("discipline", params.discipline);
+  if (params.category) {
+    searchParams.set("category", params.category);
   }
 
   if (params.workMode) {
