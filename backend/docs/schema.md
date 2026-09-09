@@ -21,7 +21,7 @@ in application code, not in SQL — e.g. a saved job's `posting_id` (text) is lo
 | --- | --- | --- |
 | `users` | `id` (UUID) | One row per account: email, name, OAuth identity, when terms were accepted |
 | `user_credentials` | `user_id` → `users.id` | Password hash and refresh token hash, split out from `users` so an OAuth-only account has no row here |
-| `user_profiles` | `user_id` → `users.id` | The matching profile — `skills text[]` plus preferences (city, discipline, work mode, salary, ...). See [`matching-profile.md`](matching-profile.md) for which fields actually affect matching |
+| `user_profiles` | `user_id` → `users.id` | The matching profile — `skills text[]` plus preferences (city, category, work mode, salary, ...). See [`matching-profile.md`](matching-profile.md) for which fields actually affect matching |
 | `saved_jobs` | (`user_id`, `posting_id`) | A user's saved postings and their `job_state` (`SAVED` / `APPLIED` / `REJECTED`). `posting_id` is a text reference into the mart, not a foreign key. See [`saving-tracking.md`](saving-tracking.md) |
 | `password_reset_tokens` | `id` (UUID) | One-time tokens for the forgot-password flow, with an expiry |
 | `job_match_scores` | (`skills_hash`, `posting_id`, `scorer_version`) | Cached LLM match verdicts, keyed on a hash of the profile's skill set rather than the user — so identical profiles share a cache entry and nothing user-identifying is stored. See [`matching-profile.md`](matching-profile.md#6-the-score-cache) |

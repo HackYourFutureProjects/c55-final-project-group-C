@@ -19,8 +19,8 @@ public class JobService {
 
     // Search job postings with optional filters, return a paginated list wrapped in PageResponse
     public PageResponse<JobSearchResponse>
-    searchJobs(String discipline, String workMode, String location, String q, int page, int size) {
-        return jobRepository.searchJobs(discipline, workMode, location, q, page, size);
+    searchJobs(String category, String workMode, String location, String q, int page, int size) {
+        return jobRepository.searchJobs(category, workMode, location, q, page, size);
     }
 
     // Retrieve available filter options for frontend dropdowns

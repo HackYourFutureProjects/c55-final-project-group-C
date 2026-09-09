@@ -18,7 +18,7 @@ import java.util.UUID;
 public class Profile {
     private UUID userId;
     // Frontend, data and mart all spell these the same way, so they are stored as sent.
-    private String discipline;
+    private String category;
     private String preferredCity;
     private String workMode;
     private String experienceLevel;

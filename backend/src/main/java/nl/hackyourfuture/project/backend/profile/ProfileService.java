@@ -48,7 +48,7 @@ public class ProfileService {
 
         Profile profile = Profile.builder()
                 .userId(userId)
-                .discipline(blankToNull(request.discipline()))
+                .category(blankToNull(request.category()))
                 .preferredCity(blankToNull(request.preferredCity()))
                 .workMode(blankToNull(request.workMode()))
                 .experienceLevel(blankToNull(request.experienceLevel()))

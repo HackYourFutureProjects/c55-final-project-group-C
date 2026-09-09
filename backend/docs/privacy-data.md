@@ -33,7 +33,7 @@ All of it is in the `app` schema. The `analytics` schema holds job postings and 
 | --- | --- | --- |
 | `users` | `email`, `name`, `created_at`, `terms_accepted_at`, `oauth_provider`, `oauth_provider_id` | The account. Email is the login identity |
 | `user_credentials` | `password_hash`, `updated_at` | BCrypt hash only. No row at all for Google-only accounts |
-| `user_profiles` | `skills[]`, `discipline`, `preferred_city`, `work_mode`, `experience_level`, `employment_type`, `salary` | What the user is looking for, and what matching runs on |
+| `user_profiles` | `skills[]`, `category`, `preferred_city`, `work_mode`, `experience_level`, `employment_type`, `salary` | What the user is looking for, and what matching runs on |
 | `password_reset_tokens` | `token`, `expiry_date`, `user_id` | A 15-minute single-use link |
 | `saved_jobs` | `posting_id`, `job_state` | Which jobs the user kept, and how far each application got |
 | `job_match_scores` | `skills_hash`, `posting_id`, `score`, `reason` | Cached model verdicts — **keyed on a hash of a skill set, not on a user** |

@@ -24,7 +24,7 @@ public record ProfileResponse(
         )
         List<String> skills,
         @Schema(description = "The field of work aimed for", example = "frontend")
-        String discipline,
+        String category,
         @Schema(description = "Where the user wants to work", example = "Utrecht")
         String preferredCity,
         @Schema(description = "Remote, hybrid or on-site", example = "remote")
@@ -43,7 +43,7 @@ public record ProfileResponse(
         return new ProfileResponse(
                 profile.getUserId(),
                 profile.getSkills(),
-                profile.getDiscipline(),
+                profile.getCategory(),
                 profile.getPreferredCity(),
                 profile.getWorkMode(),
                 profile.getExperienceLevel(),

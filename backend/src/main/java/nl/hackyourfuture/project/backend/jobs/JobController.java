@@ -28,7 +28,7 @@ public class JobController {
     @Operation(summary = "Search job postings with optional filters")
     @ApiResponse(responseCode = "200", description = "Jobs retrieved successfully")
     public PageResponse<JobSearchResponse> searchJobs(
-            @RequestParam(required = false) String discipline,
+            @RequestParam(required = false) String category,
             @RequestParam(required = false) String workMode,
             @RequestParam(required = false) String location,
             @RequestParam(required = false) String q,
@@ -49,7 +49,7 @@ public class JobController {
         int cappedSize = Math.min(size, 100);
 
         // Forward sanitized page and cappedSize to JobService
-        return jobService.searchJobs(discipline, workMode, location, q, page, cappedSize);
+        return jobService.searchJobs(category, workMode, location, q, page, cappedSize);
 
     }
 

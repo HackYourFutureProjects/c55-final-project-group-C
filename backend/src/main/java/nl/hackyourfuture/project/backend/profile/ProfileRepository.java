@@ -16,14 +16,14 @@ public class ProfileRepository {
     private final JdbcClient jdbcClient;
 
     private static final String PROFILE_SELECT = """
-            SELECT user_id, discipline, preferred_city, work_mode,
+            SELECT user_id, category, preferred_city, work_mode,
                    experience_level, employment_type, salary, skills
             FROM user_profiles
             """;
 
     private static final RowMapper<Profile> PROFILE_ROW_MAPPER = (rs, _) -> Profile.builder()
             .userId(rs.getObject("user_id", UUID.class))
-            .discipline(rs.getString("discipline"))
+            .category(rs.getString("category"))
             .preferredCity(rs.getString("preferred_city"))
             .workMode(rs.getString("work_mode"))
             .experienceLevel(rs.getString("experience_level"))
@@ -55,23 +55,23 @@ public class ProfileRepository {
         // RETURNING, so the answer is the row as Postgres stored it rather than what was
         // sent: a salary of 45000 comes back 45000.00, the same as a later GET.
         return jdbcClient.sql("""
-                        INSERT INTO user_profiles (user_id, discipline, preferred_city, work_mode,
+                        INSERT INTO user_profiles (user_id, category, preferred_city, work_mode,
                                                    experience_level, employment_type, salary, skills)
-                        VALUES (:userId, :discipline, :preferredCity, :workMode,
+                        VALUES (:userId, :category, :preferredCity, :workMode,
                                 :experienceLevel, :employmentType, :salary, :skills)
                         ON CONFLICT (user_id) DO UPDATE SET
-                            discipline = EXCLUDED.discipline,
+                            category = EXCLUDED.category,
                             preferred_city = EXCLUDED.preferred_city,
                             work_mode = EXCLUDED.work_mode,
                             experience_level = EXCLUDED.experience_level,
                             employment_type = EXCLUDED.employment_type,
                             salary = EXCLUDED.salary,
                             skills = EXCLUDED.skills
-                        RETURNING user_id, discipline, preferred_city, work_mode,
+                        RETURNING user_id, category, preferred_city, work_mode,
                                   experience_level, employment_type, salary, skills
                         """)
                 .param("userId", profile.getUserId())
-                .param("discipline", profile.getDiscipline())
+                .param("category", profile.getCategory())
                 .param("preferredCity", profile.getPreferredCity())
                 .param("workMode", profile.getWorkMode())
                 .param("experienceLevel", profile.getExperienceLevel())

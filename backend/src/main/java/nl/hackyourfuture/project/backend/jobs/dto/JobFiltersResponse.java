@@ -7,7 +7,7 @@ import java.util.List;
 @Schema(description = "Available filter options for job search dropdowns")
 public record JobFiltersResponse(
         List<String> locations,
-        List<String> disciplines,
+        List<String> categories,
         List<String> workModes,
         List<String> experienceLevels,
         List<String> employmentTypes

@@ -46,12 +46,12 @@ public class JobRepository {
         this.jdbcClient = jdbcClient;
     }
 
-    // Searches job postings with optional filters for discipline, work mode, and location
+    // Searches job postings with optional filters for category, work mode, and location
     public PageResponse<JobSearchResponse>
-    searchJobs(String discipline, String workMode, String location, String q, int page, int size) {
+    searchJobs(String category, String workMode, String location, String q, int page, int size) {
         size = Math.min(size, MAX_SEARCH_RESULTS); // Enforce repository-level cap
         long offset = (long) page * size; // Calculate row offset without int overflow
-        long totalElements = countJobs(discipline, workMode, location, q); //Fetch total count
+        long totalElements = countJobs(category, workMode, location, q); //Fetch total count
         StringBuilder sql = new StringBuilder("""
                 SELECT
                     f.posting_id,
@@ -71,7 +71,7 @@ public class JobRepository {
                     f.employment_type,
                     f.posted_date,
                     f.source,
-                    f.discipline,
+                    f.category,
                     f.freshness_class,
                     f.age_days,
                     (SELECT COUNT(DISTINCT user_id)
@@ -81,8 +81,8 @@ public class JobRepository {
                 WHERE 1=1
                 """);
 
-        if (discipline != null && !discipline.isBlank()) {
-            sql.append(" AND f.discipline = :discipline");
+        if (category != null && !category.isBlank()) {
+            sql.append(" AND f.category = :category");
         }
         if (workMode != null && !workMode.isBlank()) {
             sql.append(" AND f.work_mode = :workMode");
@@ -130,8 +130,8 @@ public class JobRepository {
                 .param("offset", offset) // Bind offset parameter
                 .param("excluded", NON_CITY_LOCATIONS);
 
-        if (discipline != null && !discipline.isBlank()) {
-            statement.param("discipline", discipline);
+        if (category != null && !category.isBlank()) {
+            statement.param("category", category);
         }
         if (workMode != null && !workMode.isBlank()) {
             statement.param("workMode", workMode);
@@ -157,7 +157,7 @@ public class JobRepository {
                     rs.getString("employment_type"),
                     rs.getObject("posted_date", LocalDate.class),
                     rs.getString("source"),
-                    rs.getString("discipline"),
+                    rs.getString("category"),
                     rs.getString("freshness_class"),
                     rs.getObject("age_days") != null ? rs.getInt("age_days") : null,
                     rs.getInt("saved_count")
@@ -171,15 +171,15 @@ public class JobRepository {
 
      // COUNT(*) query using active search filters to calculate total matching records.
     // Helper method to get true total count from database
-    private long countJobs(String discipline, String workMode, String location, String q) {
+    private long countJobs(String category, String workMode, String location, String q) {
         StringBuilder sql = new StringBuilder("""
                 SELECT COUNT(*)
                 FROM analytics.fct_postings f
                 WHERE 1=1
                 """);
 
-        if (discipline != null && !discipline.isBlank()) {
-            sql.append(" AND f.discipline = :discipline");
+        if (category != null && !category.isBlank()) {
+            sql.append(" AND f.category = :category");
         }
         if (workMode != null && !workMode.isBlank()) {
             sql.append(" AND f.work_mode = :workMode");
@@ -214,8 +214,8 @@ public class JobRepository {
         var statement = jdbcClient.sql(sql.toString())
                 .param("excluded", NON_CITY_LOCATIONS);
 
-        if (discipline != null && !discipline.isBlank()) {
-            statement.param("discipline", discipline);
+        if (category != null && !category.isBlank()) {
+            statement.param("category", category);
         }
         if (workMode != null && !workMode.isBlank()) {
             statement.param("workMode", workMode);
@@ -243,7 +243,7 @@ public class JobRepository {
                     f.employment_type,
                     f.posted_date,
                     f.source,
-                    f.discipline,
+                    f.category,
                     f.freshness_class,
                     f.age_days,
                     f.description,
@@ -287,7 +287,7 @@ public class JobRepository {
                             rs.getString("employment_type"),
                             rs.getObject("posted_date", LocalDate.class),
                             rs.getString("source"),
-                            rs.getString("discipline"),
+                            rs.getString("category"),
                             rs.getString("freshness_class"),
                             rs.getObject("age_days") != null ? rs.getInt("age_days") : null,
                             rs.getString("description"),
@@ -305,14 +305,19 @@ public class JobRepository {
                 .optional();
     }
 
-    // Retrieves distinct values for search filters
+    // Retrieves distinct values for search filters.
+    // The category list is the mart's own, roughly 37 values and open-ended: it is the source's
+    // category where there is one and the classifier's only as a fallback, so a new value can
+    // appear without anything here changing. They arrive snake_cased (data_engineering,
+    // project_management) and are passed through as stored, because the value round-trips into
+    // searchJobs as a filter - the frontend formats them for display.
     public JobFiltersResponse getAvailableFilters() {
         String sql = """
                 SELECT
                     COALESCE((
-                        SELECT array_agg(DISTINCT discipline)
+                        SELECT array_agg(DISTINCT category)
                         FROM analytics.fct_postings
-                        WHERE discipline IS NOT NULL), '{}') AS disciplines,
+                        WHERE category IS NOT NULL), '{}') AS categories,
                     COALESCE((
                         SELECT array_agg(DISTINCT work_mode)
                         FROM analytics.fct_postings
@@ -336,7 +341,7 @@ public class JobRepository {
         return jdbcClient.sql(sql)
                 .query((rs, rowNum) -> new JobFiltersResponse(
                         cities,
-                        parseStringArray(rs.getObject("disciplines")),
+                        parseStringArray(rs.getObject("categories")),
                         parseStringArray(rs.getObject("work_modes")),
                         parseStringArray(rs.getObject("experience_levels")),
                         parseStringArray(rs.getObject("employment_types"))

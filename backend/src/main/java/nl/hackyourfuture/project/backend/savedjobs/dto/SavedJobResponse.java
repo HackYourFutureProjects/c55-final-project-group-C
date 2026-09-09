@@ -19,7 +19,7 @@ public record SavedJobResponse(
         String employmentType,
         LocalDate postedDate,
         String source,
-        String discipline,
+        String category,
         String freshnessClass,
         Integer ageDays
 ) {}
