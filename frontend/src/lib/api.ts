@@ -45,7 +45,7 @@ export type UpdateCurrentUserRequest = {
 export type ProfileResponse = {
   userId: string;
   skills: string[];
-  discipline: string | null;
+  category: string | null;
   preferredCity: string | null;
   workMode: string | null;
   experienceLevel: string | null;
@@ -63,7 +63,7 @@ export type PageResponse<T> = {
 
 export type UpdateProfileRequest = {
   skills: string[];
-  discipline: string | null;
+  category: string | null;
   preferredCity: string | null;
   workMode: string | null;
   experienceLevel: string | null;
@@ -234,7 +234,7 @@ export type SavedJobResponse = {
   employmentType: string | null;
   postedDate: string | null;
   source: string | null;
-  discipline: string | null;
+  category: string | null;
   freshnessClass: string | null;
   ageDays: number | null;
 };
@@ -293,7 +293,7 @@ export type JobSearchResponse = {
   employmentType: string | null;
   postedDate: string | null;
   source: string | null;
-  discipline: string | null;
+  category: string | null;
   freshnessClass: string | null;
   ageDays: number | null;
   savedCount?: number;
@@ -301,7 +301,7 @@ export type JobSearchResponse = {
 
 export type JobFiltersResponse = {
   locations: string[];
-  disciplines: string[];
+  categories: string[];
   workModes: string[];
   experienceLevels: string[];
   employmentTypes: string[];
@@ -338,7 +338,7 @@ export type JobMatchResponse = {
 
 export type JobSearchParams = {
   q?: string;
-  discipline?: string;
+  category?: string;
   workMode?: string;
   location?: string;
   page?: number;

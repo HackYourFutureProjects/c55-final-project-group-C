@@ -59,9 +59,9 @@ Browser-side API helpers live in `src/lib/api.ts`. Server-rendered job pages use
 
 ### Job search
 
-Job search state is URL-based. The implemented query parameters are `q`, `discipline`, `workMode`, `location`, and `page`.
+Job search state is URL-based. The implemented query parameters are `q`, `category`, `workMode`, `location`, and `page`.
 
-`/jobs` loads jobs on the server through `getJobsServer()`. It also loads filter options from the backend. The currently exposed filters are discipline, work mode, and location.
+`/jobs` loads jobs on the server through `getJobsServer()`. It also loads filter options from the backend. The currently exposed filters are category, work mode, and location.
 
 Pagination is zero-based in the URL and API. Visible page labels are one-based. Pagination links preserve the active search and filter parameters.
 
@@ -69,7 +69,7 @@ Job result cards link to `/jobs/[jobId]` for the full detail view.
 
 ### Profile and matching
 
-The profile stores skills, discipline, preferred city, work mode, experience level, employment type, and salary preference. Skills use the static vocabulary in `src/lib/profile-skills.ts`; the UI enforces 5 to 20 skills.
+The profile stores skills, category, preferred city, work mode, experience level, employment type, and salary preference. Skills use the static vocabulary in `src/lib/profile-skills.ts`; the UI enforces 5 to 20 skills.
 
 Not every stored profile preference currently affects matching. Backend docs state that matching uses skills and preferred city.
 

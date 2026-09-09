@@ -1,24 +1,25 @@
 "use client";
 
 import { type KeyboardEvent, useEffect, useId, useMemo, useState } from "react";
+import { formatCategoryLabel } from "@/lib/category";
 
 type JobFiltersProps = {
   locations: string[];
-  disciplines: string[];
+  categories: string[];
   workModes: string[];
   searchQuery?: string;
   selectedLocation?: string;
-  selectedDiscipline?: string;
+  selectedCategory?: string;
   selectedWorkMode?: string;
 };
 
 export default function JobFilters({
   locations,
-  disciplines,
+  categories,
   workModes,
   searchQuery = "",
   selectedLocation = "",
-  selectedDiscipline = "",
+  selectedCategory = "",
   selectedWorkMode = "",
 }: JobFiltersProps) {
   const locationInputId = useId();
@@ -29,7 +30,7 @@ export default function JobFilters({
   const [activeLocationIndex, setActiveLocationIndex] = useState(-1);
   const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false);
   const activeFilters = [
-    selectedDiscipline,
+    formatCategoryLabel(selectedCategory),
     selectedWorkMode,
     selectedLocation,
   ].filter(Boolean);
@@ -163,18 +164,18 @@ export default function JobFilters({
           {searchQuery && <input type="hidden" name="q" value={searchQuery} />}
 
           <div className="job-filter-group">
-            <label htmlFor="discipline">Discipline</label>
+            <label htmlFor="category">Category</label>
 
             <select
-              id="discipline"
-              name="discipline"
-              defaultValue={selectedDiscipline}
+              id="category"
+              name="category"
+              defaultValue={selectedCategory}
             >
-              <option value="">All disciplines</option>
+              <option value="">All categories</option>
 
-              {disciplines.map((discipline) => (
-                <option key={discipline} value={discipline}>
-                  {discipline}
+              {categories.map((category) => (
+                <option key={category} value={category}>
+                  {formatCategoryLabel(category)}
                 </option>
               ))}
             </select>

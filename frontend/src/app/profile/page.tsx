@@ -24,6 +24,7 @@ import {
   updateCurrentUser,
   updateProfile,
 } from "@/lib/api";
+import { formatCategoryLabel } from "@/lib/category";
 import {
   formatProfileSkillLabel,
   normalizeProfileSkillsForCompatibility,
@@ -38,7 +39,7 @@ const MAX_VISIBLE_SKILL_RESULTS = 8;
 
 const EMPTY_FILTER_OPTIONS: JobFiltersResponse = {
   locations: [],
-  disciplines: [],
+  categories: [],
   workModes: [],
   experienceLevels: [],
   employmentTypes: [],
@@ -88,7 +89,7 @@ export default function ProfilePage() {
   const [selectedSkillCategory, setSelectedSkillCategory] = useState("");
   const [activeSkillIndex, setActiveSkillIndex] = useState(0);
   const [isSkillResultsOpen, setIsSkillResultsOpen] = useState(false);
-  const [discipline, setDiscipline] = useState("");
+  const [category, setCategory] = useState("");
   const [preferredCity, setPreferredCity] = useState("");
   const [workMode, setWorkMode] = useState("");
   const [experienceLevel, setExperienceLevel] = useState("");
@@ -140,7 +141,7 @@ export default function ProfilePage() {
         }
 
         setSkills(normalizeProfileSkillsForCompatibility(profile.skills ?? []));
-        setDiscipline(profile.discipline ?? "");
+        setCategory(profile.category ?? "");
         setPreferredCity(profile.preferredCity ?? "");
         setWorkMode(profile.workMode ?? "");
         setExperienceLevel(profile.experienceLevel ?? "");
@@ -225,9 +226,9 @@ export default function ProfilePage() {
     }).slice(0, MAX_VISIBLE_SKILL_RESULTS);
   }, [skillSearch, selectedSkillCategory, skills]);
 
-  const disciplineOptions = useMemo(
-    () => optionsWithCurrent(filterOptions.disciplines, discipline),
-    [filterOptions.disciplines, discipline],
+  const categoryOptions = useMemo(
+    () => optionsWithCurrent(filterOptions.categories, category),
+    [filterOptions.categories, category],
   );
   const preferredCityOptions = useMemo(
     () => optionsWithCurrent(filterOptions.locations, preferredCity),
@@ -409,7 +410,7 @@ export default function ProfilePage() {
     try {
       const savedProfile = await updateProfile({
         skills,
-        discipline: discipline || null,
+        category: category || null,
         preferredCity: preferredCity.trim() || null,
         workMode: workMode || null,
         experienceLevel: experienceLevel || null,
@@ -420,7 +421,7 @@ export default function ProfilePage() {
       setSkills(
         normalizeProfileSkillsForCompatibility(savedProfile.skills ?? skills),
       );
-      setDiscipline(savedProfile.discipline ?? "");
+      setCategory(savedProfile.category ?? "");
       setPreferredCity(savedProfile.preferredCity ?? "");
       setWorkMode(savedProfile.workMode ?? "");
       setExperienceLevel(savedProfile.experienceLevel ?? "");
@@ -810,22 +811,22 @@ export default function ProfilePage() {
               <legend>Role and experience</legend>
 
               <div className="profile-field">
-                <label htmlFor="discipline">
-                  Target role / discipline
+                <label htmlFor="category">
+                  Target role / category
                   <span className="profile-field-note">Optional</span>
                 </label>
 
                 <select
-                  id="discipline"
-                  value={discipline}
+                  id="category"
+                  value={category}
                   disabled={areFilterOptionsUnavailable}
-                  onChange={(event) => setDiscipline(event.target.value)}
+                  onChange={(event) => setCategory(event.target.value)}
                 >
                   <option value="">No preference</option>
 
-                  {disciplineOptions.map((option) => (
+                  {categoryOptions.map((option) => (
                     <option key={option} value={option}>
-                      {option}
+                      {formatCategoryLabel(option)}
                     </option>
                   ))}
                 </select>
