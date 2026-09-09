@@ -31,9 +31,9 @@ public record UpdateProfileRequest(
         List<@Size(max = 100, message = "A skill may be at most 100 characters") String> skills,
 
         // 255 to match varchar(255): an over-long value is a 400, not a 500 from Postgres.
-        @Size(max = 255, message = "Discipline may be at most 255 characters")
+        @Size(max = 255, message = "Category may be at most 255 characters")
         @Schema(description = "The field of work aimed for", example = "frontend")
-        String discipline,
+        String category,
 
         @Size(max = 255, message = "Preferred city may be at most 255 characters")
         @Schema(description = "Where the user wants to work", example = "Utrecht")
