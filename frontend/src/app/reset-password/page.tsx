@@ -11,6 +11,9 @@ function ResetPasswordContent() {
 
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [isNewPasswordVisible, setIsNewPasswordVisible] = useState(false);
+  const [isConfirmPasswordVisible, setIsConfirmPasswordVisible] =
+    useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [error, setError] = useState("");
@@ -171,16 +174,31 @@ function ResetPasswordContent() {
               <div className="auth-field">
                 <label htmlFor="newPassword">New password</label>
 
-                <input
-                  id="newPassword"
-                  name="newPassword"
-                  type="password"
-                  autoComplete="new-password"
-                  value={newPassword}
-                  onChange={(event) => setNewPassword(event.target.value)}
-                  placeholder="At least 6 characters"
-                  required
-                />
+                <div className="auth-password-input">
+                  <input
+                    id="newPassword"
+                    name="newPassword"
+                    type={isNewPasswordVisible ? "text" : "password"}
+                    autoComplete="new-password"
+                    value={newPassword}
+                    onChange={(event) => setNewPassword(event.target.value)}
+                    placeholder="At least 6 characters"
+                    required
+                  />
+                  <button
+                    type="button"
+                    aria-label={
+                      isNewPasswordVisible
+                        ? "Hide new password"
+                        : "Show new password"
+                    }
+                    onClick={() =>
+                      setIsNewPasswordVisible((isVisible) => !isVisible)
+                    }
+                  >
+                    {isNewPasswordVisible ? "Hide" : "Show"}
+                  </button>
+                </div>
 
                 <p className="auth-field-hint">Use at least 6 characters.</p>
               </div>
@@ -188,16 +206,31 @@ function ResetPasswordContent() {
               <div className="auth-field">
                 <label htmlFor="confirmPassword">Confirm new password</label>
 
-                <input
-                  id="confirmPassword"
-                  name="confirmPassword"
-                  type="password"
-                  autoComplete="new-password"
-                  value={confirmPassword}
-                  onChange={(event) => setConfirmPassword(event.target.value)}
-                  placeholder="Repeat your new password"
-                  required
-                />
+                <div className="auth-password-input">
+                  <input
+                    id="confirmPassword"
+                    name="confirmPassword"
+                    type={isConfirmPasswordVisible ? "text" : "password"}
+                    autoComplete="new-password"
+                    value={confirmPassword}
+                    onChange={(event) => setConfirmPassword(event.target.value)}
+                    placeholder="Repeat your new password"
+                    required
+                  />
+                  <button
+                    type="button"
+                    aria-label={
+                      isConfirmPasswordVisible
+                        ? "Hide confirm password"
+                        : "Show confirm password"
+                    }
+                    onClick={() =>
+                      setIsConfirmPasswordVisible((isVisible) => !isVisible)
+                    }
+                  >
+                    {isConfirmPasswordVisible ? "Hide" : "Show"}
+                  </button>
+                </div>
               </div>
 
               <button
