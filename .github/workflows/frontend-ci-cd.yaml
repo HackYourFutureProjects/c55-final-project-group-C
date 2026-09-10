@@ -73,9 +73,9 @@ jobs:
         uses: docker/build-push-action@v7
         with:
           context: ./frontend
-          platforms: linux/amd64,linux/arm64
+          platforms: ${{ github.event_name == 'push' && 'linux/amd64,linux/arm64' || 'linux/amd64' }}
           push: ${{ github.event_name == 'push' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha,scope=frontend
-          cache-to: type=gha,scope=frontend,mode=max
+          cache-to: ${{ github.event_name == 'push' && 'type=gha,scope=frontend,mode=max' || '' }}
