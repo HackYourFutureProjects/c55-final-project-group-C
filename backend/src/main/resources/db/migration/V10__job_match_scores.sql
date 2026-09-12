@@ -1,5 +1,5 @@
--- Cached model scores for a (user skill set, posting skills) pair. Keyed on skills rather than
--- on the user, so nothing user-identifying is stored and identical profiles share rows.
+-- Cached AI scores per (skill set, posting). Keyed on skills, not user, so nothing
+-- identifies a person and identical profiles share rows.
 CREATE TABLE job_match_scores (
     skills_hash    CHAR(64) NOT NULL,
     posting_id     TEXT     NOT NULL,

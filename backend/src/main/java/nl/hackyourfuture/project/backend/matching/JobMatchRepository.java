@@ -11,43 +11,34 @@ import java.time.LocalDate;
 import java.util.Collections;
 import java.util.List;
 
-// The cheap half of matching: narrows the mart to a shortlist small enough for the model.
-// Deliberately dumb - exact skill-string overlap only. Synonyms and seniority are the
-// model's job, and encoding them here is how this query grows unreadable.
+// Quick first pass: shortlists postings by exact skill match. The model handles synonyms later.
 @Repository
 @RequiredArgsConstructor
 public class JobMatchRepository {
 
     private final JdbcClient jdbcClient;
 
-    // The best `limit` open postings for a candidate, most skill overlap first.
-    // One row per title and company: a reposted job arrives as a new posting_id, and the
-    // copies would otherwise eat shortlist places. The freshest, best-overlapping one wins.
-    // No matched_count > 0 filter, or a job asking for postgresql would never be seen by a
-    // profile saying postgres - exactly what the model is there to rescue.
-    // city: preferred city as GET /api/jobs/filters offers it; blank or null means no filter.
-    // skills: already lowercased, must not be empty.
+    // Four steps: 1) candidate keeps only usable open jobs, 2) scored counts skill matches,
+    // 3) deduplicated removes duplicate reposts, 4) the final select returns a ranked shortlist.
+    // city: optional, from GET /api/jobs/filters. skills: lowercase, non-empty.
     public List<JobMatchRow> findTopMatches(String city, List<String> skills, int limit) {
         StringBuilder sql = new StringBuilder("""
+                -- 1) candidate: keep only usable open jobs.
                 WITH candidate AS (
+                    -- Take all postings from analytics.fct_postings.
                     SELECT posting_id, title, company_name, location, category, skills, posted_date
                     FROM analytics.fct_postings
+                    -- Keep only status = 'open' and closed_at is null.
                     WHERE status = 'open'
                       AND closed_at IS NULL
+                      -- Keep only postings that have skills listed.
                       AND skills IS NOT NULL
                       AND skills <> ''
-                      -- The casts below throw on a row that is not valid JSON, which would
-                      -- fail the whole endpoint rather than that one posting. MartSkills
-                      -- still carries a comma-separated fallback for the same column, so
-                      -- treat a malformed row as one that simply does not match.
+                      -- Skip any row with broken JSON skills, instead of crashing the query.
                       AND pg_input_is_valid(skills, 'jsonb')
                 """);
 
-        // The preferred city and nothing else: a remote posting elsewhere is a work-mode
-        // preference, not a city one, and mixing the two here is why "Amsterdam" used to
-        // return a list that read as unfiltered. Same rule as the /api/jobs location filter.
-        // Matched against fct_postings_cities, the same resolved city the picker offers.
-        // Never against the raw location text: '%Ede%' also matches every "Nederland" posting.
+        // If a city was given, also keep only jobs in that city (otherwise keep every city).
         if (city != null && !city.isBlank()) {
             sql.append("""
                           AND EXISTS (
@@ -59,6 +50,7 @@ public class JobMatchRepository {
         }
 
         sql.append("""
+                -- 2) scored: for every candidate job, count how its skills match the user's.
                 ), scored AS (
                     SELECT
                         posting_id,
@@ -67,15 +59,27 @@ public class JobMatchRepository {
                         location,
                         category,
                         posted_date,
+
+                        -- Count how many skills the job lists -> job_skill_count.
                         jsonb_array_length(skills::jsonb) AS job_skill_count,
+
+                        -- Find which of the job's skills also appear in the user's skills
+                        -- (an empty list if none do) -> matched_skills.
                         (SELECT coalesce(array_agg(s), '{}')
                          FROM jsonb_array_elements_text(skills::jsonb) s
                          WHERE lower(s) IN (:skills)) AS matched_skills,
+
+                        -- Keep the full list of job skills for later display -> job_skills.
                         (SELECT array_agg(s)
                          FROM jsonb_array_elements_text(skills::jsonb) s) AS job_skills
+
                     FROM candidate
+
+                -- 3) deduplicated: remove duplicate reposts of the same job.
                 ), deduplicated AS (
                     SELECT scored.*,
+                           -- Group jobs with the same title + company, and inside each group
+                           -- rank them by most matched skills, then newest posted_date.
                            row_number() OVER (
                                PARTITION BY lower(title), lower(coalesce(company_name, ''))
                                ORDER BY cardinality(matched_skills) DESC,
@@ -84,6 +88,8 @@ public class JobMatchRepository {
                            ) AS repost_rank
                     FROM scored
                 )
+                -- 4) final result: keep only the best job per group (repost_rank = 1),
+                -- sort by most matched skills then newest, and return the top `limit` rows.
                 SELECT posting_id, title, company_name, location, category, posted_date,
                        job_skill_count, matched_skills, job_skills
                 FROM deduplicated
@@ -115,6 +121,8 @@ public class JobMatchRepository {
         )).list();
     }
 
+
+    //Converts a Postgres array column into a Java list of strings, or an empty list if it's null.
     private static List<String> readArray(ResultSet rs, String column) throws SQLException {
         Array array = rs.getArray(column);
         if (array == null) {
@@ -123,7 +131,7 @@ public class JobMatchRepository {
         return List.of((String[]) array.getArray());
     }
 
-    // One shortlisted posting, before the model has had an opinion about it.
+    // One shortlisted posting, before the model scores it.
     public record JobMatchRow(
             String postingId,
             String title,

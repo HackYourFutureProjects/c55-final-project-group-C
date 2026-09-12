@@ -64,9 +64,9 @@ public class ProfileController {
                 .orElseGet(() -> ResponseEntity.status(HttpStatus.UNAUTHORIZED).build());
     }
 
-    // The caller's email, or empty when nobody is logged in.
+    // Logged-in user's email, or empty if nobody is logged in.
     private static Optional<String> resolveEmail(Object principal) {
-        // Not logged in, or an anonymous placeholder.
+        // Not logged in.
         if (principal instanceof String principalEmail) {
             if ("anonymousUser".equals(principalEmail) || principalEmail.isBlank()) {
                 return Optional.empty();

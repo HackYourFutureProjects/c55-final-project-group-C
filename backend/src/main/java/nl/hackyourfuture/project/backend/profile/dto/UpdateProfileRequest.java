@@ -9,18 +9,13 @@ import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.util.List;
 
-// A PUT replaces the whole profile, so an optional field left out is cleared - the only way
-// to empty one. Skills are the exception: they are required, so leaving them out is a 400
-// rather than a way to clear them. Differs from PUT /api/users/me, where a null name is
-// left alone.
+// PUT replaces the whole profile - leaving a field out clears it. Skills are required,
+// so missing skills is a 400 instead of clearing them.
 @Schema(description = "The job preferences to save. Replaces the profile: an optional field "
         + "left out is cleared. Skills are required and cannot be cleared this way.")
 public record UpdateProfileRequest(
-        // 5 to 20, the same rule the picker enforces: fewer is noise, more describes nobody.
-        // Repeated here so it holds for any caller, not just our own form.
-        // This bounds what was sent, not what is stored: blanks are dropped and skills that
-        // differ only in case or spacing collapse into one, so five entries can normalise to
-        // fewer. ProfileService re-checks the normalised list, which is where the rule holds.
+        // Must be 5-20 skills. Only checks what was sent - ProfileService re-checks after
+        // cleanup, since duplicates can drop the count.
         @NotNull(message = "Skills are required")
         @Size(min = MIN_SKILLS, max = MAX_SKILLS,
                 message = "Select between " + MIN_SKILLS + " and " + MAX_SKILLS + " skills")
@@ -30,7 +25,7 @@ public record UpdateProfileRequest(
                 example = "[\"React\", \"TypeScript\", \"Node.js\", \"PostgreSQL\", \"Docker\"]")
         List<@Size(max = 100, message = "A skill may be at most 100 characters") String> skills,
 
-        // 255 to match varchar(255): an over-long value is a 400, not a 500 from Postgres.
+        // Matches the DB column limit, so an over-long value is a 400, not a DB error.
         @Size(max = 255, message = "Category may be at most 255 characters")
         @Schema(description = "The field of work aimed for", example = "frontend")
         String category,
@@ -51,7 +46,7 @@ public record UpdateProfileRequest(
         @Schema(description = "Full-time, part-time, contract or internship", example = "full-time")
         String employmentType,
 
-        // Matches numeric(10,2): 8 digits before the point, 2 after.
+        // Matches the DB precision: 8 digits before the point, 2 after.
         @DecimalMin(value = "0", message = "Salary preference cannot be negative")
         @Digits(integer = 8, fraction = 2,
                 message = "Salary preference may have at most 8 digits and 2 decimals")
@@ -59,7 +54,7 @@ public record UpdateProfileRequest(
         BigDecimal salaryPreference
 ) {
 
-    // Fewer than this and the matcher has nothing to rank on; see JobMatchService.
+    // Matching needs at least this many skills to rank on.
     public static final int MIN_SKILLS = 5;
     public static final int MAX_SKILLS = 20;
 }

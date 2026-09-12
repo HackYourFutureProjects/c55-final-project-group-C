@@ -20,8 +20,7 @@ public class ProfileService {
     private final ProfileRepository profileRepository;
     private final UserRepository userRepository;
 
-    // A user who has never saved gets an empty profile rather than a 404: the profile
-    // screen has to render for a new account, and the GDPR export must not fail on one.
+    // New users get an empty profile, not a 404.
     public ProfileResponse getProfile(String email) {
         UUID userId = resolveUserId(email);
         Profile profile = profileRepository.findByUserId(userId)
@@ -29,15 +28,11 @@ public class ProfileService {
         return ProfileResponse.from(profile);
     }
 
-    // The account comes from the session and the body carries no user id, so a caller
-    // cannot write anyone else's row.
+    // User comes from the session, not the request body, so nobody can edit another account.
     public ProfileResponse saveProfile(String email, UpdateProfileRequest request) {
         UUID userId = resolveUserId(email);
 
-        // The annotations on the request bound what was sent; this bounds what is stored.
-        // Blanks and case- or spacing-duplicates collapse below, so five entries can arrive
-        // valid and normalise to two - a profile the matcher would then refuse to rank, on a
-        // request that answered 200. Only the floor needs rechecking: normalising never adds.
+        // Re-check the minimum after cleanup: duplicates can drop a valid count too low.
         List<String> skills = normaliseSkills(request.skills());
         if (skills.size() < UpdateProfileRequest.MIN_SKILLS) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
@@ -66,7 +61,7 @@ public class ProfileService {
                 .getId();
     }
 
-    // "Cleared" and "never filled in" stay one state: whitespace is stored as null.
+    // Blank means cleared - stored as null either way.
     private static String blankToNull(String value) {
         if (value == null || value.isBlank()) {
             return null;
@@ -74,10 +69,8 @@ public class ProfileService {
         return value.trim();
     }
 
-    // Blank skills are dropped rather than rejected, and skills that canonicalise the same
-    // way are collapsed to one - "React", "react" and " REACT " are one skill. The spelling
-    // that was sent is what is kept, so the screen shows "CI/CD" rather than the "ci cd" the
-    // matcher works in. Order is the order they arrived in.
+    // Drops blanks and merges duplicates like "React"/"react" into one, keeping the
+    // original spelling for display.
     private static List<String> normaliseSkills(List<String> skills) {
         if (skills == null) {
             return List.of();
@@ -93,9 +86,7 @@ public class ProfileService {
         return List.copyOf(bySpelling.values());
     }
 
-    // The key the matcher compares on: lowercase, and hyphens and runs of whitespace
-    // collapsed to one space, because the mart holds "machine-learning" and
-    // "machine learning" as different skills.
+    // Normalises for comparison: lowercase, hyphens and spaces collapsed to one space.
     private static String canonicalise(String skill) {
         return skill.toLowerCase(Locale.ROOT).replaceAll("[\\s-]+", " ");
     }

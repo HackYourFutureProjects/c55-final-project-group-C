@@ -15,7 +15,7 @@ import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 
-// Registers Google only if a client id is set; Boot's own oauth2 properties fail startup without one.
+// Only registers Google if a client id is set, so startup doesn't fail without one.
 @Configuration
 @ConditionalOnExpression("'${app.oauth2.google.client-id:}'.trim().length() > 0")
 public class GoogleOAuth2Config {
@@ -26,7 +26,7 @@ public class GoogleOAuth2Config {
             @Value("${app.oauth2.google.client-secret}") String clientSecret,
             @Value("${app.oauth2.google.redirect-uri}") String redirectUri) {
 
-        // Fills in Google's endpoints, the openid/profile/email scopes and 'sub' as the name attribute.
+        // Google's standard endpoints and scopes.
         ClientRegistration google = CommonOAuth2Provider.GOOGLE
                 .getBuilder("google")
                 .clientId(clientId)
@@ -37,8 +37,7 @@ public class GoogleOAuth2Config {
         return new InMemoryClientRegistrationRepository(google);
     }
 
-    // An unverified Google email could claim an existing account by email match.
-    // Rejecting here, not in the success handler, blocks it before the session is authenticated.
+    // Blocks an unverified email before login succeeds, so it can't claim an existing account.
     @Bean
     public OAuth2UserService<OidcUserRequest, OidcUser> oidcUserService() {
         OidcUserService delegate = new OidcUserService();

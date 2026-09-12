@@ -10,7 +10,7 @@ spring:
     password: ${DB_PASSWORD:password}
   flyway:
     schemas: ${DB_SCHEMA:app}
-    # Email notification configuration for password reset
+    # Used for password reset emails
   mail:
     host: ${MAIL_HOST:smtp-relay.brevo.com}
     port: ${MAIL_PORT:587}
@@ -25,9 +25,8 @@ spring:
 server:
   port: 8080
   error:
-    # Belt and braces next to GlobalExceptionHandler: devtools turns both of these on in
-    # development, so without pinning them a stack trace goes out in dev and the message
-    # is dropped in production - the same error reading differently per environment.
+    # Pinned so error responses look the same in dev and prod - devtools would otherwise
+    # toggle these on in development.
     include-stacktrace: never
     include-message: never
   servlet:
@@ -49,7 +48,7 @@ app:
     success-redirect: ${OAUTH2_SUCCESS_REDIRECT:${app.base-url}/}
     failure-redirect: ${OAUTH2_FAILURE_REDIRECT:${app.base-url}/login?error=oauth}
     link-required-redirect: ${OAUTH2_LINK_REDIRECT:${app.base-url}/login?error=google_link_required}
-    # Google never shows our terms, so a first sign-in through it lands here instead of home.
+    # First Google sign-in lands here instead of home, since Google skips our terms screen.
     terms-required-redirect: ${OAUTH2_TERMS_REDIRECT:${app.base-url}/accept-terms}
 
 
@@ -58,12 +57,11 @@ app:
     base-url: ${LLM_BASE_URL:https://generativelanguage.googleapis.com/v1beta/openai}
     model: ${LLM_MODEL:gemini-flash-lite-latest}
     timeout-seconds: ${LLM_TIMEOUT_SECONDS:20}
-    # Sent as reasoning_effort. Set for a model that thinks by default (Gemini 3 flash costs
-    # ~14s without it, ~4s with "low"). Leave empty for a provider that rejects the field.
+    # Sent as reasoning_effort - cuts response time for models that reason by default.
+    # Leave empty for a provider that rejects the field.
     reasoning-effort: ${LLM_REASONING_EFFORT:low}
-    # Model verdicts live in job_match_scores for score-retention-days and no longer. The read
-    # filters on that window, so nothing older is ever served; the purge only reclaims the space,
-    # hourly, because a once-daily pass cannot delete on a 24h boundary.
+    # How long a stored score stays valid. Reads already skip expired ones; the hourly
+    # purge just frees the space.
     score-retention-days: ${LLM_SCORE_RETENTION_DAYS:1}
     score-purge-cron: ${LLM_SCORE_PURGE_CRON:0 0 * * * *}
 

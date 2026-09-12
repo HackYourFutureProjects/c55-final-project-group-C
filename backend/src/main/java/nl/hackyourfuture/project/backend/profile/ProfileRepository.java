@@ -32,7 +32,7 @@ public class ProfileRepository {
             .skills(readSkills(rs.getArray("skills")))
             .build();
 
-    // text[] since V6 and not null since V7, so the only null to guard is a row older than those.
+    // Guards against old rows saved before skills was required.
     private static List<String> readSkills(Array skills) throws java.sql.SQLException {
         if (skills == null) {
             return List.of();
@@ -40,8 +40,7 @@ public class ProfileRepository {
         return List.of((String[]) skills.getArray());
     }
 
-    // Empty when the user has never saved. The caller turns that into an empty profile,
-    // not a 404 - a new user still has to be able to open the profile screen.
+    // Empty if the user has never saved a profile.
     public Optional<Profile> findByUserId(UUID userId) {
         return jdbcClient.sql(PROFILE_SELECT + " WHERE user_id = :userId")
                 .param("userId", userId)
@@ -49,11 +48,9 @@ public class ProfileRepository {
                 .optional();
     }
 
-    // First save creates the row, later ones replace every column, so there is no
-    // separate POST and a cleared field really is cleared.
+    // Insert or replace - no separate create step, so a save always overwrites every field.
     public Profile save(Profile profile) {
-        // RETURNING, so the answer is the row as Postgres stored it rather than what was
-        // sent: a salary of 45000 comes back 45000.00, the same as a later GET.
+        // Returns the row as stored, e.g. salary comes back formatted like 45000.00.
         return jdbcClient.sql("""
                         INSERT INTO user_profiles (user_id, category, preferred_city, work_mode,
                                                    experience_level, employment_type, salary, skills)

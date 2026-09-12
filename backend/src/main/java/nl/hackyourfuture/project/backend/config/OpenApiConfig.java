@@ -26,11 +26,7 @@ public class OpenApiConfig {
                 ));
     }
 
-    /**
-     * Spring discovers controller methods in an arbitrary order, so without this the endpoints
-     * show up in a different order every build. Sorting the paths alphabetically keeps the
-     * generated docs stable and puts /api/users ahead of /api/users/{id}.
-     */
+    // Keeps the generated API docs in a stable, alphabetical order across builds.
     @Bean
     public OpenApiCustomizer sortPathsAlphabetically() {
         return openApi -> {
