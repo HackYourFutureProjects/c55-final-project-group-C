@@ -1,70 +1,110 @@
-CREATE TABLE sources (
-    id INTEGER IDENTITY(1,1) PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    type VARCHAR(100),
-    base_url TEXT
+-- analytics.fct_postings definition
+
+-- Drop table
+
+-- DROP TABLE analytics.fct_postings;
+
+CREATE TABLE analytics.fct_postings (
+	title text NULL,
+	posting_id text NULL,
+	"source" text NULL,
+	source_job_id text NULL,
+	company_name text NULL,
+	"location" text NULL,
+	countries text NULL,
+	regions text NULL,
+	cities text NULL,
+	has_location_data bool NULL,
+	work_mode text NULL,
+	is_remote bool NULL,
+	skills text NULL,
+	skill_count int4 NULL,
+	experience_level text NULL,
+	education_level text NULL,
+	employment_type text NULL,
+	salary_min float8 NULL,
+	salary_max float8 NULL,
+	salary_currency text NULL,
+	salary_period text NULL,
+	category text NULL,
+	description text NULL,
+	posted_at timestamptz NULL,
+	posted_date date NULL,
+	updated_at timestamptz NULL,
+	last_seen_at timestamptz NULL,
+	closed_at timestamptz NULL,
+	status text NULL,
+	freshness_class text NULL,
+	age_days int4 NULL,
+	repost_count int4 NULL,
+	fake_freshness bool NULL,
+	source_url text NULL,
+	ingest_date date NULL,
+	ingested_at timestamptz NULL,
+	discipline text NULL,
+	enriched_at timestamptz NULL
 );
 
-CREATE TABLE companies (
-    id INTEGER IDENTITY(1,1) PRIMARY KEY,
-    name VARCHAR(255) NOT null,
-    type VARCHAR(100),
-    base_url TEXT
+
+
+-- analytics.fct_postings_cities definition
+
+-- Drop table
+
+-- DROP TABLE analytics.fct_postings_cities;
+
+CREATE TABLE analytics.fct_postings_cities (
+	posting_id text NULL,
+	city text NULL,
+	"source" text NULL,
+	title text NULL,
+	posted_at timestamptz NULL,
+	posted_date date NULL
 );
 
-CREATE TABLE jobs (
-    id INTEGER IDENTITY(1,1) PRIMARY KEY,
-    source_id INTEGER NOT NULL,
-    source_job_id VARCHAR(255),
-    company_id INTEGER NOT NULL,
-    title VARCHAR(255) NOT NULL,
-    location VARCHAR(255),
-    experience_level VARCHAR(100),
-    education_level VARCHAR(100),
-    salary NUMERIC(12, 2),
-    description TEXT,
-    start_date DATE,
-    end_date DATE,
-    status VARCHAR(50),
-    source_url TEXT
+-- analytics.fct_postings_requirements definition
+
+-- Drop table
+
+-- DROP TABLE analytics.fct_postings_requirements;
+
+CREATE TABLE analytics.fct_postings_requirements (
+	posting_id text NULL,
+	priority text NULL,
+	requirement_text text NULL,
+	"source" text NULL,
+	title text NULL,
+	posted_at timestamptz NULL,
+	posted_date date NULL
 );
 
-CREATE TABLE skills (
-    id INTEGER IDENTITY(1,1) PRIMARY KEY,
-    name VARCHAR(255) NOT NULL UNIQUE
+
+-- analytics.fct_postings_skills definition
+
+-- Drop table
+
+-- DROP TABLE analytics.fct_postings_skills;
+
+CREATE TABLE analytics.fct_postings_skills (
+	posting_id text NULL,
+	skill text NULL,
+	"source" text NULL,
+	title text NULL,
+	posted_at timestamptz NULL,
+	posted_date date NULL
 );
 
-ALTER TABLE jobs
-ADD CONSTRAINT fk_jobs_source
-FOREIGN KEY (source_id)
-REFERENCES sources(id);
 
-ALTER TABLE jobs
-ADD CONSTRAINT fk_jobs_company
-FOREIGN KEY (company_id)
-REFERENCES companies(id);
 
-ALTER TABLE job_skills
-ADD CONSTRAINT fk_job_skills_job
-FOREIGN KEY (job_id)
-REFERENCES jobs(id)
-ON DELETE CASCADE;
+-- analytics.fct_skill_popularity definition
 
-ALTER TABLE job_skills
-ADD CONSTRAINT fk_job_skills_skill
-FOREIGN KEY (skill_id)
-REFERENCES skills(id)
-ON DELETE CASCADE;
+-- Drop table
 
-SELECT
-    tc.table_name,
-    kcu.column_name,
-    ccu.table_name AS foreign_table_name,
-    ccu.column_name AS foreign_column_name
-FROM information_schema.table_constraints AS tc
-JOIN information_schema.key_column_usage AS kcu
-    ON tc.constraint_name = kcu.constraint_name
-JOIN information_schema.constraint_column_usage AS ccu
-    ON ccu.constraint_name = tc.constraint_name
-WHERE tc.constraint_type = 'FOREIGN KEY'
-ORDER BY tc.table_name;
+-- DROP TABLE analytics.fct_skill_popularity;
+
+CREATE TABLE analytics.fct_skill_popularity (
+	skill text NULL,
+	postings int8 NULL,
+	first_seen_at timestamptz NULL,
+	last_seen_at timestamptz NULL
+);
