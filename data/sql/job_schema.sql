@@ -1,9 +1,6 @@
 -- analytics.fct_postings definition
-
 -- Drop table
-
 -- DROP TABLE analytics.fct_postings;
-
 CREATE TABLE analytics.fct_postings (
 	title text NULL,
 	posting_id text NULL,
@@ -46,13 +43,9 @@ CREATE TABLE analytics.fct_postings (
 );
 
 
-
 -- analytics.fct_postings_cities definition
-
 -- Drop table
-
 -- DROP TABLE analytics.fct_postings_cities;
-
 CREATE TABLE analytics.fct_postings_cities (
 	posting_id text NULL,
 	city text NULL,
@@ -63,11 +56,8 @@ CREATE TABLE analytics.fct_postings_cities (
 );
 
 -- analytics.fct_postings_requirements definition
-
 -- Drop table
-
 -- DROP TABLE analytics.fct_postings_requirements;
-
 CREATE TABLE analytics.fct_postings_requirements (
 	posting_id text NULL,
 	priority text NULL,
@@ -80,11 +70,8 @@ CREATE TABLE analytics.fct_postings_requirements (
 
 
 -- analytics.fct_postings_skills definition
-
 -- Drop table
-
 -- DROP TABLE analytics.fct_postings_skills;
-
 CREATE TABLE analytics.fct_postings_skills (
 	posting_id text NULL,
 	skill text NULL,
@@ -95,13 +82,9 @@ CREATE TABLE analytics.fct_postings_skills (
 );
 
 
-
 -- analytics.fct_skill_popularity definition
-
 -- Drop table
-
 -- DROP TABLE analytics.fct_skill_popularity;
-
 CREATE TABLE analytics.fct_skill_popularity (
 	skill text NULL,
 	postings int8 NULL,
