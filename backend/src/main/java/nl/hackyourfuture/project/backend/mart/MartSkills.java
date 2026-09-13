@@ -8,11 +8,10 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
-// Parses JSON array strings (e.g., '["python","sql"]') from analytics.fct_postings.skills.
-//
-// - Takes String intentionally: if the column type changes, call sites fail at compile-time
-//   instead of silently hiding breaking changes from downstream SQL queries.
-// - Note: JobMatchRepository parses in SQL directly for query-level ranking and dedup.
+// Parses the skills column, e.g. '["python","sql"]'.
+// Takes a String, not a richer type, so a column type change breaks the build here instead
+// of failing silently downstream. JobMatchRepository parses skills in SQL instead - it needs
+// them there for ranking and dedup.
 public final class MartSkills {
 
     private static final ObjectMapper JSON = new ObjectMapper();
@@ -30,7 +29,7 @@ public final class MartSkills {
                     .filter(Objects::nonNull)
                     .toList();
         } catch (JacksonException e) {
-            // Fallback for non-JSON or legacy comma-separated values (e.g., "python, sql").
+            // Not JSON - probably an old, comma-separated value like "python, sql".
             return splitOnCommas(skillsColumn);
         }
     }

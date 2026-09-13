@@ -4,9 +4,7 @@ import jakarta.servlet.http.HttpSession;
 
 import java.util.Optional;
 
-// A Google identity waiting to be attached to an account that already owns the email.
-// It sits in the session between the refused Google sign-in and the password login that
-// proves the account is really the user's.
+// A Google identity waiting in the session until a password login proves the account.
 final class PendingGoogleLink {
 
     private static final String EMAIL = PendingGoogleLink.class.getName() + ".email";
@@ -20,8 +18,7 @@ final class PendingGoogleLink {
         session.setAttribute(PROVIDER_ID, providerId);
     }
 
-    // Hands the provider id over only to the login that just proved it owns this email,
-    // and only once.
+    // Returns the parked id once, only to a login for the same email.
     static Optional<String> claim(HttpSession session, String email) {
         if (session == null || !email.equalsIgnoreCase((String) session.getAttribute(EMAIL))) {
             return Optional.empty();

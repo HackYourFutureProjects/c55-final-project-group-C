@@ -70,7 +70,7 @@ public class AuthenticationController {
     public void updatePassword(
             @AuthenticationPrincipal String email,
             @Valid @RequestBody UpdatePasswordRequest request, jakarta.servlet.http.HttpServletRequest httpRequest) {
-        // Guard against unauthenticated requests or anonymous principals falling through
+        // Not logged in.
         if (email == null || "anonymousUser".equals(email) || email.isBlank()) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Not logged in");
         }

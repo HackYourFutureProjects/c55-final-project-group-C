@@ -1,4 +1,4 @@
--- Google users never choose a password, so there is no hash to store.
+-- Google users have no password to store.
 ALTER TABLE user_credentials
     ALTER COLUMN password_hash DROP NOT NULL;
 
@@ -6,7 +6,7 @@ ALTER TABLE users
     ADD COLUMN IF NOT EXISTS oauth_provider VARCHAR(50),
     ADD COLUMN IF NOT EXISTS oauth_provider_id VARCHAR(255);
 
--- Either both columns are set or neither is; a half-linked account is meaningless.
+-- Both oauth columns must be set together, or neither.
 ALTER TABLE users
     DROP CONSTRAINT IF EXISTS users_oauth_provider_pair_chk;
 ALTER TABLE users
@@ -18,5 +18,5 @@ CREATE UNIQUE INDEX IF NOT EXISTS users_oauth_provider_id_idx
     ON users (oauth_provider, oauth_provider_id)
     WHERE oauth_provider_id IS NOT NULL;
 
--- Email links a Google sign-in to an existing account, so duplicates must be impossible.
+-- Must be unique - it's how a Google sign-in finds its account.
 CREATE UNIQUE INDEX IF NOT EXISTS users_email_idx ON users (email);

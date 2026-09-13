@@ -37,7 +37,7 @@ public class GlobalExceptionHandler {
         return ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, ex.getMessage());
     }
 
-    // users.email is unique, so without this a duplicate is a 500 instead of a 409.
+    // Turns a duplicate email into a 409 instead of a raw 500.
     @ExceptionHandler(DuplicateKeyException.class)
     public ProblemDetail handleDuplicateKey(DuplicateKeyException ex) {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(
@@ -46,9 +46,7 @@ public class GlobalExceptionHandler {
         return problem;
     }
 
-    // Keeps ResponseStatusException on the same ProblemDetail body in dev and prod.
-    // The ones Spring raises itself carry no reason, and a null detail serialises as a
-    // problem body with nothing in it, so fall back to the status phrase.
+    // Falls back to the status phrase when Spring's own exception has no message.
     @ExceptionHandler(ResponseStatusException.class)
     public ProblemDetail handleResponseStatus(ResponseStatusException ex) {
         String reason = ex.getReason();

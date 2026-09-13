@@ -5,11 +5,8 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDate;
 import java.util.List;
 
-// One ranked posting.
-// The original record described an overlap-only ranking, docs/matching.md described the model
-// rescoring. Both are kept: matchScore / matchPercent / label stay plain skill overlap - the
-// share of the job's own skills the user has - and the model's layer - score, reason,
-// aiScored - sits alongside them. score is the ranking.
+// One ranked posting. matchScore/matchPercent/label are plain skill overlap; score/reason/aiScored
+// are the model's layer on top. score is what the list is actually sorted by.
 @Schema(description = "A job posting ranked against the logged-in user's profile")
 public record JobMatchResponse(
         String postingId,

@@ -17,17 +17,16 @@ import java.util.Optional;
 @Repository
 public class JobRepository {
 
-    // Without a cap an unfiltered search returns the whole mart. Newest first, with
-    // posting_id breaking ties so the cut-off point is stable between calls.
+    // Caps an unfiltered search from returning the whole mart. posting_id breaks ties so
+    // the cut-off is stable between calls.
     private static final int MAX_SEARCH_RESULTS = 200;
 
-    // fct_postings_cities mixes cities with countries and provinces, so these values are kept
-    // out of every city-derived query: the dropdown, the location filter, and the city list
-    // shown on a posting. Provinces that double as city names (Utrecht, Groningen) and
-    // city-states (Singapore) stay in. Derived from the data; re-derive when new ones appear.
-    // The proper fix is upstream, in the city column itself.
+    // fct_postings_cities mixes in countries and provinces, so these are excluded from every
+    // city query: the dropdown, the location filter, and the city shown on a posting. Cities
+    // that share a name with a province (Utrecht, Groningen) stay in. Re-derive when new bad
+    // values show up; the real fix belongs upstream, in the city column itself.
     private static final List<String> NON_CITY_LOCATIONS = List.of(
-            // Countries. "netherlands" is second only to Amsterdam in this column.
+            // Countries - "netherlands" is the most common bad value here.
             "netherlands", "nederland", "the netherlands", "holland",
             "australia", "belgium", "canada", "denmark", "djibouti", "france", "germany",
             "india", "ireland", "jamaica", "liberia", "mozambique", "poland", "portugal",
@@ -36,7 +35,7 @@ public class JobRepository {
             // Provinces.
             "north holland", "noord-holland", "south holland", "zuid-holland",
             "noord-brabant", "north brabant", "gelderland", "overijssel", "drenthe", "flevoland",
-            // Remote written into the city field: the is_remote flag, not a place.
+            // "Remote" written into the city field instead of using is_remote.
             "netherlands - remote", "netherlands remote", "remote - netherlands",
             "remote in europe", "remote netherlands", "remote-netherlands");
 
@@ -46,12 +45,11 @@ public class JobRepository {
         this.jdbcClient = jdbcClient;
     }
 
-    // Searches job postings with optional filters for category, work mode, and location
     public PageResponse<JobSearchResponse>
     searchJobs(String category, String workMode, String location, String q, int page, int size) {
-        size = Math.min(size, MAX_SEARCH_RESULTS); // Enforce repository-level cap
-        long offset = (long) page * size; // Calculate row offset without int overflow
-        long totalElements = countJobs(category, workMode, location, q); //Fetch total count
+        size = Math.min(size, MAX_SEARCH_RESULTS);
+        long offset = (long) page * size; // long avoids int overflow on large pages
+        long totalElements = countJobs(category, workMode, location, q);
         StringBuilder sql = new StringBuilder("""
                 SELECT
                     f.posting_id,
@@ -88,15 +86,9 @@ public class JobRepository {
             sql.append(" AND f.work_mode = :workMode");
         }
         if (location != null && !location.isBlank()) {
-            // Only the normalised city table: the raw location column is free text
-            // ("Amsterdam, Netherlands", "Noord-Holland", "NL - Hybrid") and matching it as
-            // well pulled in provinces and countries under a city's name.
-            //
-            // Equality, not a substring: the value comes from the getCityOptions() dropdown,
-            // so it is already a whole city name. Matching '%Ede%' instead also returned
-            // Enschede, Medemblik, Nederweert and Sweden. NON_CITY_LOCATIONS still applies
-            // because the city table carries countries and provinces of its own, and the
-            // filter is a city filter however the query string was put together.
+            // Matches the normalised city table, not the free-text location column, and by
+            // equality rather than substring: the value is already a whole city name from
+            // the dropdown, and '%Ede%' also matched Enschede, Medemblik and Sweden.
             sql.append("""
                      AND EXISTS (
                          SELECT 1 FROM analytics.fct_postings_cities sub_c
@@ -126,8 +118,8 @@ public class JobRepository {
         sql.append(" ORDER BY f.posted_date DESC NULLS LAST, f.posting_id LIMIT :limit OFFSET :offset");
 
         var statement = jdbcClient.sql(sql.toString())
-                .param("limit", size) // size as limit
-                .param("offset", offset) // Bind offset parameter
+                .param("limit", size)
+                .param("offset", offset)
                 .param("excluded", NON_CITY_LOCATIONS);
 
         if (category != null && !category.isBlank()) {
@@ -143,7 +135,6 @@ public class JobRepository {
             statement.param("q", "%" + q + "%");
         }
 
-        // Store query results in 'content' variable instead of returning directly
         List<JobSearchResponse> content = statement.query((rs, rowNum) -> {
             List<String> skillsList = MartSkills.parse(rs.getString("skills"));
             return new JobSearchResponse(
@@ -164,13 +155,10 @@ public class JobRepository {
             );
         }).list();
 
-        //Return PageResponse record containing content and metadata
         return PageResponse.of(content, page, size, totalElements);
     }
 
-
-     // COUNT(*) query using active search filters to calculate total matching records.
-    // Helper method to get true total count from database
+    // Same filters as searchJobs, just a count.
     private long countJobs(String category, String workMode, String location, String q) {
         StringBuilder sql = new StringBuilder("""
                 SELECT COUNT(*)
@@ -230,9 +218,7 @@ public class JobRepository {
         return statement.query(Long.class).single();
     }
 
-    // Retrieves detailed information for a specific job posting by its ID
     public Optional<JobDetailResponse> getJobById(String postingId) {
-        // Uses correlated subqueries to aggregate cities and skills for this posting_id
         String sql = """
                 SELECT
                     f.posting_id,
@@ -305,12 +291,8 @@ public class JobRepository {
                 .optional();
     }
 
-    // Retrieves distinct values for search filters.
-    // The category list is the mart's own, roughly 37 values and open-ended: it is the source's
-    // category where there is one and the classifier's only as a fallback, so a new value can
-    // appear without anything here changing. They arrive snake_cased (data_engineering,
-    // project_management) and are passed through as stored, because the value round-trips into
-    // searchJobs as a filter - the frontend formats them for display.
+    // Categories come from the mart as-is, snake_cased (data_engineering), because the value
+    // round-trips into searchJobs as a filter - the frontend formats it for display.
     public JobFiltersResponse getAvailableFilters() {
         String sql = """
                 SELECT
@@ -333,9 +315,8 @@ public class JobRepository {
                 FROM (VALUES (1)) AS t
                 """;
 
-        // Read the cities first, outside the mapper below. Called from inside it, the second
-        // query borrowed a connection while the first one still held its own, so every request
-        // needed two at once and enough concurrent ones deadlocked the pool against itself.
+        // Run before the query below, not inside its mapper - nesting it there held two
+        // connections per request and could deadlock the pool under load.
         List<String> cities = getCityOptions();
 
         return jdbcClient.sql(sql)
@@ -349,10 +330,9 @@ public class JobRepository {
                 .single();
     }
 
-    // The location dropdown, from the normalised city table rather than the raw location
-    // column: aggregating location gave 877 free-text near-duplicates ("Amsterdam",
-    // "Amsterdam, Netherlands"), each matching only its own subset of the postings.
-    // initcap is display only - the value round-trips into searchJobs, compared case-insensitively.
+    // Uses the normalised city table, not the free-text location column, which had hundreds
+    // of near-duplicates ("Amsterdam", "Amsterdam, Netherlands"). initcap is display only -
+    // the value round-trips into searchJobs, compared case-insensitively.
     private List<String> getCityOptions() {
         String sql = """
                 SELECT initcap(city) AS city

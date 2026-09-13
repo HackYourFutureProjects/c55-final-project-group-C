@@ -16,18 +16,15 @@ import java.util.List;
 import java.util.Map;
 
 // Asks a language model to score a shortlist of postings against a candidate's skills.
-// Talks the OpenAI chat-completions shape (Gemini compat path and Groq speak it too), so
-// switching provider is LLM_BASE_URL + LLM_MODEL, not code. The one field beyond that shape
-// is reasoning_effort, which LLM_REASONING_EFFORT drops when a provider will not take it.
-// Never throws: every failure comes back as an empty map and the caller keeps its SQL ordering.
+// Speaks the OpenAI chat-completions format, so switching provider is just config, not code.
+// Never throws - any failure returns an empty map and the caller falls back to SQL ordering.
 @Slf4j
 @Component
 public class MatchScorer {
 
     private static final int MAX_REASON_LENGTH = 120;
 
-    // Bump when buildPrompt changes the numbers it returns: it is part of the key stored
-    // scores are filed under, so a bump rescores everything instead of mixing two prompts.
+    // Bump this whenever buildPrompt's output changes, so old and new scores don't mix.
     private static final String PROMPT_VERSION = "v1";
 
     private final RestClient restClient;
@@ -72,14 +69,13 @@ public class MatchScorer {
         return apiKey != null && !apiKey.isBlank();
     }
 
-    // Who produced a score, as model/promptVersion. Stored with every verdict, so changing
-    // the model or the prompt invalidates the old ones for free.
+    // Identifies which model + prompt produced a score, so changing either invalidates old scores.
     public String version() {
         return model + "/" + PROMPT_VERSION;
     }
 
-    // Scores each shortlisted posting 0-100, keyed by full posting id. Missing entries and
-    // an empty map are both normal: the caller falls back for anything absent.
+    // Scores each posting 0-100, keyed by posting id. Missing entries are normal - the
+    // caller falls back for whatever's absent.
     public Map<String, Score> score(List<String> candidateSkills, List<JobMatchRepository.JobMatchRow> jobs) {
         if (!isEnabled() || jobs.isEmpty()) {
             return Map.of();
@@ -88,20 +84,19 @@ public class MatchScorer {
             String content = callModel(buildPrompt(candidateSkills, jobs));
             return parseScores(content, jobs);
         } catch (RestClientResponseException e) {
-            // Usually the request shape, not an outage: a provider that rejects a field it
-            // does not know, reasoning_effort above all. Without the body this reads exactly
-            // like the model being down, and the fix is a config change, not a restart.
+            // Usually a bad request (e.g. an unsupported field), not the model being down -
+            // log the response body so it's clear which one it was.
             log.warn("LLM scoring rejected by the provider ({}), falling back to skill-overlap order: {}",
                     e.getStatusCode(), e.getResponseBodyAsString());
             return Map.of();
         } catch (Exception e) {
-            // Broad on purpose: any failure degrades to the SQL ranking.
+            // Catch anything - any failure here should just fall back, not break the request.
             log.warn("LLM scoring unavailable, falling back to skill-overlap order: {}", e.getMessage());
             return Map.of();
         }
     }
 
-    // Short ids keep the prompt small and stop the model echoing a 32-char hash back wrongly.
+    // Short ids keep the prompt small and less likely to be echoed back wrong.
     private String buildPrompt(List<String> candidateSkills, List<JobMatchRepository.JobMatchRow> jobs) {
         StringBuilder prompt = new StringBuilder()
                 .append("Candidate skills: ").append(String.join(", ", candidateSkills)).append("\n\n")
@@ -124,15 +119,13 @@ public class MatchScorer {
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("model", model);
         body.put("temperature", 0);
-        // Gemini 3 flash thinks by default; "low" measured ~4s against ~14s here. Not every
-        // OpenAI-compatible provider takes the field and some reject unknown ones outright,
-        // so an empty LLM_REASONING_EFFORT leaves it out of the body entirely.
+        // Only send this if it's set - not every provider accepts it, some reject it outright.
         if (reasoningEffort != null && !reasoningEffort.isBlank()) {
             body.put("reasoning_effort", reasoningEffort);
         }
         body.put("messages", List.of(Map.of("role", "user", "content", prompt)));
 
-        // Parsed from String rather than bound to a type: the shape differs per provider.
+        // Parsed as a plain String, not a typed class - the response shape differs per provider.
         String raw = restClient.post()
                 .uri("/chat/completions")
                 .header("Authorization", "Bearer " + apiKey)
@@ -154,7 +147,8 @@ public class MatchScorer {
     }
 
     private Map<String, Score> parseScores(String content, List<JobMatchRepository.JobMatchRow> jobs) throws Exception {
-        // Models often wrap the JSON in prose or a ``` fence.
+        // The model often wraps the JSON in extra text or a code fence, so just grab
+        // everything between the first [ and the last ].
         int start = content.indexOf('[');
         int end = content.lastIndexOf(']');
         if (start < 0 || end <= start) {
@@ -168,7 +162,7 @@ public class MatchScorer {
 
         Map<String, Score> scores = new HashMap<>();
         for (JsonNode node : objectMapper.readTree(content.substring(start, end + 1))) {
-            // Ignore ids the model invented.
+            // Skip any id the model made up.
             String postingId = byShortId.get(node.path("id").asString(""));
             if (postingId == null) {
                 continue;

@@ -29,7 +29,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
     private final UserRepository userRepository;
     private final AuthenticationService authenticationService;
 
-    // No default: application.yaml derives it from app.base-url.
+    // Derived from app.base-url in application.yaml.
     @Value("${app.oauth2.success-redirect}")
     private String successRedirect;
 
@@ -50,8 +50,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 
         Optional<User> user = resolveUser(email, name, providerId);
         if (user.isEmpty()) {
-            // Park the identity and send them to the password form. No session is opened:
-            // nothing here has proved the account is theirs yet.
+            // Park the identity - no session yet, since nothing here proves the account is theirs.
             PendingGoogleLink.save(request.getSession(), email, providerId);
             log.info("Google sign-in for {} needs the account password before linking", email);
             response.sendRedirect(linkRequiredRedirect);
@@ -60,7 +59,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 
         authenticationService.establishSession(user.get().getEmail(), request);
 
-        // Google never shows our terms, so send these users to the terms screen first.
+        // Google skips our terms screen, so send them there first.
         if (user.get().getTermsAcceptedAt() == null) {
             log.info("Google sign-in for {} still needs the terms and privacy agreement", email);
             response.sendRedirect(termsRequiredRedirect);
@@ -69,9 +68,8 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         response.sendRedirect(successRedirect);
     }
 
-    // Empty when the email already belongs to an account. Linking on an email match alone
-    // would hand this Google identity to whoever registered the address, since registration
-    // never proved they own it; AuthenticationService.login finishes the link instead.
+    // Empty if the email is already taken - an email match alone isn't proof of ownership,
+    // so AuthenticationService.login finishes the link instead.
     private Optional<User> resolveUser(String email, String name, String providerId) {
         Optional<User> linked = userRepository.findByProvider(PROVIDER_GOOGLE, providerId);
         if (linked.isPresent()) {
@@ -89,7 +87,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         try {
             userRepository.createProviderUser(created, PROVIDER_GOOGLE, providerId);
         } catch (DuplicateKeyException ex) {
-            // Lost a race with a concurrent sign-up; that account has to prove itself too.
+            // Lost a race with a concurrent sign-up - that account must prove itself too.
             log.info("Concurrent sign-up for {}, deferring the link", email);
             return Optional.empty();
         }

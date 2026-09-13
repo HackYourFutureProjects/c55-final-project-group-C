@@ -26,7 +26,7 @@ import org.springframework.security.web.authentication.SimpleUrlAuthenticationFa
 @EnableWebSecurity
 public class SecurityConfig {
 
-    // Under /api so the Next.js proxy forwards it, keeping one origin for JSESSIONID.
+    // Under /api so the Next.js proxy forwards it.
     private static final String AUTHORIZATION_BASE_URI = "/api/oauth2/authorization";
     private static final String REDIRECTION_BASE_URI = "/api/login/oauth2/code/*";
 
@@ -39,27 +39,26 @@ public class SecurityConfig {
             Environment environment) {
         http
                 .authorizeHttpRequests(auth -> auth
-                        // Require authentication for password updates before public /api/auth/** permitAll
+                        // This one needs login; the rest of /api/auth/** is public.
                         .requestMatchers(HttpMethod.PATCH, "/api/auth/password").authenticated()
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/error").permitAll()
                         .requestMatchers("/api/docs/**").permitAll()
                         .requestMatchers("/api/oauth2/**", "/api/login/oauth2/**").permitAll()
-                        // Whitelist public /api/jobs routes explicitly to avoid exposing private endpoints like /top-matches.
+                        // Only these /api/jobs routes are public - top-matches stays private.
                         .requestMatchers(HttpMethod.GET, "/api/jobs/top-matches").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/jobs", "/api/jobs/filters", "/api/jobs/*").permitAll()
                         .anyRequest().authenticated()
                 )
-                // Without this, oauth2Login's entry point redirects an unauthenticated API
-                // call to Google. A browser fetch() follows that cross-origin, is blocked by
-                // CORS, and the caller sees a network failure instead of "not logged in".
+                // Return 401 for an unauthenticated API call instead of redirecting to Google,
+                // which a browser fetch() can't follow (CORS) and just fails instead.
                 .exceptionHandling(exceptions -> exceptions
                         .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED))
                 )
                 .csrf(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .formLogin(AbstractHttpConfigurer::disable)
-                // custom logout behavior and response Configuration
+                // Custom logout: clear the session cookie and return JSON.
                 .logout(logout -> logout
                         .logoutUrl("/api/auth/logout")
                         .deleteCookies("JSESSIONID")
@@ -71,19 +70,18 @@ public class SecurityConfig {
                         })
                 );
 
-        // No credentials means no ClientRegistrationRepository, and oauth2Login would fail startup.
+        // No Google credentials means no Google login - skip setting it up.
         if (clientRegistrations.getIfAvailable() != null) {
             String loginRedirect = environment.getRequiredProperty("app.oauth2.failure-redirect");
             http.oauth2Login(oauth2 -> oauth2
                     .authorizationEndpoint(endpoint -> endpoint.baseUri(AUTHORIZATION_BASE_URI))
                     .redirectionEndpoint(endpoint -> endpoint.baseUri(REDIRECTION_BASE_URI))
-                    // Spring Security would find this bean by type anyway; naming it here keeps
-                    // the email_verified check from disappearing behind a generics change.
+                    // Named explicitly so the email-verified check can't silently disappear.
                     .userInfoEndpoint(userInfo -> userInfo.oidcUserService(oidcUserService.getObject()))
                     .successHandler(oauth2LoginSuccessHandler)
                     .failureHandler(new SimpleUrlAuthenticationFailureHandler(loginRedirect))
             );
-            // A mismatch with the Google Cloud Console URI is the usual sign-in failure.
+            // Logged for debugging - a mismatched redirect URI is the usual sign-in failure.
             log.info("Google sign-in enabled at {}/google, redirect URI {}",
                     AUTHORIZATION_BASE_URI, environment.getProperty("app.oauth2.google.redirect-uri"));
         } else {
